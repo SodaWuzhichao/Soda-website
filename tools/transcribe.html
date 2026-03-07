@@ -153,9 +153,16 @@ async function handleFile() {
 }
 
 function formatText(text) {
+  text = text.replace(/\s+/g, '');
+
+  text = text
+    .replace(/(了|的|吧|呢|啊|呀|吗|嘛|哦|哈|嗯|唉)([^，。！？、；：])/g, '$1，$2')
+    .replace(/([，、；：]){2,}/g, '，')
+    .replace(/(.{30,50}?)(然后|接着|后来|于是|所以|因此|但是|可是|不过|而且|并且|同时)/g, '$1。$2')
+    .replace(/(.{40,60}?)([^，。！？、；：])/g, '$1。$2');
+
   return text
-    .replace(/\s+/g, ' ')
-    .replace(/([。！？])\s*/g, '$1\n')
+    .replace(/([。！？])\s*/g, '$1\n\n')
     .replace(/([，、；：])\s*/g, '$1')
     .trim();
 }
