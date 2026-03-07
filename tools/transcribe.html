@@ -79,9 +79,10 @@ nav {
   <div class="error" id="error"></div>
 
   <div class="result-area" id="resultArea">
-    <div class="result-title">提取结果</div>
+    <div class="result-title">提取结果 <span id="wordCount" style="color:var(--muted);font-size:0.9rem;margin-left:12px;"></span></div>
     <div class="result-text" id="resultText"></div>
     <button class="btn" onclick="copyText()">复制文案</button>
+    <button class="btn" onclick="downloadText()" style="background:#2a2a30;margin-left:12px;">导出TXT</button>
     <button class="btn" onclick="reset()" style="background:#2a2a30;margin-left:12px;">重新上传</button>
   </div>
 </div>
@@ -140,7 +141,8 @@ async function handleFile() {
 
     loading.style.display = 'none';
     resultArea.style.display = 'block';
-    resultText.textContent = data.text;
+    resultText.textContent = formatText(data.text);
+    document.getElementById('wordCount').textContent = `共 ${resultText.textContent.length} 字`;
 
   } catch (err) {
     loading.style.display = 'none';
@@ -150,9 +152,27 @@ async function handleFile() {
   }
 }
 
+function formatText(text) {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/([。！？])\s*/g, '$1\n')
+    .replace(/([，、；：])\s*/g, '$1')
+    .trim();
+}
+
 function copyText() {
   navigator.clipboard.writeText(resultText.textContent);
   alert('✅ 文案已复制到剪贴板！');
+}
+
+function downloadText() {
+  const blob = new Blob([resultText.textContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `文案_${new Date().getTime()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function reset() {
