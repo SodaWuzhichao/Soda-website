@@ -147,6 +147,16 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; c
 .edit-panel .form-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #999; }
 .edit-panel .btn-group { display: flex; gap: 12px; margin-top: 20px; }
 .edit-panel .btn-group button { flex: 1; }
+
+.crop-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; }
+.crop-modal.show { display: flex; }
+.crop-container { background: #1a1a1f; padding: 24px; border-radius: 8px; max-width: 600px; width: 90%; }
+.crop-container h3 { margin-bottom: 16px; }
+.crop-preview { position: relative; width: 100%; height: 400px; background: #000; margin: 16px 0; overflow: hidden; }
+.crop-preview img { position: absolute; max-width: none; cursor: move; }
+.crop-ratio { display: flex; gap: 8px; margin-bottom: 16px; }
+.crop-ratio button { padding: 8px 16px; background: #2a2a30; border: 1px solid #3a3a40; color: #e8e8e8; border-radius: 4px; cursor: pointer; }
+.crop-ratio button.active { background: #f0c040; color: #0a0a0a; }
 </style>
 </head>
 <body>
@@ -392,15 +402,68 @@ function toggleUploadMode() {
 
 let uploadedPosterData = null;
 
+let cropData = { ratio: 0, img: null, scale: 1, x: 0, y: 0 };
+
 function handlePosterUpload() {
   const file = document.getElementById('posterInput').files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    uploadedPosterData = e.target.result;
+    cropData.img = e.target.result;
+    document.getElementById('cropImage').src = e.target.result;
+    document.getElementById('cropModal').classList.add('show');
   };
   reader.readAsDataURL(file);
+}
+
+function setCropRatio(ratio) {
+  cropData.ratio = ratio;
+  document.querySelectorAll('.crop-ratio button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function confirmCrop() {
+  const img = document.getElementById('cropImage');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const ratio = cropData.ratio || (img.naturalWidth / img.naturalHeight);
+  const srcW = img.naturalWidth;
+  const srcH = img.naturalHeight;
+
+  let cropW, cropH, cropX, cropY;
+
+  if (srcW / srcH > ratio) {
+    cropH = srcH;
+    cropW = srcH * ratio;
+    cropX = (srcW - cropW) / 2;
+    cropY = 0;
+  } else {
+    cropW = srcW;
+    cropH = srcW / ratio;
+    cropX = 0;
+    cropY = (srcH - cropH) / 2;
+  }
+
+  canvas.width = 800;
+  canvas.height = 800 / ratio;
+  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+  const croppedData = canvas.toDataURL('image/jpeg', 0.8);
+
+  if (cropData.isEdit) {
+    editUploadedPosterData = croppedData;
+    cropData.isEdit = false;
+  } else {
+    uploadedPosterData = croppedData;
+  }
+
+  closeCropModal();
+}
+
+function closeCropModal() {
+  document.getElementById('cropModal').classList.remove('show');
 }
 
 let editUploadedPosterData = null;
@@ -411,7 +474,10 @@ function handleEditPosterUpload() {
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    editUploadedPosterData = e.target.result;
+    cropData.img = e.target.result;
+    cropData.isEdit = true;
+    document.getElementById('cropImage').src = e.target.result;
+    document.getElementById('cropModal').classList.add('show');
   };
   reader.readAsDataURL(file);
 }
@@ -872,5 +938,25 @@ function importBackup(input) {
   input.value = '';
 }
 </script>
+
+<div class="crop-modal" id="cropModal">
+  <div class="crop-container">
+    <h3>裁剪封面</h3>
+    <div class="crop-ratio">
+      <button onclick="setCropRatio(16/9)">16:9 横屏</button>
+      <button onclick="setCropRatio(9/16)">9:16 竖屏</button>
+      <button onclick="setCropRatio(1)">1:1 方形</button>
+      <button onclick="setCropRatio(0)" class="active">自由裁剪</button>
+    </div>
+    <div class="crop-preview" id="cropPreview">
+      <img id="cropImage" />
+    </div>
+    <div class="btn-group">
+      <button class="btn" onclick="confirmCrop()">确认裁剪</button>
+      <button class="btn" onclick="closeCropModal()" style="background:#2a2a30;">取消</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
