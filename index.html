@@ -728,7 +728,7 @@ function setupHoverAndRatio() {
       });
       item.addEventListener('mouseleave', () => {
         video.pause();
-        video.currentTime = 0;
+        video.load();
       });
     } else if (img) {
       img.addEventListener('load', () => {
