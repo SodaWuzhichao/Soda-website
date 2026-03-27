@@ -544,10 +544,11 @@ async function loadWorksFromAPI() {
         'https://media.soda567.dpdns.org/thumbnails/' + w.thumbnail : '';
       
       if (w.type === 'video' && videoUrl) {
+        const poster = thumbUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1920 1080%22%3E%3Crect width=%221920%22 height=%221080%22 fill=%22%23141414%22/%3E%3C/svg%3E';
         return `
         <div class="work-item is-video" data-type="video" data-src="${videoUrl}" data-id="${w.id}">
-          <video src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
-            poster="${thumbUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1920 1080%22%3E%3Crect width=%221920%22 height=%221080%22 fill=%22%23141414%22/%3E%3C/svg%3E'}"
+          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="none"
+            poster="${poster}"
             style="pointer-events:none"></video>
           <div class="work-overlay">
             <div class="work-title">${w.title}</div>
@@ -592,12 +593,34 @@ loadWorksFromAPI();
 
 function setupHoverAndRatio() {
   const workItems = document.querySelectorAll('.work-item');
+
+  // IntersectionObserver 懒加载视频
+  const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target.querySelector('video[data-src]');
+      if (!video) return;
+      if (entry.isIntersecting) {
+        // 进入视口：加载视频
+        if (!video.src || video.src === window.location.href) {
+          video.src = video.dataset.src;
+          video.load();
+        }
+      } else {
+        // 离开视口：暂停释放资源
+        video.pause();
+      }
+    });
+  }, { rootMargin: '200px 0px', threshold: 0.1 });
+
   workItems.forEach(item => {
     const video = item.querySelector('video');
     const img = item.querySelector('img');
     const customRatio = item.dataset.ratio;
 
     if (video) {
+      // 懒加载：先观察，进入视口再加载
+      videoObserver.observe(item);
+
       video.addEventListener('loadedmetadata', () => {
         if (!customRatio || customRatio === 'auto') {
           const ratio = video.videoWidth / video.videoHeight;
@@ -610,7 +633,6 @@ function setupHoverAndRatio() {
           }
         }
       });
-      video.load();
 
       video.addEventListener('click', (e) => {
         e.preventDefault();
@@ -618,11 +640,14 @@ function setupHoverAndRatio() {
       });
 
       item.addEventListener('mouseenter', () => {
+        // 确保已加载再播放
+        if (video.dataset.src && (!video.src || video.src === window.location.href)) {
+          video.src = video.dataset.src;
+        }
         video.play().catch(() => {});
       });
       item.addEventListener('mouseleave', () => {
         video.pause();
-        video.load();
       });
     } else if (img) {
       img.addEventListener('load', () => {
