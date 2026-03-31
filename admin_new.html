@@ -372,9 +372,23 @@ function openEdit(id) {
   document.getElementById('editUrl').value = w.source_url||w.filename||'';
   document.getElementById('editDesc').value = w.description||'';
   document.getElementById('uploadMode').value = 'url';
-  // 编辑模式：显示封面区，隐藏帧选择器，显示当前封面
+  // 编辑模式：显示封面区，如果有视频 URL 则显示帧选择器
   document.getElementById('coverSection').style.display = 'block';
-  document.getElementById('framePickerWrap').style.display = 'none';
+  const srcUrl = w.source_url || w.filename || '';
+  const isVideo = w.type === 'video' && srcUrl;
+  document.getElementById('framePickerWrap').style.display = isVideo ? 'block' : 'none';
+  if (isVideo) {
+    const fv = document.getElementById('frameVideo');
+    fv.src = srcUrl;
+    fv.onloadedmetadata = () => {
+      const slider = document.getElementById('frameSlider');
+      slider.max = fv.duration;
+      slider.value = 0;
+      fv.currentTime = 0;
+    };
+    capturedCoverBlob = null;
+    document.getElementById('capturePrev').innerHTML = '';
+  }
   const currentThumb = w.thumbnail_url || w.thumbnail || '';
   if (currentThumb) {
     document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">点击更换封面</small>';
@@ -475,14 +489,38 @@ async function saveWork() {
   if (!title) { toast('请输入标题', 'err'); return; }
 
   if (id) {
-    // 编辑：JSON PATCH
-    const body = { title, type, year, status, description };
-    if (mode === 'url') body.source_url = document.getElementById('editUrl').value.trim()||null;
-    try {
-      const res = await api('PATCH', '/api/works/'+id, body);
-      if (!res.ok) throw new Error(await res.text());
-      toast('更新成功', 'ok'); closePanel(); loadWorks();
-    } catch(e) { toast('保存失败: '+e.message, 'err'); }
+    // 编辑：有封面则用 FormData，否则用 JSON PATCH
+    const coverInput = document.getElementById('coverInput');
+    const hasCover = capturedCoverBlob || (coverInput.files && coverInput.files[0]);
+    if (hasCover) {
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('type', type);
+      if (year) fd.append('year', year);
+      fd.append('status', status);
+      if (description) fd.append('description', description);
+      if (mode === 'url') fd.append('source_url', document.getElementById('editUrl').value.trim()||'');
+      if (capturedCoverBlob) {
+        fd.append('thumbnail', capturedCoverBlob, 'cover.jpg');
+      } else {
+        fd.append('thumbnail', coverInput.files[0]);
+      }
+      try {
+        const t = tok();
+        if (!t) { toast('未登录，请刷新页面重新登录', 'err'); return; }
+        const res = await fetch(API + '/api/works/' + id, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + t }, body: fd });
+        if (!res.ok) throw new Error(await res.text());
+        toast('更新成功（含封面）', 'ok'); closePanel(); loadWorks();
+      } catch(e) { toast('保存失败: '+e.message, 'err'); }
+    } else {
+      const body = { title, type, year, status, description };
+      if (mode === 'url') body.source_url = document.getElementById('editUrl').value.trim()||null;
+      try {
+        const res = await api('PATCH', '/api/works/'+id, body);
+        if (!res.ok) throw new Error(await res.text());
+        toast('更新成功', 'ok'); closePanel(); loadWorks();
+      } catch(e) { toast('保存失败: '+e.message, 'err'); }
+    }
     return;
   }
 
