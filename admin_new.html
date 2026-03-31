@@ -501,9 +501,9 @@ async function saveWork() {
       if (description) fd.append('description', description);
       if (mode === 'url') fd.append('source_url', document.getElementById('editUrl').value.trim()||'');
       if (capturedCoverBlob) {
-        fd.append('thumbnail', capturedCoverBlob, 'cover.jpg');
+        fd.append('cover', capturedCoverBlob, 'cover.jpg');
       } else {
-        fd.append('thumbnail', coverInput.files[0]);
+        fd.append('cover', coverInput.files[0]);
       }
       try {
         const t = tok();
