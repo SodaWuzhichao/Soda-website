@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SODA 后台管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0a0f; color: #e8e8e8; font-family: sans-serif; min-height: 100vh; }
-input, select, textarea { background: #111; border: 1px solid #2a2a30; color: #e8e8e8; border-radius: 4px; padding: 10px 12px; width: 100%; font-size: 14px; }
+body { background: #0a0a0f; color: #e8e8e8; font-family: 'DM Sans', -apple-system, sans-serif; font-weight: 200; min-height: 100vh; }
+input, select, textarea { background: #111; border: 1px solid #2a2a30; color: #e8e8e8; border-radius: 4px; padding: 10px 12px; width: 100%; font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 300; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #f0c040; }
-button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; padding: 10px 20px; }
+button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-weight: 300; }
 .bp { background: #f0c040; color: #0a0a0f; font-weight: 600; }
 .bp:hover { background: #f5d060; }
 .bs { background: #2a2a30; color: #e8e8e8; }
@@ -18,29 +20,32 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .bd:hover { background: #f06060; }
 .login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; }
 .login-box { background:#1a1a1f; padding:40px; border-radius:8px; width:90%; max-width:400px; border:1px solid #2a2a30; }
-.login-box h1 { margin-bottom:8px; font-size:1.5rem; font-weight:300; }
+.login-box h1 { margin-bottom:8px; font-size:1.5rem; font-weight:200; font-family:'DM Sans', sans-serif; letter-spacing:0.15em; }
 .login-box p { color:#888; margin-bottom:24px; font-size:14px; }
 .login-box input { margin-bottom:16px; }
 .login-box button { width:100%; }
 #loginError { color:#e05050; font-size:13px; margin-top:12px; min-height:20px; }
 .admin-layout { display:none; min-height:100vh; }
 .sidebar { width:220px; background:#111; border-right:1px solid #1a1a1f; padding:24px 0; position:fixed; top:0; left:0; height:100vh; }
-.sidebar-logo { padding:0 24px 24px; font-size:18px; font-weight:600; letter-spacing:2px; border-bottom:1px solid #1a1a1f; margin-bottom:16px; }
+.sidebar-logo { padding:0 24px 24px; font-size:15px; font-weight:300; letter-spacing:0.2em; border-bottom:1px solid #1a1a1f; margin-bottom:16px; font-family:'DM Sans', sans-serif; }
 .sidebar-logo span { color:#f0c040; }
 .nav-item { padding:12px 24px; color:#888; cursor:pointer; }
 .nav-item:hover { color:#e8e8e8; background:#1a1a1f; }
 .main-content { margin-left:220px; padding:32px; }
 .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
-.page-header h2 { font-size:1.4rem; font-weight:300; }
+.page-header h2 { font-size:1.4rem; font-weight:300; font-family:'DM Sans', sans-serif; }
 .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px; margin-bottom:32px; }
 .stat-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:8px; padding:20px; }
 .stat-card .num { font-size:2rem; font-weight:300; color:#f0c040; }
 .stat-card .label { color:#888; font-size:13px; margin-top:4px; }
 .works-table { background:#1a1a1f; border-radius:8px; overflow:hidden; border:1px solid #2a2a30; }
 .tbl-hdr { display:grid; grid-template-columns:60px 1fr 90px 90px 80px 140px; padding:12px 16px; background:#111; color:#888; font-size:12px; text-transform:uppercase; }
-.work-row { display:grid; grid-template-columns:60px 1fr 90px 90px 80px 140px; padding:12px 16px; border-top:1px solid #1a1a1f; align-items:center; }
+.work-row { display:grid; grid-template-columns:36px 60px 1fr 90px 90px 80px 140px; padding:12px 16px; border-top:1px solid #1a1a1f; align-items:center; }
+.row-checkbox { width:16px; height:16px; accent-color:#f0c040; cursor:pointer; }
+.batch-bar { display:none; align-items:center; gap:12px; padding:10px 16px; background:#1a1a1f; border-radius:6px; margin-bottom:12px; }
+.batch-bar.show { display:flex; }
 .work-row:hover { background:#0f0f14; }
-.wthumb { width:48px; height:32px; background:#2a2a30; border-radius:4px; overflow:hidden; }
+.wthumb { width:48px; height:32px; background:#2a2a30; border-radius:4px; overflow:hidden; position:relative; }
 .wthumb video,.wthumb img { width:100%; height:100%; object-fit:cover; }
 .wtitle { padding:0 12px; }
 .wtitle .t { font-size:14px; margin-bottom:2px; }
@@ -56,7 +61,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .overlay.open { display:flex; }
 .panel { background:#1a1a1f; border-radius:8px; width:90%; max-width:560px; max-height:90vh; overflow-y:auto; border:1px solid #2a2a30; }
 .panel-hdr { padding:20px 24px; border-bottom:1px solid #2a2a30; display:flex; align-items:center; justify-content:space-between; }
-.panel-hdr h3 { font-weight:300; }
+.panel-hdr h3 { font-weight:300; font-family:'DM Sans', sans-serif; }
 .pclose { background:none; color:#888; font-size:20px; padding:0; width:28px; height:28px; }
 .pclose:hover { color:#e8e8e8; }
 .panel-body { padding:24px; }
@@ -73,6 +78,19 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .toast.show { transform:translateY(0); opacity:1; }
 .toast.ok { border-color:#5ad060; }
 .toast.err { border-color:#e05050; }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .sidebar { width:100%; height:auto; position:fixed; top:0; left:0; right:0; bottom:auto; border-right:none; border-bottom:1px solid #1a1a1f; padding:0; display:flex; align-items:center; justify-content:space-between; z-index:100; }
+  .sidebar-logo { padding:16px 20px; border-bottom:none; margin-bottom:0; font-size:14px; }
+  .nav-item { padding:16px 20px; position:static !important; width:auto; }
+  .nav-item:first-of-type { display:none; }
+  .main-content { margin-left:0; padding:80px 16px 16px; }
+  .page-header { flex-direction:column; align-items:flex-start; gap:12px; }
+  .work-row { grid-template-columns:28px 40px 1fr auto; padding:10px 12px; }
+  .page-header h2 { font-size:1.1rem; }
+  .panel { width:100% !important; right:0 !important; left:0 !important; border-radius:12px 12px 0 0; bottom:0 !important; top:auto !important; max-height:90vh; overflow-y:auto; }
+}
 </style>
 </head>
 <body>
@@ -90,6 +108,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   <div class="sidebar">
     <div class="sidebar-logo">SODA <span>Admin</span></div>
     <div class="nav-item">📁 作品管理</div>
+    <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="position:absolute;bottom:60px;width:100%;color:#888;font-size:13px">🌐 公网模式</div>
     <div class="nav-item" onclick="logout()" style="position:absolute;bottom:24px;width:100%">🚪 退出登录</div>
   </div>
   <div class="main-content">
@@ -97,6 +116,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <h2>作品管理</h2>
       <div style="display:flex;gap:12px">
         <button class="bs" onclick="loadWorks()">刷新</button>
+        <button class="bs" id="selectAllBtn" onclick="selectAllToggle()">全选</button>
         <button class="bp" onclick="openAddPanel()">+ 添加作品</button>
       </div>
     </div>
@@ -106,6 +126,28 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
       <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
     </div>
+    <div class="batch-bar" id="batchBar">
+      <span id="selectedCount" style="color:#888;font-size:13px">已选 0 项</span>
+      <button class="bd" onclick="batchDelete()" style="padding:6px 14px;font-size:13px">批量删除</button>
+      <button class="bs" onclick="clearSelect()" style="padding:6px 14px;font-size:13px">取消选择</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select id="filterType" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
+          <option value="">全部类型</option>
+          <option value="video">视频</option>
+          <option value="photo">照片</option>
+        </select>
+        <select id="filterYear" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
+          <option value="">全部年份</option>
+        </select>
+        <select id="sortBy" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
+          <option value="year_desc">年份 ↓</option>
+          <option value="year_asc">年份 ↑</option>
+          <option value="title_asc">标题 A→Z</option>
+          <option value="title_desc">标题 Z→A</option>
+        </select>
+        <span id="filterCount" style="color:#888;font-size:13px;margin-left:4px"></span>
+      </div>
     <div class="works-table">
       <div class="tbl-hdr"><div>封面</div><div>标题</div><div>类型</div><div>状态</div><div>年份</div><div>操作</div></div>
       <div id="worksList"></div>
@@ -131,7 +173,32 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <div style="color:#888;font-size:14px">点击选择文件<br><small>mp4 mov avi mkv webm jpg png webp</small></div>
           <input type="file" id="fileInput" accept="video/*,image/*" onchange="handleFile(this)" />
           <div id="filePrev"></div>
-          <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+        </div>
+        <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+        <div id="coverSection" style="margin-top:12px;display:none">
+          <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            封面选择
+            <span style="color:#888;font-size:12px">拖动滑块选帧，或上传图片</span>
+          </label>
+          <!-- 帧选择器 -->
+          <div id="framePickerWrap" style="background:#111;border-radius:6px;padding:10px;margin-bottom:8px">
+            <video id="frameVideo" style="width:100%;max-height:180px;border-radius:4px;background:#000;display:block" preload="metadata" muted playsinline></video>
+            <input type="range" id="frameSlider" min="0" max="100" value="0" step="0.1"
+              style="width:100%;margin:8px 0;accent-color:#f0c040"
+              oninput="seekFrame(this.value)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span id="frameTime" style="color:#888;font-size:12px">00:00</span>
+              <button class="bs" onclick="captureFrame()" style="padding:6px 14px;font-size:12px">用此帧作封面</button>
+            </div>
+            <canvas id="frameCanvas" style="display:none"></canvas>
+            <div id="capturePrev" style="margin-top:8px"></div>
+          </div>
+          <!-- 或上传自定义封面 -->
+          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">— 或上传自定义封面图 —</div>
+          <div class="upload-area" style="padding:12px" onclick="document.getElementById('coverInput').value='';document.getElementById('coverInput').click()">
+            <div id="coverPrev" style="color:#888;font-size:13px;text-align:center">点击上传图片封面<br><small>jpg png webp</small></div>
+            <input type="file" id="coverInput" accept="image/*" onchange="handleCover(this)" style="display:none" />
+          </div>
         </div>
       </div>
       <div class="fg"><label>描述</label><textarea id="editDesc" rows="3" placeholder="作品描述..."></textarea></div>
@@ -144,7 +211,18 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const API = 'https://api.soda567.dpdns.org';
+const API_WAN = 'https://api.soda567.dpdns.org';
+const API_LAN = 'http://192.168.0.109:5001';
+let API = localStorage.getItem('soda_api') || API_WAN;
+
+function toggleApiMode() {
+  API = (API === API_WAN) ? API_LAN : API_WAN;
+  localStorage.setItem('soda_api', API);
+  const btn = document.getElementById('apiModeBtn');
+  btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
+  btn.style.color = API === API_LAN ? '#5ad060' : '#888';
+  toast('已切换到 ' + (API === API_LAN ? '局域网直传' : '公网'), 'ok');
+}
 let works = [];
 let uploadedFilename = null;
 
@@ -200,6 +278,10 @@ async function loadWorks() {
   try {
     const res = await api('GET', '/api/works?status=all');
     works = await res.json();
+    // 填充年份下拉
+    const years = [...new Set(works.map(w=>w.year).filter(Boolean))].sort((a,b)=>b-a);
+    const fy = document.getElementById('filterYear');
+    fy.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
     renderWorks();
     updateStats();
   } catch(e) { toast('加载失败: '+e.message, 'err'); }
@@ -214,14 +296,34 @@ function updateStats() {
 
 function renderWorks() {
   const list = document.getElementById('worksList');
-  if (!works.length) { list.innerHTML = '<div style="padding:32px;text-align:center;color:#888">暂无作品</div>'; return; }
-  list.innerHTML = works.map(w => {
+  const typeF = document.getElementById('filterType')?.value || '';
+  const yearF = document.getElementById('filterYear')?.value || '';
+  const sortV = document.getElementById('sortBy')?.value || 'year_desc';
+  let filtered = works.filter(w => {
+    if (typeF && w.type !== typeF) return false;
+    if (yearF && String(w.year) !== yearF) return false;
+    return true;
+  });
+  filtered.sort((a,b) => {
+    if (sortV === 'year_desc') return (b.year||0)-(a.year||0);
+    if (sortV === 'year_asc') return (a.year||0)-(b.year||0);
+    if (sortV === 'title_asc') return (a.title||'').localeCompare(b.title||'');
+    if (sortV === 'title_desc') return (b.title||'').localeCompare(a.title||'');
+    return 0;
+  });
+  const countEl = document.getElementById('filterCount');
+  if (countEl) countEl.textContent = filtered.length < works.length ? `显示 ${filtered.length} / ${works.length} 条` : `共 ${works.length} 条`;
+  if (!filtered.length) { list.innerHTML = '<div style="padding:32px;text-align:center;color:#888">无匹配作品</div>'; return; }
+  list.innerHTML = filtered.map(w => {
     const url = w.source_url || (w.filename ? 'https://media.soda567.dpdns.org/videos/'+w.filename : '');
     const thumb = w.thumbnail ? 'https://media.soda567.dpdns.org/thumbnails/'+w.thumbnail : '';
+    const hasVideo = w.type==='video' && url;
     const thumbHtml = thumb
-      ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover">'
-      : (w.type==='video'&&url ? '<video src="'+url+'" muted preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>' : '');
+      ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
+        +(hasVideo ? '<video src="'+url+'" muted preload="none" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1;this.play()" onmouseleave="this.style.opacity=0;this.pause();this.currentTime=0"></video>' : '')
+      : (hasVideo ? '<video src="'+url+'" muted preload="metadata" style="width:100%;height:100%;object-fit:cover" onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0"></video>' : '');
     return '<div class="work-row">'
+      +'<input type="checkbox" class="row-checkbox" data-id="'+w.id+'" onchange="updateBatchBar()">'
       +'<div class="wthumb">'+thumbHtml+'</div>'
       +'<div class="wtitle"><div class="t">'+w.title+'</div><div class="s">'+(url||'无链接')+'</div></div>'
       +'<div><span class="badge '+(w.type==='video'?'bv':'bp2')+'">'+(w.type==='video'?'视频':'照片')+'</span></div>'
@@ -246,6 +348,13 @@ function openAddPanel() {
   document.getElementById('editUrl').value = '';
   document.getElementById('editDesc').value = '';
   document.getElementById('filePrev').innerHTML = '';
+  document.getElementById('coverPrev').innerHTML = '点击上传图片封面<br><small>jpg png webp</small>';
+  document.getElementById('coverInput').value = '';
+  document.getElementById('coverSection').style.display = 'none';
+  document.getElementById('framePickerWrap').style.display = 'none';
+  document.getElementById('capturePrev').innerHTML = '';
+  document.getElementById('frameVideo').src = '';
+  capturedCoverBlob = null;
   uploadedFilename = null;
   toggleMode();
   document.getElementById('overlay').classList.add('open');
@@ -263,6 +372,20 @@ function openEdit(id) {
   document.getElementById('editUrl').value = w.source_url||w.filename||'';
   document.getElementById('editDesc').value = w.description||'';
   document.getElementById('uploadMode').value = 'url';
+  // 编辑模式：显示封面区，隐藏帧选择器，显示当前封面
+  document.getElementById('coverSection').style.display = 'block';
+  document.getElementById('framePickerWrap').style.display = 'none';
+  const currentThumb = w.thumbnail_url || w.thumbnail || '';
+  if (currentThumb) {
+    document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">点击更换封面</small>';
+  } else {
+    document.getElementById('coverPrev').innerHTML = '暂无封面，点击上传<br><small>jpg png webp</small>';
+  }
+  document.getElementById('coverInput').value = '';
+  document.getElementById('capturePrev').innerHTML = '';
+  document.getElementById('frameVideo').src = '';
+  capturedCoverBlob = null;
+  uploadedFilename = null;
   toggleMode();
   document.getElementById('overlay').classList.add('open');
 }
@@ -275,63 +398,215 @@ function toggleMode() {
   document.getElementById('fileMode').style.display = m==='file'?'block':'none';
 }
 
-async function handleFile(input) {
+let capturedCoverBlob = null;
+
+function handleFile(input) {
   const file = input.files[0];
   if (!file) return;
   const prev = document.getElementById('filePrev');
-  const prog = document.getElementById('prog');
-  const fill = document.getElementById('progFill');
-  prog.style.display = 'block'; fill.style.width = '10%';
-  prev.innerHTML = '';
-  try {
-    const fd = new FormData();
-    fd.append('file', file);
-    fill.style.width = '40%';
-    const res = await api('POST', '/api/upload', fd, true);
-    fill.style.width = '90%';
-    if (!res.ok) throw new Error('上传失败');
-    const d = await res.json();
-    uploadedFilename = d.filename;
-    fill.style.width = '100%';
-    if (file.type.startsWith('video')) {
-      prev.innerHTML = '<video src="https://media.soda567.dpdns.org/videos/'+d.filename+'" controls style="max-width:100%;max-height:160px;margin-top:8px"></video>';
-    } else {
-      prev.innerHTML = '<img src="https://media.soda567.dpdns.org/photos/'+d.filename+'" style="max-width:100%;max-height:160px;margin-top:8px">';
-    }
-    toast('上传成功', 'ok');
-  } catch(e) { toast('上传失败: '+e.message, 'err'); }
-  setTimeout(()=>{ prog.style.display='none'; fill.style.width='0'; }, 1000);
+  const coverSection = document.getElementById('coverSection');
+  const url = URL.createObjectURL(file);
+  if (file.type.startsWith('video')) {
+    prev.innerHTML = '<video src="'+url+'" controls style="max-width:100%;max-height:160px;margin-top:8px"></video>';
+    coverSection.style.display = 'block';
+    document.getElementById('framePickerWrap').style.display = 'block';
+    // 绑定帧选择器
+    const fv = document.getElementById('frameVideo');
+    fv.src = url;
+    fv.onloadedmetadata = () => {
+      const slider = document.getElementById('frameSlider');
+      slider.max = fv.duration;
+      slider.value = 0;
+      fv.currentTime = 0;
+    };
+    capturedCoverBlob = null;
+    document.getElementById('capturePrev').innerHTML = '';
+  } else {
+    prev.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:160px;margin-top:8px">';
+    coverSection.style.display = 'none';
+  }
+}
+
+function seekFrame(val) {
+  const fv = document.getElementById('frameVideo');
+  fv.currentTime = parseFloat(val);
+  const t = parseFloat(val);
+  const m = String(Math.floor(t/60)).padStart(2,'0');
+  const s = String(Math.floor(t%60)).padStart(2,'0');
+  document.getElementById('frameTime').textContent = m+':'+s;
+}
+
+function captureFrame() {
+  const fv = document.getElementById('frameVideo');
+  const canvas = document.getElementById('frameCanvas');
+  canvas.width = fv.videoWidth;
+  canvas.height = fv.videoHeight;
+  canvas.getContext('2d').drawImage(fv, 0, 0);
+  canvas.toBlob(blob => {
+    capturedCoverBlob = blob;
+    const url = URL.createObjectURL(blob);
+    document.getElementById('capturePrev').innerHTML =
+      '<img src="'+url+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:4px;border:2px solid #f0c040;margin-top:4px">'
+      +'<div style="color:#5ad060;font-size:12px;margin-top:4px;text-align:center">✓ 已选为封面</div>';
+    // 清空文件上传封面
+    document.getElementById('coverInput').value = '';
+    document.getElementById('coverPrev').innerHTML = '点击上传图片封面<br><small>jpg png webp</small>';
+  }, 'image/jpeg', 0.92);
+}
+
+function handleCover(input) {
+  const file = input.files[0];
+  if (!file) return;
+  capturedCoverBlob = null; // 清空截帧封面
+  document.getElementById('capturePrev').innerHTML = '';
+  const prev = document.getElementById('coverPrev');
+  const url = URL.createObjectURL(file);
+  prev.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:120px;border-radius:4px">';
 }
 
 async function saveWork() {
   const id = document.getElementById('editId').value;
   const mode = document.getElementById('uploadMode').value;
-  const body = {
-    title: document.getElementById('editTitle').value.trim(),
-    type: document.getElementById('editType').value,
-    year: parseInt(document.getElementById('editYear').value)||null,
-    status: document.getElementById('editStatus').value,
-    description: document.getElementById('editDesc').value.trim()||null,
-  };
-  if (!body.title) { toast('请输入标题', 'err'); return; }
-  if (mode === 'url') {
-    body.source_url = document.getElementById('editUrl').value.trim()||null;
-  } else {
-    if (!uploadedFilename && !id) { toast('请先上传文件', 'err'); return; }
-    if (uploadedFilename) body.filename = uploadedFilename;
+  const title = document.getElementById('editTitle').value.trim();
+  const type = document.getElementById('editType').value;
+  const year = parseInt(document.getElementById('editYear').value)||null;
+  const status = document.getElementById('editStatus').value;
+  const description = document.getElementById('editDesc').value.trim()||null;
+  if (!title) { toast('请输入标题', 'err'); return; }
+
+  if (id) {
+    // 编辑：JSON PATCH
+    const body = { title, type, year, status, description };
+    if (mode === 'url') body.source_url = document.getElementById('editUrl').value.trim()||null;
+    try {
+      const res = await api('PATCH', '/api/works/'+id, body);
+      if (!res.ok) throw new Error(await res.text());
+      toast('更新成功', 'ok'); closePanel(); loadWorks();
+    } catch(e) { toast('保存失败: '+e.message, 'err'); }
+    return;
   }
-  try {
-    let res;
-    if (id) {
-      res = await api('PATCH', '/api/works/'+id, body);
-    } else {
-      res = await api('POST', '/api/works', body);
+
+  // 新建
+  if (mode === 'url') {
+    const body = { title, type, year, status, description, source_url: document.getElementById('editUrl').value.trim()||null };
+    try {
+      const res = await api('POST', '/api/works', body);
+      if (!res.ok) throw new Error(await res.text());
+      toast('添加成功', 'ok'); closePanel(); loadWorks();
+    } catch(e) { toast('保存失败: '+e.message, 'err'); }
+    return;
+  }
+
+  // 新建 + 本地文件：XHR 带进度
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  if (!file) { toast('请选择要上传的文件', 'err'); return; }
+  const prog = document.getElementById('prog');
+  const fill = document.getElementById('progFill');
+  prog.style.display = 'block'; fill.style.width = '0%';
+
+  const fd = new FormData();
+  fd.append('title', title);
+  fd.append('type', type);
+  if (year) fd.append('year', year);
+  fd.append('status', status);
+  if (description) fd.append('description', description);
+  fd.append('file', file);
+  // 封面：优先截帧，其次上传图片
+  if (capturedCoverBlob) {
+    fd.append('thumbnail', capturedCoverBlob, 'cover.jpg');
+  } else {
+    const coverInput = document.getElementById('coverInput');
+    if (coverInput.files[0]) fd.append('thumbnail', coverInput.files[0]);
+  }
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', API + '/api/works');
+  const t = tok();
+  if (!t) { toast('未登录，请刷新页面重新登录', 'err'); prog.style.display='none'; return; }
+  xhr.setRequestHeader('Authorization', 'Bearer ' + t);
+  console.log('上传文件:', file.name, (file.size/1024/1024).toFixed(2)+'MB', '| token:', t.substring(0,10)+'...');
+
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const pct = Math.round(e.loaded / e.total * 90);
+      fill.style.width = pct + '%';
     }
-    if (!res.ok) throw new Error(await res.text());
-    toast(id?'更新成功':'添加成功', 'ok');
-    closePanel();
-    loadWorks();
-  } catch(e) { toast('保存失败: '+e.message, 'err'); }
+  };
+  xhr.onload = () => {
+    fill.style.width = '100%';
+    setTimeout(() => { prog.style.display='none'; fill.style.width='0'; }, 1000);
+    if (xhr.status === 201 || xhr.status === 200) {
+      toast('上传成功', 'ok'); closePanel(); loadWorks();
+    } else if (xhr.status === 401) {
+      logout();
+    } else {
+      toast('上传失败: ' + xhr.responseText, 'err');
+    }
+  };
+  xhr.onerror = () => {
+    prog.style.display = 'none';
+    toast('网络错误，请检查网络连接后重试', 'err');
+    console.error('XHR onerror', xhr.status, xhr.statusText, xhr.responseText);
+  };
+  xhr.ontimeout = () => {
+    prog.style.display = 'none';
+    toast('上传超时，文件可能过大', 'err');
+  };
+  xhr.timeout = 120000; // 2分钟超时
+  xhr.send(fd);
+}
+
+function getSelectedIds() {
+  return [...document.querySelectorAll('.row-checkbox[data-id]:checked')].map(el=>el.dataset.id);
+}
+
+function updateBatchBar() {
+  const ids = getSelectedIds();
+  const bar = document.getElementById('batchBar');
+  const count = document.getElementById('selectedCount');
+  const allCb = document.getElementById('selectAll');
+  const allBoxes = document.querySelectorAll('.row-checkbox[data-id]');
+  bar.classList.toggle('show', ids.length > 0);
+  count.textContent = '已选 '+ids.length+' 项';
+  allCb.indeterminate = ids.length > 0 && ids.length < allBoxes.length;
+  allCb.checked = allBoxes.length > 0 && ids.length === allBoxes.length;
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.row-checkbox[data-id]').forEach(cb => cb.checked = checked);
+  updateBatchBar();
+}
+
+function selectAllToggle() {
+  const boxes = document.querySelectorAll('.row-checkbox[data-id]');
+  const allChecked = [...boxes].every(cb => cb.checked);
+  boxes.forEach(cb => cb.checked = !allChecked);
+  document.getElementById('selectAllBtn').textContent = allChecked ? '全选' : '取消全选';
+  updateBatchBar();
+}
+
+function clearSelect() {
+  document.querySelectorAll('.row-checkbox[data-id]').forEach(cb => cb.checked = false);
+  document.getElementById('selectAllBtn').textContent = '全选';
+  updateBatchBar();
+}
+
+async function batchDelete() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  if (!confirm('确认删除选中的 '+ids.length+' 个作品？此操作不可撤销。')) return;
+  let ok = 0, fail = 0;
+  for (const id of ids) {
+    try {
+      const res = await api('DELETE', '/api/works/'+id);
+      if (res.ok) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+  toast(ok+'个已删除'+(fail?'，'+fail+'个失败':''), fail?'err':'ok');
+  document.getElementById('batchBar').classList.remove('show');
+  document.getElementById('selectAll').checked = false;
+  loadWorks();
 }
 
 async function delWork(id) {
@@ -350,6 +625,12 @@ function toast(msg, type) {
   el.className = 'toast show ' + (type||'');
   setTimeout(()=>el.classList.remove('show'), 3000);
 }
+
+// 初始化 API 模式按钮
+(function(){
+  const btn = document.getElementById('apiModeBtn');
+  if (btn && API === API_LAN) { btn.textContent = '🏠 局域网模式'; btn.style.color = '#5ad060'; }
+})();
 
 // 自动登录
 if (tok()) { showAdmin(); } else { document.getElementById('loginPage').style.display='flex'; }
