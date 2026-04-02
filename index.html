@@ -741,10 +741,7 @@ function setupVideoModal() {
         const video = document.getElementById('modalVideo');
         modal.style.display = 'flex';
         video.src = videoSrc;
-        // 等待视频准备好再播放，避免播放慢
-        video.addEventListener('loadeddata', () => {
-          video.play().catch(() => {});
-        }, { once: true });
+        video.play().catch(() => {});
       }
     });
   });
