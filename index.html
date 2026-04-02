@@ -557,7 +557,7 @@ async function loadWorksFromAPI() {
         const ratioClass = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
         return `
         <div class="work-item is-video ${ratioClass}" data-type="video" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
-          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="none"
+          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
             poster="${poster}"
             style="pointer-events:none"></video>
           <div class="work-overlay">
@@ -582,7 +582,7 @@ async function loadWorksFromAPI() {
         const ratioClass3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
         return `
         <div class="work-item is-video ${ratioClass3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
-          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="none"
+          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
             poster="${thumbUrl}"
             style="pointer-events:none"></video>
           <div class="work-overlay">
