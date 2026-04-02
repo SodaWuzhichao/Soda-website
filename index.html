@@ -669,14 +669,36 @@ function setupHoverAndRatio() {
       });
 
       item.addEventListener('mouseenter', () => {
-        // 确保已加载再播放
-        if (video.dataset.src && (!video.src || video.src === window.location.href)) {
-          video.src = video.dataset.src;
+        // HLS视频使用hls.js播放
+        if (item.dataset.src && item.dataset.src.includes('.m3u8')) {
+          if (!item.hlsInstance) {
+            if (Hls.isSupported()) {
+              item.hlsInstance = new Hls();
+              item.hlsInstance.loadSource(item.dataset.src);
+              item.hlsInstance.attachMedia(video);
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              video.src = item.dataset.src;
+            }
+          }
+          if (item.hlsInstance) {
+            item.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+              video.play().catch(() => {});
+            });
+          }
+        } else {
+          // 普通视频直接播放
+          if (video.dataset.src && (!video.src || video.src === window.location.href)) {
+            video.src = video.dataset.src;
+          }
+          video.play().catch(() => {});
         }
-        video.play().catch(() => {});
       });
       item.addEventListener('mouseleave', () => {
         video.pause();
+        if (item.hlsInstance) {
+          item.hlsInstance.destroy();
+          item.hlsInstance = null;
+        }
       });
     } else if (img) {
       img.addEventListener('load', () => {
