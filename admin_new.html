@@ -337,7 +337,6 @@ function renderWorks() {
       +'<div><span class="badge '+(w.status==='published'?'bpub':'bdraft')+'">'+(w.status==='published'?'已发布':'草稿')+'</span></div>'
       +'<div style="color:#888">'+(w.year||'-')+'</div>'
       +'<div class="row-act">'
-        +(w.type==='video' && w.filename && !w.filename.endsWith('.m3u8') ? '<button class="bs" onclick="transcodeOne(\''+w.id+'\')" style="padding:4px 10px;font-size:12px;margin-right:4px">转码</button>' : '')
         +'<button class="bs" onclick="openEdit(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">编辑</button>'
         +'<button class="bd" onclick="delWork(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">删除</button>'
       +'</div>'
