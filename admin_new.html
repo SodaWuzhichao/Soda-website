@@ -124,6 +124,8 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="stat-card"><div class="num" id="sTotal">-</div><div class="label">总作品</div></div>
       <div class="stat-card"><div class="num" id="sVideo">-</div><div class="label">视频</div></div>
       <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
+      <div class="stat-card"><div class="num" id="sLive">-</div><div class="label">直播</div></div>
+      <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
       <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
     </div>
     <div class="batch-bar" id="batchBar">
@@ -292,6 +294,8 @@ function updateStats() {
   document.getElementById('sTotal').textContent = works.length;
   document.getElementById('sVideo').textContent = works.filter(w=>w.type==='video').length;
   document.getElementById('sPhoto').textContent = works.filter(w=>w.type==='photo').length;
+  document.getElementById('sLive').textContent = works.filter(w=>w.type==='live').length;
+  document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
   document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
 }
 
