@@ -130,6 +130,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
     </div>
     <div class="batch-bar" id="batchBar">
       <span id="selectedCount" style="color:#888;font-size:13px">已选 0 项</span>
+      <button class="bd" onclick="batchTranscode()" style="padding:6px 14px;font-size:13px;margin-right:8px">HLS转码</button>
       <button class="bd" onclick="batchDelete()" style="padding:6px 14px;font-size:13px">批量删除</button>
       <button class="bs" onclick="clearSelect()" style="padding:6px 14px;font-size:13px">取消选择</button>
     </div>
@@ -633,6 +634,24 @@ function clearSelect() {
   document.querySelectorAll('.row-checkbox[data-id]').forEach(cb => cb.checked = false);
   document.getElementById('selectAllBtn').textContent = '全选';
   updateBatchBar();
+}
+
+async function batchTranscode() {
+  if (!confirm('确认将所有视频转码为HLS格式？转码需要一些时间，请耐心等待。')) return;
+  toast('开始转码...', 'ok');
+  try {
+    const res = await api('POST', '/api/works/transcode-all');
+    if (res.ok) {
+      const data = await res.json();
+      const success = data.results.filter(r => r.status === 'success').length;
+      toast('转码完成：'+success+'个成功', 'ok');
+      loadWorks();
+    } else {
+      throw new Error('转码失败');
+    }
+  } catch(e) {
+    toast('转码失败：'+e.message, 'err');
+  }
 }
 
 async function batchDelete() {
