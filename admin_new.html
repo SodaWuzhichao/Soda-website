@@ -645,7 +645,9 @@ async function batchTranscode() {
     if (res.ok) {
       const data = await res.json();
       const success = data.results.filter(r => r.status === 'success').length;
-      toast('转码完成：'+success+'个成功', 'ok');
+      const failed = data.results.filter(r => r.status === 'failed').length;
+      const skipped = data.results.filter(r => r.status === 'skipped').length;
+      toast('转码完成：'+success+'个成功'+(failed?'，'+failed+'个失败':'')+(skipped?'，'+skipped+'个跳过':''), failed?'err':'ok');
       loadWorks();
     } else {
       throw new Error('转码失败');
