@@ -641,7 +641,7 @@ async function batchTranscode() {
   if (!confirm('确认将所有视频转码为HLS格式？转码需要一些时间，请耐心等待。')) return;
   toast('开始转码...', 'ok');
   try {
-    const res = await api('POST', '/api/works/transcode-all');
+    const res = await api('POST', '/api/transcode-all');
     if (res.ok) {
       const data = await res.json();
       const success = data.results.filter(r => r.status === 'success').length;
