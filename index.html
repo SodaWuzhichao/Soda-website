@@ -620,7 +620,7 @@ loadWorksFromAPI();
 function setupHoverAndRatio() {
   const workItems = document.querySelectorAll('.work-item');
 
-  // IntersectionObserver 懒加载视频
+  // IntersectionObserver 懒加载视频（进入视口才加载，移出暂停）
   const videoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target.querySelector('video[data-src]');
@@ -632,11 +632,12 @@ function setupHoverAndRatio() {
           video.load();
         }
       } else {
-        // 离开视口：暂停释放资源
+        // 离开视口：暂停并移除src释放内存
         video.pause();
+        video.src = '';
       }
     });
-  }, { rootMargin: '200px 0px', threshold: 0.1 });
+  }, { rootMargin: '300px 0px', threshold: 0.01 });
 
   workItems.forEach(item => {
     const video = item.querySelector('video');
