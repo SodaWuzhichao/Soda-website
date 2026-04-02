@@ -136,6 +136,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <option value="">全部类型</option>
           <option value="video">视频</option>
           <option value="photo">照片</option>
+          <option value="live">直播</option>
         </select>
         <select id="filterYear" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
           <option value="">全部年份</option>
@@ -161,7 +162,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <input type="hidden" id="editId" />
       <div class="fg"><label>标题</label><input type="text" id="editTitle" placeholder="输入标题" /></div>
       <div class="frow">
-        <div class="fg"><label>类型</label><select id="editType"><option value="video">视频</option><option value="photo">照片</option></select></div>
+        <div class="fg"><label>类型</label><select id="editType"><option value="video">视频</option><option value="photo">照片</option><option value="live">直播</option></select></div>
         <div class="fg"><label>年份</label><input type="number" id="editYear" value="2025" /></div>
       </div>
       <div class="fg"><label>状态</label><select id="editStatus"><option value="published">已发布</option><option value="draft">草稿</option></select></div>

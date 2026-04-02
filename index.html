@@ -461,6 +461,7 @@ footer {
     <button class="filter-btn active" data-filter="all">全部</button>
     <button class="filter-btn" data-filter="video">视频</button>
     <button class="filter-btn" data-filter="photo">照片</button>
+    <button class="filter-btn" data-filter="live">直播</button>
   </div>
   <div class="works-grid" id="worksGrid">
   <!-- 作品由 API 动态加载 -->
@@ -575,6 +576,20 @@ async function loadWorksFromAPI() {
             <div class="work-title">${w.title}</div>
             <div class="work-meta">PHOTO · ${w.year || 2025}</div>
           </div>
+        </div>`;
+      } else if (w.type === 'live' && thumbUrl) {
+        const ar3 = parseFloat(w.aspect_ratio) || 0;
+        const ratioClass3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
+        return `
+        <div class="work-item is-video ${ratioClass3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
+          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
+            poster="${thumbUrl}"
+            style="pointer-events:none"></video>
+          <div class="work-overlay">
+            <div class="work-title">${w.title}</div>
+            <div class="work-meta">LIVE · ${w.year || 2025}</div>
+          </div>
+          <div class="work-play"></div>
         </div>`;
       }
       return '';
