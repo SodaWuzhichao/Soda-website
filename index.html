@@ -547,7 +547,7 @@ async function loadWorksFromAPI() {
     grid.innerHTML = works.map(w => {
       // 视频 URL：优先用 source_url（小红书），否则用本地 media
       const videoUrl = w.source_url || 
-        (w.filename ? 'https://media.soda567.dpdns.org/videos/' + w.filename : '');
+        (w.filename ? 'https://media.soda567.dpdns.org/' + (w.filename.endsWith('.m3u8') ? 'hls/' : 'videos/') + w.filename : '');
       const thumbUrl = w.thumbnail ? 
         'https://media.soda567.dpdns.org/thumbnails/' + w.thumbnail : '';
       
