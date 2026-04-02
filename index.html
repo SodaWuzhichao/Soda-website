@@ -623,17 +623,32 @@ function setupHoverAndRatio() {
   // IntersectionObserver 懒加载视频（进入视口才加载，移出暂停）
   const videoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      const video = entry.target.querySelector('video[data-src]');
+      const item = entry.target;
+      const video = item.querySelector('video[data-src]');
       if (!video) return;
+      const videoSrc = item.dataset.src;
+      
       if (entry.isIntersecting) {
         // 进入视口：加载视频
-        if (!video.src || video.src === window.location.href) {
-          video.src = video.dataset.src;
+        if (videoSrc && videoSrc.includes('.m3u8')) {
+          // HLS视频用hls.js加载
+          if (typeof Hls !== 'undefined' && Hls.isSupported() && !item.hlsInstance) {
+            item.hlsInstance = new Hls();
+            item.hlsInstance.loadSource(videoSrc);
+            item.hlsInstance.attachMedia(video);
+          }
+        } else if (!video.src || video.src === window.location.href) {
+          // 普通视频直接加载
+          video.src = videoSrc;
           video.load();
         }
       } else {
-        // 离开视口：暂停并移除src释放内存
+        // 离开视口：暂停并释放内存
         video.pause();
+        if (item.hlsInstance) {
+          item.hlsInstance.destroy();
+          item.hlsInstance = null;
+        }
         video.src = '';
       }
     });
