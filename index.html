@@ -736,12 +736,15 @@ function setupVideoModal() {
   document.querySelectorAll('.work-item').forEach(item => {
     item.addEventListener('click', () => {
       const videoSrc = item.dataset.src;
-      if (videoSrc && item.dataset.type === 'video') {
+      if (videoSrc && (item.dataset.type === 'video' || item.dataset.type === 'live')) {
         const modal = document.getElementById('videoModal');
         const video = document.getElementById('modalVideo');
         modal.style.display = 'flex';
         video.src = videoSrc;
-        video.play();
+        // 等待视频准备好再播放，避免播放慢
+        video.addEventListener('loadeddata', () => {
+          video.play().catch(() => {});
+        }, { once: true });
       }
     });
   });
