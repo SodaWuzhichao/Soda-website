@@ -752,6 +752,8 @@ function setupFilter() {
           item.style.display = item.dataset.type === filter ? 'block' : 'none';
         }
       });
+      // 筛选后重新绑定hover事件
+      setupHoverAndRatio();
     });
   });
 }
