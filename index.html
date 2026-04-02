@@ -732,6 +732,7 @@ function closeVideo() {
   video.src = '';
 }
 
+let hlsInstance = null;
 function setupVideoModal() {
   document.querySelectorAll('.work-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -740,12 +741,38 @@ function setupVideoModal() {
         const modal = document.getElementById('videoModal');
         const video = document.getElementById('modalVideo');
         modal.style.display = 'flex';
-        video.src = videoSrc;
-        video.play().catch(() => {});
+        
+        // 如果是HLS (.m3u8)，使用hls.js播放
+        if (videoSrc.includes('.m3u8')) {
+          if (hlsInstance) {
+            hlsInstance.destroy();
+          }
+          if (Hls.isSupported()) {
+            hlsInstance = new Hls();
+            hlsInstance.loadSource(videoSrc);
+            hlsInstance.attachMedia(video);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+              video.play().catch(() => {});
+            });
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari原生支持HLS
+            video.src = videoSrc;
+            video.addEventListener('loadedmetadata', () => {
+              video.play().catch(() => {});
+            });
+          }
+        } else {
+          // 普通视频直接播放
+          video.src = videoSrc;
+          video.play().catch(() => {});
+        }
       }
     });
   });
 }
 </script>
+<!-- HLS.js 播放器 -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
 </body>
 </html>
