@@ -765,9 +765,9 @@ function setupFilter() {
   <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">小片正在飞奔赶来中<span id="loadingDots">...</span></p>
+    <p style="color:#888;margin-top:12px;font-size:14px;">右滑退出</p>
   </div>
   <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
-  <button onclick="closeVideo()" style="position:absolute;top:60px;left:20px;background:transparent;border:2px solid white;color:white;font-size:2rem;width:50px;height:50px;border-radius:50%;cursor:pointer;z-index:10;">×</button>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -791,7 +791,24 @@ document.addEventListener('keydown', e => {
 });
 
 let hlsInstance = null;
+let touchStartX = 0;
+let touchStartY = 0;
+
 function setupVideoModal() {
+  // 触摸滑动关闭
+  const modal = document.getElementById('videoModal');
+  modal.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  modal.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 100 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
+      closeVideo();
+    }
+  });
+
   document.querySelectorAll('.work-item').forEach(item => {
     item.addEventListener('click', () => {
       const videoSrc = item.dataset.src;
