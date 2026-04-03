@@ -567,7 +567,7 @@ async function saveWork() {
     fd.append('file_id', fileId);
     fd.append('part_index', index);
     fd.append('total_parts', totalParts);
-    fd.append('chunk', chunk);
+    fd.append('file', chunk);
     console.log(`正在上传分块 ${index + 1}/${totalParts}`);
 
     return new Promise((resolve, reject) => {
