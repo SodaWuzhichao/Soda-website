@@ -823,15 +823,27 @@ function setupVideoModal() {
             });
           }
         } else {
-          // 普通视频 - 等待canplay后显示
+          // 普通视频 - 等待loadedmetadata后显示（比canplay更早触发）
           video.src = videoSrc;
-          video.addEventListener('canplay', () => {
+          // 防止 error 在加载过程中提前触发
+          let videoLoaded = false;
+          video.addEventListener('loadedmetadata', () => {
+            videoLoaded = true;
             loading.style.display = 'none';
             video.style.display = 'block';
           }, { once: true });
-          video.addEventListener('error', () => {
-            loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
-          });
+          video.addEventListener('canplay', () => {
+            if (!videoLoaded) {
+              loading.style.display = 'none';
+              video.style.display = 'block';
+            }
+          }, { once: true });
+          // 仅在真正超时时显示错误
+          setTimeout(() => {
+            if (!videoLoaded && video.error) {
+              loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
+            }
+          }, 8000);
           video.play().catch(() => {});
         }
       }
