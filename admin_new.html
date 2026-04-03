@@ -554,7 +554,7 @@ async function saveWork() {
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
 
   // 分块配置
-  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
