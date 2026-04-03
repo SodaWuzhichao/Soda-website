@@ -865,7 +865,7 @@ function setupVideoModal() {
             if (!videoLoaded && video.error) {
               loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
             }
-          }, 8000);
+          }, 15000);
           video.play().catch(() => {});
         }
       }
