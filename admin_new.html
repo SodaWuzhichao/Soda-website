@@ -16,729 +16,364 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .bp:hover { background: #f5d060; }
 .bs { background: #2a2a30; color: #e8e8e8; }
 .bs:hover { background: #3a3a40; }
-.bd { background: #e05050; color: #fff; }
-.bd:hover { background: #f06060; }
-.login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; }
-.login-box { background:#1a1a1f; padding:40px; border-radius:8px; width:90%; max-width:400px; border:1px solid #2a2a30; }
-.login-box h1 { margin-bottom:8px; font-size:1.5rem; font-weight:200; font-family:'DM Sans', sans-serif; letter-spacing:0.15em; }
-.login-box p { color:#888; margin-bottom:24px; font-size:14px; }
-.login-box input { margin-bottom:16px; }
-.login-box button { width:100%; }
-#loginError { color:#e05050; font-size:13px; margin-top:12px; min-height:20px; }
-.admin-layout { display:none; min-height:100vh; }
-.sidebar { width:220px; background:#111; border-right:1px solid #1a1a1f; padding:24px 0; position:fixed; top:0; left:0; height:100vh; }
-.sidebar-logo { padding:0 24px 24px; font-size:15px; font-weight:300; letter-spacing:0.2em; border-bottom:1px solid #1a1a1f; margin-bottom:16px; font-family:'DM Sans', sans-serif; }
-.sidebar-logo span { color:#f0c040; }
-.nav-item { padding:12px 24px; color:#888; cursor:pointer; }
-.nav-item:hover { color:#e8e8e8; background:#1a1a1f; }
-.main-content { margin-left:220px; padding:32px; }
-.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
-.page-header h2 { font-size:1.4rem; font-weight:300; font-family:'DM Sans', sans-serif !important; letter-spacing:0.05em; }
-.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px; margin-bottom:32px; }
-.stat-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:8px; padding:20px; }
-.stat-card .num { font-size:2rem; font-weight:300; color:#f0c040; }
-.stat-card .label { color:#888; font-size:13px; margin-top:4px; }
-.works-table { background:#1a1a1f; border-radius:8px; overflow:hidden; border:1px solid #2a2a30; }
-.tbl-hdr { display:grid; grid-template-columns:60px 1fr 90px 90px 80px 140px; padding:12px 16px; background:#111; color:#888; font-size:12px; text-transform:uppercase; }
-.work-row { display:grid; grid-template-columns:36px 60px 1fr 90px 90px 80px 140px; padding:12px 16px; border-top:1px solid #1a1a1f; align-items:center; }
-.row-checkbox { width:16px; height:16px; accent-color:#f0c040; cursor:pointer; }
-.batch-bar { display:none; align-items:center; gap:12px; padding:10px 16px; background:#1a1a1f; border-radius:6px; margin-bottom:12px; }
-.batch-bar.show { display:flex; }
-.work-row:hover { background:#0f0f14; }
-.wthumb { width:48px; height:32px; background:#2a2a30; border-radius:4px; overflow:hidden; position:relative; }
-.wthumb video,.wthumb img { width:100%; height:100%; object-fit:cover; }
-.wtitle { padding:0 12px; }
-.wtitle .t { font-size:14px; margin-bottom:2px; }
-.wtitle .s { font-size:11px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
-.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; }
-.bv { background:#1a3a5c; color:#5aa0d0; }
-.bp2 { background:#1a3a2a; color:#5ad080; }
-.blive { background:#3a1a1a; color:#d05050; }
-.bpub { background:#1a3a1a; color:#5ad060; }
-.bdraft { background:#3a3a1a; color:#d0c060; }
-.row-act { display:flex; gap:8px; }
-.row-act button { padding:4px 10px; font-size:12px; }
-.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; align-items:center; justify-content:center; }
-.overlay.open { display:flex; }
-.panel { background:#1a1a1f; border-radius:8px; width:90%; max-width:560px; max-height:90vh; overflow-y:auto; border:1px solid #2a2a30; }
-.panel-hdr { padding:20px 24px; border-bottom:1px solid #2a2a30; display:flex; align-items:center; justify-content:space-between; }
-.panel-hdr h3 { font-weight:300; font-family:'DM Sans', sans-serif !important; letter-spacing:0.05em; }
-.pclose { background:none; color:#888; font-size:20px; padding:0; width:28px; height:28px; }
-.pclose:hover { color:#e8e8e8; }
-.panel-body { padding:24px; }
-.fg { margin-bottom:16px; }
-.fg label { display:block; color:#888; font-size:12px; margin-bottom:6px; text-transform:uppercase; }
-.frow { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.upload-area { border:2px dashed #2a2a30; border-radius:8px; padding:32px; text-align:center; cursor:pointer; }
-.upload-area:hover { border-color:#f0c040; }
-.upload-area input { display:none; }
-.prog { height:4px; background:#2a2a30; border-radius:2px; margin-top:8px; overflow:hidden; display:none; }
-.prog-fill { height:100%; background:#f0c040; width:0; transition:width .3s; }
-.panel-ftr { padding:16px 24px; border-top:1px solid #2a2a30; display:flex; gap:12px; justify-content:flex-end; }
-.toast { position:fixed; bottom:24px; right:24px; background:#1a1a1f; border:1px solid #2a2a30; border-radius:8px; padding:14px 20px; font-size:14px; z-index:999; transform:translateY(80px); opacity:0; transition:all .3s; pointer-events:none; }
-.toast.show { transform:translateY(0); opacity:1; }
-.toast.ok { border-color:#5ad060; }
-.toast.err { border-color:#e05050; }
-
-/* 移动端适配 */
-@media (max-width: 768px) {
-  .sidebar { width:100%; height:auto; position:fixed; top:0; left:0; right:0; bottom:auto; border-right:none; border-bottom:1px solid #1a1a1f; padding:0; display:flex; align-items:center; justify-content:space-between; z-index:100; }
-  .sidebar-logo { padding:16px 20px; border-bottom:none; margin-bottom:0; font-size:14px; }
-  .nav-item { padding:16px 20px; position:static !important; width:auto; }
-  .nav-item:first-of-type { display:none; }
-  .main-content { margin-left:0; padding:80px 16px 16px; }
-  .page-header { flex-direction:column; align-items:flex-start; gap:12px; }
-  .work-row { grid-template-columns:28px 40px 1fr auto; padding:10px 12px; }
-  .page-header h2 { font-size:1.1rem; }
-  .panel { width:100% !important; right:0 !important; left:0 !important; border-radius:12px 12px 0 0; bottom:0 !important; top:auto !important; max-height:90vh; overflow-y:auto; }
-}
+.bd { background: #ff4d4f; color: #fff; }
+.sidebar { width: 240px; background: #000; border-right: 1px solid #1a1a1f; position: fixed; height: 100vh; display: flex; flex-direction: column; padding: 32px 0; }
+.logo { padding: 0 32px 48px; font-family: 'Cormorant Garamond', serif; font-size: 28px; letter-spacing: 2px; color: #f0c040; }
+.nav-item { padding: 12px 32px; cursor: pointer; transition: 0.2s; color: #888; font-size: 15px; }
+.nav-item:hover, .nav-item.active { background: #111; color: #f0c040; }
+.main { margin-left: 240px; padding: 48px; max-width: 1200px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 48px; }
+.stat-card { background: #111; padding: 24px; border-radius: 8px; border: 1px solid #1a1a1f; }
+.stat-val { font-size: 32px; font-family: 'Cormorant Garamond', serif; color: #f0c040; }
+.stat-label { font-size: 12px; color: #666; text-transform: uppercase; margin-top: 4px; }
+.works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px; }
+.work-card { background: #111; border-radius: 8px; overflow: hidden; border: 1px solid #1a1a1f; transition: 0.3s; position: relative; }
+.work-card:hover { border-color: #333; transform: translateY(-4px); }
+.work-thumb { aspect-ratio: 4/3; background: #000; position: relative; overflow: hidden; }
+.work-info { padding: 20px; }
+.work-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; margin-bottom: 8px; color: #fff; }
+.work-meta { font-size: 12px; color: #666; display: flex; justify-content: space-between; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.overlay.open { display: flex; }
+.panel { background: #111; width: 100%; max-width: 600px; border-radius: 12px; border: 1px solid #2a2a30; padding: 40px; position: relative; max-height: 90vh; overflow-y: auto; }
+.toast { position: fixed; bottom: 32px; right: 32px; padding: 12px 24px; border-radius: 4px; transform: translateY(100px); transition: 0.3s; z-index: 2000; }
+.toast.show { transform: translateY(0); }
+.toast.ok { background: #5ad060; color: #000; }
+.toast.err { background: #ff4d4f; color: #fff; }
+.logout-btn { margin-top: auto; padding: 12px 32px; color: #ff4d4f; cursor: pointer; font-size: 14px; opacity: 0.6; }
+.logout-btn:hover { opacity: 1; }
+.row-checkbox { position: absolute; top: 12px; left: 12px; z-index: 10; cursor: pointer; width: 18px; height: 18px; opacity: 0; transition: 0.2s; }
+.work-card:hover .row-checkbox, .row-checkbox:checked { opacity: 1; }
+.batch-bar { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px); background: #f0c040; color: #000; padding: 12px 32px; border-radius: 32px; display: flex; align-items: center; gap: 24px; transition: 0.3s; z-index: 900; font-weight: 600; }
+.batch-bar.show { transform: translateX(-50%) translateY(0); }
+#loginPage { position: fixed; inset: 0; background: #000; z-index: 3000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+.login-box { background: #111; padding: 40px; border-radius: 12px; width: 320px; border: 1px solid #1a1a1f; }
 </style>
 </head>
 <body>
-<div class="login-page" id="loginPage">
+
+<div id="loginPage">
+  <div class="logo">SODA.</div>
   <div class="login-box">
-    <h1>SODA <span style="color:#f0c040">Admin</span></h1>
-    <p>后台管理系统</p>
-    <input type="text" id="loginUser" placeholder="用户名" value="soda" />
-    <input type="password" id="loginPass" placeholder="密码" />
-    <button class="bp" onclick="login()">登录</button>
-    <div id="loginError"></div>
+    <div style="margin-bottom:24px;text-align:center;font-size:14px;color:#666">DASHBOARD ACCESS</div>
+    <input type="text" id="user" placeholder="Username" style="margin-bottom:16px">
+    <input type="password" id="pass" placeholder="Password" style="margin-bottom:24px">
+    <button class="bp" style="width:100%" onclick="login()">LOGIN</button>
   </div>
 </div>
-<div class="admin-layout" id="adminLayout">
-  <div class="sidebar">
-    <div class="sidebar-logo">SODA <span>Admin</span></div>
-    <div class="nav-item">📁 作品管理</div>
-    <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="position:absolute;bottom:60px;width:100%;color:#888;font-size:13px">🌐 公网模式</div>
-    <div class="nav-item" onclick="logout()" style="position:absolute;bottom:24px;width:100%">🚪 退出登录</div>
-  </div>
-  <div class="main-content">
-    <div class="page-header">
-      <h2>作品管理</h2>
-      <div style="display:flex;gap:12px">
-        <button class="bs" onclick="loadWorks()">刷新</button>
-        <button class="bs" id="selectAllBtn" onclick="selectAllToggle()">全选</button>
-        <button class="bp" onclick="openAddPanel()">+ 添加作品</button>
-      </div>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="num" id="sTotal">-</div><div class="label">总作品</div></div>
-      <div class="stat-card"><div class="num" id="sVideo">-</div><div class="label">视频</div></div>
-      <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
-      <div class="stat-card"><div class="num" id="sLive">-</div><div class="label">直播</div></div>
-      <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
-      <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
-    </div>
-    <div class="batch-bar" id="batchBar">
-      <span id="selectedCount" style="color:#888;font-size:13px">已选 0 项</span>
-      <button class="bd" onclick="batchTranscode()" style="padding:6px 14px;font-size:13px;margin-right:8px">HLS转码</button>
-      <button class="bd" onclick="batchDelete()" style="padding:6px 14px;font-size:13px">批量删除</button>
-      <button class="bs" onclick="clearSelect()" style="padding:6px 14px;font-size:13px">取消选择</button>
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-        <select id="filterType" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
-          <option value="">全部类型</option>
-          <option value="video">视频</option>
-          <option value="photo">照片</option>
-          <option value="live">直播</option>
-        </select>
-        <select id="filterYear" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
-          <option value="">全部年份</option>
-        </select>
-        <select id="sortBy" onchange="renderWorks()" style="width:auto;padding:8px 12px;background:#1a1a1f;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif">
-          <option value="year_desc">年份 ↓</option>
-          <option value="year_asc">年份 ↑</option>
-          <option value="title_asc">标题 A→Z</option>
-          <option value="title_desc">标题 Z→A</option>
-        </select>
-        <span id="filterCount" style="color:#888;font-size:13px;margin-left:4px"></span>
-      </div>
-    <div class="works-table">
-      <div class="tbl-hdr"><div>封面</div><div>标题</div><div>类型</div><div>状态</div><div>年份</div><div>操作</div></div>
-      <div id="worksList"></div>
-    </div>
-  </div>
+
+<div class="sidebar">
+  <div class="logo">SODA.</div>
+  <div class="nav-item active">作品管理</div>
+  <div class="nav-item" onclick="showPanel()">新增作品</div>
+  <div class="nav-item" onclick="location.href='/media6/admin'">IPv6直连 (实验)</div>
+  
+  <div id="apiModeBtn" class="nav-item" onclick="toggleApiMode()" style="margin-top:auto; color:#888; border-top:1px solid #1a1a1f">🌐 公网模式</div>
+  <div class="logout-btn" onclick="logout()">LOGOUT</div>
 </div>
-<div class="overlay" id="overlay">
+
+<div class="main">
+  <div class="header">
+    <h1 style="font-family:'Cormorant Garamond',serif;font-weight:400;font-size:32px">Works</h1>
+    <div style="display:flex;gap:12px">
+      <select id="sortBy" style="width:140px" onchange="renderWorks()">
+        <option value="year_desc">年份 (新-旧)</option>
+        <option value="year_asc">年份 (旧-新)</option>
+        <option value="title_asc">标题 (A-Z)</option>
+        <option value="title_desc">标题 (Z-A)</option>
+      </select>
+      <button class="bp" onclick="showPanel()">+ ADD NEW</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-val" id="sVideo">0</div><div class="stat-label">Videos</div></div>
+    <div class="stat-card"><div class="stat-val" id="sPhoto">0</div><div class="stat-label">Photos</div></div>
+    <div class="stat-card"><div class="stat-val" id="sDraft">0</div><div class="stat-label">Drafts</div></div>
+  </div>
+
+  <div class="works-grid" id="worksList"></div>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closePanel()">
   <div class="panel">
-    <div class="panel-hdr"><h3 id="panelTitle">添加作品</h3><button class="pclose" onclick="closePanel()">✕</button></div>
-    <div class="panel-body">
-      <input type="hidden" id="editId" />
-      <div class="fg"><label>标题</label><input type="text" id="editTitle" placeholder="输入标题" /></div>
-      <div class="frow">
-        <div class="fg"><label>类型</label><select id="editType"><option value="video">视频</option><option value="photo">照片</option><option value="live">直播</option></select></div>
-        <div class="fg"><label>年份</label><input type="number" id="editYear" value="2025" /></div>
+    <h2 style="font-family:'Cormorant Garamond',serif;margin-bottom:32px" id="panelTitle">添加作品</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div>
+        <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">标题</label>
+        <input type="text" id="title">
       </div>
-      <div class="fg"><label>状态</label><select id="editStatus"><option value="published">已发布</option><option value="draft">草稿</option></select></div>
-      <div class="fg"><label>上传方式</label><select id="uploadMode" onchange="toggleMode()"><option value="file" selected>本地上传</option><option value="url">外链</option></select></div>
-      <div id="urlMode" class="fg"><label>外链 URL</label><input type="url" id="editUrl" placeholder="https://..." /></div>
-      <div id="fileMode" style="display:none" class="fg">
-        <label>上传文件</label>
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-          <div style="color:#888;font-size:14px">点击选择文件<br><small>mp4 mov avi mkv webm jpg png webp</small></div>
-          <input type="file" id="fileInput" accept="video/*,image/*" onchange="handleFile(this)" />
-          <div id="filePrev"></div>
-        </div>
-
-        <div id="coverSection" style="margin-top:12px;display:none">
-          <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            封面选择
-            <span style="color:#888;font-size:12px">拖动滑块选帧,或上传图片</span>
-          </label>
-          <!-- 帧选择器 -->
-          <div id="framePickerWrap" style="background:#111;border-radius:6px;padding:10px;margin-bottom:8px">
-            <video id="frameVideo" style="width:100%;max-height:180px;border-radius:4px;background:#000;display:block" preload="metadata" muted playsinline></video>
-            <input type="range" id="frameSlider" min="0" max="100" value="0" step="0.1"
-              style="width:100%;margin:8px 0;accent-color:#f0c040"
-              oninput="seekFrame(this.value)">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span id="frameTime" style="color:#888;font-size:12px">00:00</span>
-              <button class="bs" onclick="captureFrame()" style="padding:6px 14px;font-size:12px">用此帧作封面</button>
-            </div>
-            <canvas id="frameCanvas" style="display:none"></canvas>
-            <div id="capturePrev" style="margin-top:8px"></div>
-          </div>
-          <!-- 或上传自定义封面 -->
-          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">- 或上传自定义封面图 -</div>
-          <div class="upload-area" style="padding:12px" onclick="document.getElementById('coverInput').value='';document.getElementById('coverInput').click()">
-            <div id="coverPrev" style="color:#888;font-size:13px;text-align:center">点击上传图片封面<br><small>jpg png webp</small></div>
-            <input type="file" id="coverInput" accept="image/*" onchange="handleCover(this)" style="display:none" />
-          </div>
-        </div>
+      <div>
+        <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">年份</label>
+        <input type="number" id="year" value="2024">
       </div>
-      <div class="fg"><label>描述</label><textarea id="editDesc" rows="3" placeholder="作品描述..."></textarea></div>
     </div>
-    <div class="panel-ftr">
-      <button class="bs" onclick="closePanel()">取消</button>
-      <div id="prog" style="display:none;margin-bottom:15px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px"><span>上传文件</span><span id="progPct">0%</span></div>
-        <div class="prog"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div>
+        <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">类型</label>
+        <select id="type"><option value="video">视频</option><option value="photo">摄影</option><option value="live">直播</option></select>
       </div>
-      <button class="bp" onclick="saveWork()">保存</button>
+      <div>
+        <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">状态</label>
+        <select id="status"><option value="published">已发布</option><option value="draft">草稿</option></select>
+      </div>
+    </div>
+    
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">方式</label>
+      <select id="uploadMode" onchange="toggleMode()">
+        <option value="file">本地上传 (支持GB级大视频)</option>
+        <option value="url">外部链接</option>
+      </select>
+    </div>
+
+    <div id="fileMode" style="margin-bottom:24px">
+      <div style="border:1px dashed #333;padding:32px;text-align:center;border-radius:8px" id="dropZone">
+        <input type="file" id="fileInput" style="display:none" onchange="handleFile(this)">
+        <button class="bs" onclick="document.getElementById('fileInput').click()">选择文件</button>
+        <div id="filePrev" style="margin-top:16px;color:#666;font-size:12px">支持 mp4, mov, jpg, png</div>
+      </div>
+      <div id="progWrap" style="margin-top:16px;display:none">
+        <div style="height:4px;background:#222;border-radius:2px;overflow:hidden">
+          <div id="progFill" style="height:100%;background:#f0c040;width:0%;transition:0.3s"></div>
+        </div>
+        <div id="progText" style="font-size:11px;color:#666;margin-top:8px;text-align:center">正在上传 0%</div>
+      </div>
+    </div>
+
+    <div id="urlMode" style="margin-bottom:24px;display:none">
+      <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">视频/图片 URL</label>
+      <input type="text" id="sourceUrl">
+    </div>
+
+    <div id="coverSection" style="margin-bottom:24px">
+      <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">封面图</label>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:16px">
+        <div id="coverPrev" style="width:120px;aspect-ratio:16/9;background:#000;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#444;cursor:pointer" onclick="document.getElementById('coverInput').click()">点击上传</div>
+        <div id="framePickerWrap" style="display:none">
+          <video id="frameVideo" style="display:none"></video>
+          <button class="bs" style="padding:6px 12px;font-size:12px" onclick="captureFrame()">从当前视频截图作为封面</button>
+          <input type="range" id="frameSlider" style="margin-top:12px" oninput="document.getElementById('frameVideo').currentTime=this.value">
+          <div id="capturePrev" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <input type="file" id="coverInput" style="display:none" accept="image/*" onchange="handleCover(this)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:#666;margin-bottom:8px;display:block">作品描述</label>
+      <textarea id="description" rows="3"></textarea>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-top:40px">
+      <button class="bp" style="flex:2" onclick="saveWork()">保存作品</button>
+      <button class="bs" style="flex:1" onclick="closePanel()">取消</button>
     </div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
-<script>
-const API_WAN = 'https://api.soda567.dpdns.org';
-const API_LAN = 'http://192.168.0.109:5001';
-let API = localStorage.getItem('soda_api') || API_WAN;
 
-function toggleApiMode() {
-  API = (API === API_WAN) ? API_LAN : API_WAN;
-  localStorage.setItem('soda_api', API);
-  const btn = document.getElementById('apiModeBtn');
-  btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
-  btn.style.color = API === API_LAN ? '#5ad060' : '#888';
-  toast('已切换到 ' + (API === API_LAN ? '局域网直传' : '公网'), 'ok');
-}
-let works = [];
-let uploadedFilename = null;
+<div class="batch-bar" id="batchBar">
+  <span id="batchText">已选择 0 项</span>
+  <button style="background:rgba(0,0,0,0.1);padding:6px 12px;border-radius:4px" onclick="batchDelete()">批量删除</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_WAN = "https://api.soda567.dpdns.org";
+const API_LAN = "http://100.73.100.90:5001";
+let API = localStorage.getItem("API_MODE") === "WAN" ? API_WAN : API_LAN;
 
 function tok() { return localStorage.getItem('soda_token'); }
 
-async function api(method, path, body, isForm) {
-  const opts = { method, headers: {} };
-  const t = tok();
-  if (t) opts.headers['Authorization'] = 'Bearer ' + t;
-  if (body && !isForm) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-  if (isForm) opts.body = body;
-  const res = await fetch(API + path, opts);
-  if (res.status === 401) { logout(); throw new Error('未授权'); }
-  return res;
+function logout() {
+  localStorage.removeItem('soda_token');
+  location.reload();
 }
 
-async function login() {
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  const err = document.getElementById('loginError');
-  err.textContent = '';
-  try {
-    const res = await fetch(API + '/api/auth/login', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username:user, password:pass})
-    });
-    if (!res.ok) { err.textContent = '用户名或密码错误'; return; }
-    const d = await res.json();
-    localStorage.setItem('soda_token', d.token);
-    showAdmin();
-  } catch(e) { err.textContent = '连接失败: ' + e.message; }
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') login();
-});
-
-function showAdmin() {
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('adminLayout').style.display = 'flex';
+function toggleApiMode() {
+  const btn = document.getElementById('apiModeBtn');
+  if (API === API_LAN) {
+    API = API_WAN;
+    localStorage.setItem("API_MODE", "WAN");
+    btn.textContent = "🌐 公网模式";
+    btn.style.color = "#f0c040";
+  } else {
+    API = API_LAN;
+    localStorage.setItem("API_MODE", "LAN");
+    btn.textContent = "🏠 局域网模式";
+    btn.style.color = "#5ad060";
+  }
+  toast('已切换至' + (API===API_WAN?'公网':'局域网') + '模式', 'ok');
   loadWorks();
 }
 
-function logout() {
-  localStorage.removeItem('soda_token');
-  document.getElementById('adminLayout').style.display = 'none';
-  document.getElementById('loginPage').style.display = 'flex';
+// 初始化按钮状态
+(function(){
+  const btn = document.getElementById('apiModeBtn');
+  if(API === API_LAN) {
+    btn.textContent = "🏠 局域网模式";
+    btn.style.color = "#5ad060";
+  }
+})();
+
+async function login() {
+  const u = document.getElementById('user').value;
+  const p = document.getElementById('pass').value;
+  try {
+    const res = await fetch(API+'/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:p})
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('soda_token', data.token);
+      showAdmin();
+    } else {
+      alert('登录失败');
+    }
+  } catch(e) {
+    alert('网络错误');
+  }
 }
 
+function showAdmin() {
+  document.getElementById('loginPage').style.display='none';
+  loadWorks();
+}
+
+let works = [];
 async function loadWorks() {
-  document.getElementById('worksList').innerHTML = '<div style="padding:24px;text-align:center;color:#888">加载中...</div>';
   try {
-    const res = await api('GET', '/api/works?status=all');
+    const res = await fetch(API+'/api/works');
     works = await res.json();
-    // 填充年份下拉
-    const years = [...new Set(works.map(w=>w.year).filter(Boolean))].sort((a,b)=>b-a);
-    const fy = document.getElementById('filterYear');
-    fy.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
-    renderWorks();
     updateStats();
-  } catch(e) { toast('加载失败: '+e.message, 'err'); }
+    renderWorks();
+  } catch(e) { console.error(e); }
 }
 
 function updateStats() {
   document.getElementById('sTotal').textContent = works.length;
   document.getElementById('sVideo').textContent = works.filter(w=>w.type==='video').length;
   document.getElementById('sPhoto').textContent = works.filter(w=>w.type==='photo').length;
-  document.getElementById('sLive').textContent = works.filter(w=>w.type==='live').length;
-  document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
   document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
 }
 
 function renderWorks() {
   const list = document.getElementById('worksList');
-  const typeF = document.getElementById('filterType')?.value || '';
-  const yearF = document.getElementById('filterYear')?.value || '';
-  const sortV = document.getElementById('sortBy')?.value || 'year_desc';
-  let filtered = works.filter(w => {
-    if (typeF && w.type !== typeF) return false;
-    if (yearF && String(w.year) !== yearF) return false;
-    return true;
-  });
-  filtered.sort((a,b) => {
-    if (sortV === 'year_desc') return (b.year||0)-(a.year||0);
-    if (sortV === 'year_asc') return (a.year||0)-(b.year||0);
-    if (sortV === 'title_asc') return (a.title||'').localeCompare(b.title||'');
-    if (sortV === 'title_desc') return (b.title||'').localeCompare(a.title||'');
-    return 0;
-  });
-  const countEl = document.getElementById('filterCount');
-  if (countEl) countEl.textContent = filtered.length < works.length ? `显示 ${filtered.length} / ${works.length} 条` : `共 ${works.length} 条`;
-  if (!filtered.length) { list.innerHTML = '<div style="padding:32px;text-align:center;color:#888">无匹配作品</div>'; return; }
-  list.innerHTML = filtered.map(w => {
-    const url = w.source_url || (w.filename ? 'https://media.soda567.dpdns.org/videos/'+w.filename : '');
-    const thumb = w.thumbnail ? 'https://media.soda567.dpdns.org/thumbnails/'+w.thumbnail : '';
-    const hasVideo = w.type==='video' && url;
-    const thumbHtml = thumb
-      ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
-        +(hasVideo ? '<video src="'+url+'" muted preload="none" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1;this.play()" onmouseleave="this.style.opacity=0;this.pause();this.currentTime=0"></video>' : '')
-      : (hasVideo ? '<video src="'+url+'" muted preload="metadata" style="width:100%;height:100%;object-fit:cover" onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0"></video>' : '');
-    return '<div class="work-row">'
-      +'<input type="checkbox" class="row-checkbox" data-id="'+w.id+'" onchange="updateBatchBar()">'
-      +'<div class="wthumb">'+thumbHtml+'</div>'
-      +'<div class="wtitle"><div class="t">'+w.title+'</div><div class="s">'+(url||'无链接')+'</div></div>'
-      +'<div><span class="badge '+(w.type==='video'?'bv':w.type==='live'?'blive':'bp2')+'">'+(w.type==='video'?'视频':w.type==='live'?'直播':'照片')+'</span></div>'
-      +'<div><span class="badge '+(w.status==='published'?'bpub':'bdraft')+'">'+(w.status==='published'?'已发布':'草稿')+'</span></div>'
-      +'<div style="color:#888">'+(w.year||'-')+'</div>'
-      +'<div class="row-act">'
-        +'<button class="bs" onclick="openEdit(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">编辑</button>'
-        +'<button class="bd" onclick="delWork(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">删除</button>'
-      +'</div>'
-    +'</div>';
-  }).join('');
+  list.innerHTML = works.map(w => `
+    <div class="work-card">
+      <input type="checkbox" class="row-checkbox" data-id="${w.id}" onchange="updateBatchBar()">
+      <div class="work-thumb">
+        <img src="${w.thumbnail?API+'/media/photos/'+w.thumbnail:''}" style="width:100%;height:100%;object-fit:cover">
+      </div>
+      <div class="work-info">
+        <div class="work-title">${w.title}</div>
+        <div class="work-meta"><span>${w.type}</span><span>${w.year}</span></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="bs" style="padding:4px 8px;font-size:11px" onclick="deleteWork('${w.id}')">删除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
 }
 
-function openAddPanel() {
+function showPanel() {
   document.getElementById('panelTitle').textContent = '添加作品';
-  document.getElementById('editId').value = '';
-  document.getElementById('editTitle').value = '';
-  document.getElementById('editType').value = 'video';
-  document.getElementById('editYear').value = new Date().getFullYear();
-  document.getElementById('editStatus').value = 'published';
-  document.getElementById('uploadMode').value = 'file';
-  toggleMode();
-  document.getElementById('editUrl').value = '';
-  document.getElementById('editDesc').value = '';
-  document.getElementById('filePrev').innerHTML = '';
-  document.getElementById('coverPrev').innerHTML = '点击上传图片封面<br><small>jpg png webp</small>';
-  document.getElementById('coverInput').value = '';
-  document.getElementById('coverSection').style.display = 'none';
-  document.getElementById('framePickerWrap').style.display = 'none';
-  document.getElementById('capturePrev').innerHTML = '';
-  document.getElementById('frameVideo').src = '';
-  capturedCoverBlob = null;
-  uploadedFilename = null;
-  toggleMode();
   document.getElementById('overlay').classList.add('open');
 }
 
-function openEdit(id) {
-  const w = works.find(x=>x.id===id);
-  if (!w) return;
-  document.getElementById('panelTitle').textContent = '编辑作品';
-  document.getElementById('editId').value = w.id;
-  document.getElementById('editTitle').value = w.title||'';
-  document.getElementById('editType').value = w.type||'video';
-  document.getElementById('editYear').value = w.year||2025;
-  document.getElementById('editStatus').value = w.status||'published';
-  document.getElementById('editUrl').value = w.source_url||w.filename||'';
-  document.getElementById('editDesc').value = w.description||'';
-  document.getElementById('uploadMode').value = w.source_url ? 'url' : 'file';
-  toggleMode();
-  // 编辑模式:显示封面区,如果有视频 URL 则显示帧选择器
-  document.getElementById('coverSection').style.display = 'block';
-  const srcUrl = w.source_url || w.filename || '';
-  const isVideo = w.type === 'video' && srcUrl;
-  document.getElementById('framePickerWrap').style.display = isVideo ? 'block' : 'none';
-  if (isVideo) {
-    const fv = document.getElementById('frameVideo');
-    fv.src = srcUrl;
-    fv.onloadedmetadata = () => {
-      const slider = document.getElementById('frameSlider');
-      slider.max = fv.duration;
-      slider.value = 0;
-      fv.currentTime = 0;
-    };
-    capturedCoverBlob = null;
-    document.getElementById('capturePrev').innerHTML = '';
-  }
-  const currentThumb = w.thumbnail_url || w.thumbnail || '';
-  if (currentThumb) {
-    document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">点击更换封面</small>';
-  } else {
-    document.getElementById('coverPrev').innerHTML = '暂无封面,点击上传<br><small>jpg png webp</small>';
-  }
-  document.getElementById('coverInput').value = '';
-  document.getElementById('capturePrev').innerHTML = '';
-  document.getElementById('frameVideo').src = '';
-  capturedCoverBlob = null;
-  uploadedFilename = null;
-  toggleMode();
-  document.getElementById('overlay').classList.add('open');
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
 }
-
-function closePanel() { document.getElementById('overlay').classList.remove('open'); }
 
 function toggleMode() {
   const m = document.getElementById('uploadMode').value;
-  document.getElementById('urlMode').style.display = m==='url'?'block':'none';
   document.getElementById('fileMode').style.display = m==='file'?'block':'none';
+  document.getElementById('urlMode').style.display = m==='url'?'block':'none';
 }
 
-let capturedCoverBlob = null;
-
-function handleFile(input) {
+let uploadedFilename = null;
+async function handleFile(input) {
   const file = input.files[0];
   if (!file) return;
-  const prev = document.getElementById('filePrev');
-  const coverSection = document.getElementById('coverSection');
-  const url = URL.createObjectURL(file);
-  if (file.type.startsWith('video')) {
-    prev.innerHTML = '<video src="'+url+'" controls style="max-width:100%;max-height:160px;margin-top:8px"></video>';
-    coverSection.style.display = 'block';
-    document.getElementById('framePickerWrap').style.display = 'block';
-    // 绑定帧选择器
-    const fv = document.getElementById('frameVideo');
-    fv.src = url;
-    fv.onloadedmetadata = () => {
-      const slider = document.getElementById('frameSlider');
-      slider.max = fv.duration;
-      slider.value = 0;
-      fv.currentTime = 0;
-    };
-    capturedCoverBlob = null;
-    document.getElementById('capturePrev').innerHTML = '';
-  } else {
-    prev.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:160px;margin-top:8px">';
-    coverSection.style.display = 'none';
-  }
-}
-
-function seekFrame(val) {
-  const fv = document.getElementById('frameVideo');
-  fv.currentTime = parseFloat(val);
-  const t = parseFloat(val);
-  const m = String(Math.floor(t/60)).padStart(2,'0');
-  const s = String(Math.floor(t%60)).padStart(2,'0');
-  document.getElementById('frameTime').textContent = m+':'+s;
-}
-
-function captureFrame() {
-  const fv = document.getElementById('frameVideo');
-  const canvas = document.getElementById('frameCanvas');
-  canvas.width = fv.videoWidth;
-  canvas.height = fv.videoHeight;
-  canvas.getContext('2d').drawImage(fv, 0, 0);
-  canvas.toBlob(blob => {
-    capturedCoverBlob = blob;
-    const url = URL.createObjectURL(blob);
-    document.getElementById('capturePrev').innerHTML =
-      '<img src="'+url+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:4px;border:2px solid #f0c040;margin-top:4px">'
-      +'<div style="color:#5ad060;font-size:12px;margin-top:4px;text-align:center">✓ 已选为封面</div>';
-    // 清空文件上传封面
-    document.getElementById('coverInput').value = '';
-    document.getElementById('coverPrev').innerHTML = '点击上传图片封面<br><small>jpg png webp</small>';
-  }, 'image/jpeg', 0.92);
-}
-
-function handleCover(input) {
-  const file = input.files[0];
-  if (!file) return;
-  capturedCoverBlob = null; // 清空截帧封面
-  document.getElementById('capturePrev').innerHTML = '';
-  const prev = document.getElementById('coverPrev');
-  const url = URL.createObjectURL(file);
-  prev.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:120px;border-radius:4px">';
-}
-
-async function saveWork() {
-  const id = document.getElementById('editId').value;
-  const mode = document.getElementById('uploadMode').value;
-  const title = document.getElementById('editTitle').value.trim();
-  const type = document.getElementById('editType').value;
-  const year = parseInt(document.getElementById('editYear').value)||null;
-  const status = document.getElementById('editStatus').value;
-  const description = document.getElementById('editDesc').value.trim()||null;
-  if (!title) { toast('请输入标题', 'err'); return; }
-
-  if (id) {
-    // 编辑:有封面则用 FormData,否则用 JSON PATCH
-    const coverInput = document.getElementById('coverInput');
-    const hasCover = capturedCoverBlob || (coverInput.files && coverInput.files[0]);
-    if (hasCover) {
-      const fd = new FormData();
-      fd.append('title', title);
-      fd.append('type', type);
-      if (year) fd.append('year', year);
-      fd.append('status', status);
-      if (description) fd.append('description', description);
-      if (mode === 'url') fd.append('source_url', document.getElementById('editUrl').value.trim()||'');
-      if (capturedCoverBlob) {
-        fd.append('cover', capturedCoverBlob, 'cover.jpg');
-      } else {
-        fd.append('cover', coverInput.files[0]);
-      }
-      try {
-        const t = tok();
-        if (!t) { toast('未登录,请刷新页面重新登录', 'err'); return; }
-        const res = await fetch(API + '/api/works/' + id, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + t }, body: fd });
-        if (!res.ok) throw new Error(await res.text());
-        toast('更新成功(含封面)', 'ok'); closePanel(); loadWorks();
-      } catch(e) { toast('保存失败: '+e.message, 'err'); }
-    } else {
-      const body = { title, type, year, status, description };
-      if (mode === 'url') body.source_url = document.getElementById('editUrl').value.trim()||null;
-      try {
-        const res = await api('PATCH', '/api/works/'+id, body);
-        if (!res.ok) throw new Error(await res.text());
-        toast('更新成功', 'ok'); closePanel(); loadWorks();
-      } catch(e) { toast('保存失败: '+e.message, 'err'); }
-    }
-    return;
-  }
-
-  // 新建
-  if (mode === 'url') {
-    const body = { title, type, year, status, description, source_url: document.getElementById('editUrl').value.trim()||null };
-    try {
-      const res = await api('POST', '/api/works', body);
-      if (!res.ok) throw new Error(await res.text());
-      toast('添加成功', 'ok'); closePanel(); loadWorks();
-    } catch(e) { toast('保存失败: '+e.message, 'err'); }
-    return;
-  }
-
-  // 新建 + 本地文件:分块上传支持
-  const fileInput = document.getElementById('fileInput');
-  const file = fileInput.files[0];
-  if (!file) { toast('请选择要上传的文件', 'err'); return; }
-  const prog = document.getElementById('prog');
+  
+  const prog = document.getElementById('progWrap');
   const fill = document.getElementById('progFill');
-  const pText = document.getElementById('progPct');
-  prog.style.display = 'block'; fill.style.width = '0%'; pText.textContent = '0%';
+  const text = document.getElementById('progText');
+  prog.style.display = 'block';
 
-  const t = tok();
-  if (!t) { toast('未登录,请重新登录', 'err'); return; }
+  const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB 分块
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  const identifier = Math.random().toString(36).substring(2);
 
-  // 分块配置
-  const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
-  const totalParts = Math.ceil(file.size / CHUNK_SIZE);
-  const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-
-  const uploadChunk = async (index) => {
-    const start = index * CHUNK_SIZE;
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * CHUNK_SIZE;
     const end = Math.min(file.size, start + CHUNK_SIZE);
     const chunk = file.slice(start, end);
 
     const fd = new FormData();
-    fd.append('filename', safeFilename);
-    fd.append('chunkIndex', index);
-    fd.append('totalChunks', totalParts);
-    fd.append('file', chunk);
-    console.log(`正在上传分块 ${index + 1}/${totalParts}`);
+    fd.append('chunk', chunk);
+    fd.append('filename', file.name);
+    fd.append('index', i);
+    fd.append('total', totalChunks);
+    fd.append('identifier', identifier);
 
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', API + '/api/upload_chunk');
-      xhr.setRequestHeader('Authorization', 'Bearer ' + t);
-      xhr.onload = () => { console.log('Chunk', index, 'response:', xhr.status, xhr.responseText); (xhr.status === 200 ? resolve() : reject(xhr.responseText)); };
-      xhr.onerror = () => reject('网络错误');
-      xhr.send(fd);
+    await fetch(API+'/api/upload_chunk', {
+      method: 'POST',
+      body: fd
     });
+    
+    const p = Math.round(((i + 1) / totalChunks) * 100);
+    fill.style.width = p + '%';
+    text.textContent = '正在上传 ' + p + '%';
+  }
+
+  text.textContent = '合并中...';
+  const res = await fetch(API+'/api/upload_chunk', {
+    method: 'POST',
+    body: new URLSearchParams({ 'merge': 'true', 'filename': file.name, 'identifier': identifier })
+  });
+  const data = await res.json();
+  uploadedFilename = data.filename;
+  text.textContent = '上传完成';
+  toast('作品已同步到服务器', 'ok');
+}
+
+async function saveWork() {
+  const payload = {
+    title: document.getElementById('title').value,
+    year: document.getElementById('year').value,
+    type: document.getElementById('type').value,
+    status: document.getElementById('status').value,
+    description: document.getElementById('description').value,
+    filename: uploadedFilename || document.getElementById('sourceUrl').value
   };
 
-  try {
-    for (let i = 0; i < totalParts; i++) {
-      await uploadChunk(i);
-      const pct = Math.round((i + 1) / totalParts * 100) + '%'; fill.style.width = pct; document.getElementById('progPct').textContent = pct;
-    }
-
-    // 全部块上传完成,最后提交元数据合并
-    console.log('开始合并, filename:', file.name, 'totalParts:', totalParts);
-    const mergeRes = await fetch(API + '/api/merge_chunks', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + t,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        filename: safeFilename,
-        totalChunks: totalParts,
-        folder: type === 'video' ? 'videos' : 'photos'
-      })
-    });
-    console.log('合并响应:', mergeRes.status, await mergeRes.text());
-    if (!mergeRes.ok) throw new Error('合并分块失败');
-    const mergeData = await mergeRes.json();
-    const finalFilename = mergeData.filename;
-    const body = { title, type, year, status, description, filename: finalFilename };
-
-    const fdData = new FormData();
-    for (const key in body) { if (body[key]) fdData.append(key, body[key]); }
-
-    if (capturedCoverBlob) {
-      fdData.append('thumbnail', capturedCoverBlob, 'cover.jpg');
-    } else {
-      const coverInput = document.getElementById('coverInput');
-      if (coverInput.files && coverInput.files[0]) fdData.append('thumbnail', coverInput.files[0]);
-    }
-
-    const res = await fetch(API + '/api/works', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + t },
-      body: fdData
-    });
-
-    if (res.ok) {
-      fill.style.width = '100%';
-      setTimeout(() => { prog.style.display='none'; loadWorks(); closePanel(); }, 500);
-      toast('上传成功', 'ok');
-    } else {
-      throw new Error(await res.text());
-    }
-  } catch (e) {
-    prog.style.display = 'none';
-    toast('上传失败: ' + e, 'err');
-  }
-}
-
-function getSelectedIds() {
-  return [...document.querySelectorAll('.row-checkbox[data-id]:checked')].map(el=>el.dataset.id);
-}
-
-function updateBatchBar() {
-  const ids = getSelectedIds();
-  const bar = document.getElementById('batchBar');
-  const count = document.getElementById('selectedCount');
-  const allCb = document.getElementById('selectAll');
-  const allBoxes = document.querySelectorAll('.row-checkbox[data-id]');
-  bar.classList.toggle('show', ids.length > 0);
-  count.textContent = '已选 '+ids.length+' 项';
-  allCb.indeterminate = ids.length > 0 && ids.length < allBoxes.length;
-  allCb.checked = allBoxes.length > 0 && ids.length === allBoxes.length;
-}
-
-function toggleSelectAll(checked) {
-  document.querySelectorAll('.row-checkbox[data-id]').forEach(cb => cb.checked = checked);
-  updateBatchBar();
-}
-
-function selectAllToggle() {
-  const boxes = document.querySelectorAll('.row-checkbox[data-id]');
-  const allChecked = [...boxes].every(cb => cb.checked);
-  boxes.forEach(cb => cb.checked = !allChecked);
-  document.getElementById('selectAllBtn').textContent = allChecked ? '全选' : '取消全选';
-  updateBatchBar();
-}
-
-function clearSelect() {
-  document.querySelectorAll('.row-checkbox[data-id]').forEach(cb => cb.checked = false);
-  document.getElementById('selectAllBtn').textContent = '全选';
-  updateBatchBar();
-}
-
-async function batchTranscode() {
-  if (!confirm('确认将所有视频转码为HLS格式?转码需要一些时间,请耐心等待。')) return;
-  toast('开始转码...', 'ok');
-  try {
-    const res = await api('POST', '/api/transcode-all');
-    if (res.ok) {
-      const data = await res.json();
-      const success = data.results.filter(r => r.status === 'success').length;
-      const failed = data.results.filter(r => r.status === 'failed').length;
-      const skipped = data.results.filter(r => r.status === 'skipped').length;
-      toast('转码完成:'+success+'个成功'+(failed?','+failed+'个失败':'')+(skipped?','+skipped+'个跳过':''), failed?'err':'ok');
-      loadWorks();
-    } else {
-      throw new Error('转码失败');
-    }
-  } catch(e) {
-    toast('转码失败:'+e.message, 'err');
-  }
-}
-
-async function batchDelete() {
-  const ids = getSelectedIds();
-  if (!ids.length) return;
-  if (!confirm('确认删除选中的 '+ids.length+' 个作品?此操作不可撤销。')) return;
-  let ok = 0, fail = 0;
-  for (const id of ids) {
-    try {
-      const res = await api('DELETE', '/api/works/'+id);
-      if (res.ok) ok++; else fail++;
-    } catch(e) { fail++; }
-  }
-  toast(ok+'个已删除'+(fail?','+fail+'个失败':''), fail?'err':'ok');
-  document.getElementById('batchBar').classList.remove('show');
-  document.getElementById('selectAll').checked = false;
+  await fetch(API+'/api/works', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + tok()
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  closePanel();
   loadWorks();
+  toast('作品保存成功', 'ok');
 }
 
-async function transcodeOne(id) {
-  if (!confirm('确认转码这个视频为HLS格式?')) return;
-  toast('转码中...', 'ok');
-  try {
-    const res = await api('POST', '/api/works/'+id+'/transcode');
-    if (res.ok) {
-      toast('转码成功', 'ok');
-      loadWorks();
-    } else {
-      throw new Error('转码失败');
-    }
-  } catch(e) {
-    toast('转码失败:'+e.message, 'err');
-  }
-}
-
-async function delWork(id) {
-  if (!confirm('确认删除这个作品?')) return;
-  try {
-    const res = await api('DELETE', '/api/works/'+id);
-    if (!res.ok) throw new Error('删除失败');
-    toast('已删除', 'ok');
-    loadWorks();
-  } catch(e) { toast('删除失败: '+e.message, 'err'); }
+async function deleteWork(id) {
+  if(!confirm('确定删除?')) return;
+  await fetch(API+'/api/works/'+id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + tok() }
+  });
+  loadWorks();
 }
 
 function toast(msg, type) {
@@ -748,13 +383,14 @@ function toast(msg, type) {
   setTimeout(()=>el.classList.remove('show'), 3000);
 }
 
-// 初始化 API 模式按钮
-(function(){
-  const btn = document.getElementById('apiModeBtn');
-  if (btn && API === API_LAN) { btn.textContent = '🏠 局域网模式'; btn.style.color = '#5ad060'; }
-})();
+function updateBatchBar() {
+  const count = document.querySelectorAll('.row-checkbox:checked').length;
+  const bar = document.getElementById('batchBar');
+  document.getElementById('batchText').textContent = `已选择 ${count} 项`;
+  if (count > 0) bar.classList.add('show');
+  else bar.classList.remove('show');
+}
 
-// 自动登录
 if (tok()) { showAdmin(); } else { document.getElementById('loginPage').style.display='flex'; }
 </script>
 </body>
