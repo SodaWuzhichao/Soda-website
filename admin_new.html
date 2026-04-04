@@ -564,9 +564,9 @@ async function saveWork() {
     const chunk = file.slice(start, end);
 
     const fd = new FormData();
-    fd.append('file_id', fileId);
-    fd.append('part_index', index);
-    fd.append('total_parts', totalParts);
+    fd.append('filename', file.name);
+    fd.append('chunkIndex', index);
+    fd.append('totalChunks', totalParts);
     fd.append('file', chunk);
     console.log(`正在上传分块 ${index + 1}/${totalParts}`);
 
@@ -587,14 +587,24 @@ async function saveWork() {
     }
 
     // 全部块上传完成，最后提交元数据合并
-    const fd = new FormData();
-    fd.append('title', title);
-    fd.append('type', type);
-    if (year) fd.append('year', year);
-    fd.append('status', status);
-    if (description) fd.append('description', description);
-    fd.append('file_id', fileId);
-    fd.append('filename', file.name);
+    const mergeRes = await fetch(API + '/api/merge_chunks', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + t,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        totalChunks: totalParts,
+        folder: type === 'video' ? 'videos' : 'photos'
+      })
+    });
+    if (!mergeRes.ok) throw new Error('合并分块失败');
+    const mergeData = await mergeRes.json();
+    const finalFilename = mergeData.filename;
+
+    const body = { title, type, year, status, description, filename: finalFilename };
+    const saveRes = await api('POST', '/api/works', body);
 
     if (capturedCoverBlob) {
       fd.append('thumbnail', capturedCoverBlob, 'cover.jpg');
