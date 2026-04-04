@@ -183,7 +183,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div id="coverSection" style="margin-top:12px;display:none">
           <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             封面选择
-            <span style="color:#888;font-size:12px">拖动滑块选帧，或上传图片</span>
+            <span style="color:#888;font-size:12px">拖动滑块选帧,或上传图片</span>
           </label>
           <!-- 帧选择器 -->
           <div id="framePickerWrap" style="background:#111;border-radius:6px;padding:10px;margin-bottom:8px">
@@ -199,7 +199,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
             <div id="capturePrev" style="margin-top:8px"></div>
           </div>
           <!-- 或上传自定义封面 -->
-          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">— 或上传自定义封面图 —</div>
+          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">- 或上传自定义封面图 -</div>
           <div class="upload-area" style="padding:12px" onclick="document.getElementById('coverInput').value='';document.getElementById('coverInput').click()">
             <div id="coverPrev" style="color:#888;font-size:13px;text-align:center">点击上传图片封面<br><small>jpg png webp</small></div>
             <input type="file" id="coverInput" accept="image/*" onchange="handleCover(this)" style="display:none" />
@@ -381,7 +381,7 @@ function openEdit(id) {
   document.getElementById('editDesc').value = w.description||'';
   document.getElementById('uploadMode').value = w.source_url ? 'url' : 'file';
   toggleMode();
-  // 编辑模式：显示封面区，如果有视频 URL 则显示帧选择器
+  // 编辑模式:显示封面区,如果有视频 URL 则显示帧选择器
   document.getElementById('coverSection').style.display = 'block';
   const srcUrl = w.source_url || w.filename || '';
   const isVideo = w.type === 'video' && srcUrl;
@@ -402,7 +402,7 @@ function openEdit(id) {
   if (currentThumb) {
     document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">点击更换封面</small>';
   } else {
-    document.getElementById('coverPrev').innerHTML = '暂无封面，点击上传<br><small>jpg png webp</small>';
+    document.getElementById('coverPrev').innerHTML = '暂无封面,点击上传<br><small>jpg png webp</small>';
   }
   document.getElementById('coverInput').value = '';
   document.getElementById('capturePrev').innerHTML = '';
@@ -498,7 +498,7 @@ async function saveWork() {
   if (!title) { toast('请输入标题', 'err'); return; }
 
   if (id) {
-    // 编辑：有封面则用 FormData，否则用 JSON PATCH
+    // 编辑:有封面则用 FormData,否则用 JSON PATCH
     const coverInput = document.getElementById('coverInput');
     const hasCover = capturedCoverBlob || (coverInput.files && coverInput.files[0]);
     if (hasCover) {
@@ -516,10 +516,10 @@ async function saveWork() {
       }
       try {
         const t = tok();
-        if (!t) { toast('未登录，请刷新页面重新登录', 'err'); return; }
+        if (!t) { toast('未登录,请刷新页面重新登录', 'err'); return; }
         const res = await fetch(API + '/api/works/' + id, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + t }, body: fd });
         if (!res.ok) throw new Error(await res.text());
-        toast('更新成功（含封面）', 'ok'); closePanel(); loadWorks();
+        toast('更新成功(含封面)', 'ok'); closePanel(); loadWorks();
       } catch(e) { toast('保存失败: '+e.message, 'err'); }
     } else {
       const body = { title, type, year, status, description };
@@ -544,7 +544,7 @@ async function saveWork() {
     return;
   }
 
-  // 新建 + 本地文件：分块上传支持
+  // 新建 + 本地文件:分块上传支持
   const fileInput = document.getElementById('fileInput');
   const file = fileInput.files[0];
   if (!file) { toast('请选择要上传的文件', 'err'); return; }
@@ -553,7 +553,7 @@ async function saveWork() {
   prog.style.display = 'block'; fill.style.width = '0%';
 
   const t = tok();
-  if (!t) { toast('未登录，请重新登录', 'err'); return; }
+  if (!t) { toast('未登录,请重新登录', 'err'); return; }
 
   // 分块配置
   const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
@@ -588,7 +588,7 @@ async function saveWork() {
       fill.style.width = Math.round((i + 1) / totalParts * 85) + '%';
     }
 
-    // 全部块上传完成，最后提交元数据合并
+    // 全部块上传完成,最后提交元数据合并
     const mergeRes = await fetch(API + '/api/merge_chunks', {
       method: 'POST',
       headers: {
@@ -604,21 +604,22 @@ async function saveWork() {
     if (!mergeRes.ok) throw new Error('合并分块失败');
     const mergeData = await mergeRes.json();
     const finalFilename = mergeData.filename;
-
     const body = { title, type, year, status, description, filename: finalFilename };
-    const saveRes = await api('POST', '/api/works', body);
+
+    const fdData = new FormData();
+    for (const key in body) { if (body[key]) fdData.append(key, body[key]); }
 
     if (capturedCoverBlob) {
-      fd.append('thumbnail', capturedCoverBlob, 'cover.jpg');
+      fdData.append('thumbnail', capturedCoverBlob, 'cover.jpg');
     } else {
       const coverInput = document.getElementById('coverInput');
-      if (coverInput.files[0]) fd.append('thumbnail', coverInput.files[0]);
+      if (coverInput.files && coverInput.files[0]) fdData.append('thumbnail', coverInput.files[0]);
     }
 
     const res = await fetch(API + '/api/works', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + t },
-      body: fd
+      body: fdData
     });
 
     if (res.ok) {
@@ -670,7 +671,7 @@ function clearSelect() {
 }
 
 async function batchTranscode() {
-  if (!confirm('确认将所有视频转码为HLS格式？转码需要一些时间，请耐心等待。')) return;
+  if (!confirm('确认将所有视频转码为HLS格式?转码需要一些时间,请耐心等待。')) return;
   toast('开始转码...', 'ok');
   try {
     const res = await api('POST', '/api/transcode-all');
@@ -679,20 +680,20 @@ async function batchTranscode() {
       const success = data.results.filter(r => r.status === 'success').length;
       const failed = data.results.filter(r => r.status === 'failed').length;
       const skipped = data.results.filter(r => r.status === 'skipped').length;
-      toast('转码完成：'+success+'个成功'+(failed?'，'+failed+'个失败':'')+(skipped?'，'+skipped+'个跳过':''), failed?'err':'ok');
+      toast('转码完成:'+success+'个成功'+(failed?','+failed+'个失败':'')+(skipped?','+skipped+'个跳过':''), failed?'err':'ok');
       loadWorks();
     } else {
       throw new Error('转码失败');
     }
   } catch(e) {
-    toast('转码失败：'+e.message, 'err');
+    toast('转码失败:'+e.message, 'err');
   }
 }
 
 async function batchDelete() {
   const ids = getSelectedIds();
   if (!ids.length) return;
-  if (!confirm('确认删除选中的 '+ids.length+' 个作品？此操作不可撤销。')) return;
+  if (!confirm('确认删除选中的 '+ids.length+' 个作品?此操作不可撤销。')) return;
   let ok = 0, fail = 0;
   for (const id of ids) {
     try {
@@ -700,14 +701,14 @@ async function batchDelete() {
       if (res.ok) ok++; else fail++;
     } catch(e) { fail++; }
   }
-  toast(ok+'个已删除'+(fail?'，'+fail+'个失败':''), fail?'err':'ok');
+  toast(ok+'个已删除'+(fail?','+fail+'个失败':''), fail?'err':'ok');
   document.getElementById('batchBar').classList.remove('show');
   document.getElementById('selectAll').checked = false;
   loadWorks();
 }
 
 async function transcodeOne(id) {
-  if (!confirm('确认转码这个视频为HLS格式？')) return;
+  if (!confirm('确认转码这个视频为HLS格式?')) return;
   toast('转码中...', 'ok');
   try {
     const res = await api('POST', '/api/works/'+id+'/transcode');
@@ -718,12 +719,12 @@ async function transcodeOne(id) {
       throw new Error('转码失败');
     }
   } catch(e) {
-    toast('转码失败：'+e.message, 'err');
+    toast('转码失败:'+e.message, 'err');
   }
 }
 
 async function delWork(id) {
-  if (!confirm('确认删除这个作品？')) return;
+  if (!confirm('确认删除这个作品?')) return;
   try {
     const res = await api('DELETE', '/api/works/'+id);
     if (!res.ok) throw new Error('删除失败');
