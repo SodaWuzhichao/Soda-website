@@ -581,7 +581,7 @@ async function saveWork() {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', API + '/api/upload_chunk');
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
-      xhr.onload = () => (xhr.status === 200 ? resolve() : reject(xhr.responseText));
+      xhr.onload = () => { console.log('Chunk', index, 'response:', xhr.status, xhr.responseText); (xhr.status === 200 ? resolve() : reject(xhr.responseText)); };
       xhr.onerror = () => reject('网络错误');
       xhr.send(fd);
     });
@@ -594,6 +594,7 @@ async function saveWork() {
     }
 
     // 全部块上传完成,最后提交元数据合并
+    console.log('开始合并, filename:', file.name, 'totalParts:', totalParts);
     const mergeRes = await fetch(API + '/api/merge_chunks', {
       method: 'POST',
       headers: {
@@ -606,6 +607,7 @@ async function saveWork() {
         folder: type === 'video' ? 'videos' : 'photos'
       })
     });
+    console.log('合并响应:', mergeRes.status, await mergeRes.text());
     if (!mergeRes.ok) throw new Error('合并分块失败');
     const mergeData = await mergeRes.json();
     const finalFilename = mergeData.filename;
