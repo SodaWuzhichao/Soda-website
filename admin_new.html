@@ -602,7 +602,7 @@ async function saveWork() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        filename: file.name,
+        filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
         totalChunks: totalParts,
         folder: type === 'video' ? 'videos' : 'photos'
       })
