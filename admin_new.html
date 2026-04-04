@@ -550,7 +550,8 @@ async function saveWork() {
   if (!file) { toast('请选择要上传的文件', 'err'); return; }
   const prog = document.getElementById('prog');
   const fill = document.getElementById('progFill');
-  prog.style.display = 'block'; fill.style.width = '0%';
+  const pText = document.getElementById('progPercent');
+  prog.style.display = 'block'; fill.style.width = '0%'; pText.textContent = '0%';
 
   const t = tok();
   if (!t) { toast('未登录,请重新登录', 'err'); return; }
@@ -585,7 +586,7 @@ async function saveWork() {
   try {
     for (let i = 0; i < totalParts; i++) {
       await uploadChunk(i);
-      fill.style.width = Math.round((i + 1) / totalParts * 85) + '%';
+      const pct = Math.round((i + 1) / totalParts * 100) + '%'; fill.style.width = pct; document.getElementById('progPercent').textContent = pct;
     }
 
     // 全部块上传完成,最后提交元数据合并
