@@ -179,7 +179,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <input type="file" id="fileInput" accept="video/*,image/*" onchange="handleFile(this)" />
           <div id="filePrev"></div>
         </div>
-        <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+
         <div id="coverSection" style="margin-top:12px;display:none">
           <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             封面选择
@@ -210,6 +210,10 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
     </div>
     <div class="panel-ftr">
       <button class="bs" onclick="closePanel()">取消</button>
+      <div id="prog" style="display:none;margin-bottom:15px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px"><span>上传进度</span><span id="progPct">0%</span></div>
+        <div class="prog"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      </div>
       <button class="bp" onclick="saveWork()">保存</button>
     </div>
   </div>
@@ -586,7 +590,7 @@ async function saveWork() {
   try {
     for (let i = 0; i < totalParts; i++) {
       await uploadChunk(i);
-      const pct = Math.round((i + 1) / totalParts * 100) + '%'; fill.style.width = pct; document.getElementById('progPercent').textContent = pct;
+      const pct = Math.round((i + 1) / totalParts * 100) + '%'; fill.style.width = pct; document.getElementById('progPct').textContent = pct;
     }
 
     // 全部块上传完成,最后提交元数据合并
