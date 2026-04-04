@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 语音通话 | 打工小五</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .status { margin-bottom: 40px; font-size: 1.2rem; color: #888; letter-spacing: 2px; }
+        .circle-container { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
+        .circle { width: 120px; height: 120px; background: white; border-radius: 50%; box-shadow: 0 0 50px rgba(255,255,255,0.2); transition: all 0.3s ease; cursor: pointer; }
+        .circle.listening { transform: scale(1.1); background: #ffd700; box-shadow: 0 0 80px rgba(255,215,0,0.4); }
+        .circle.thinking { animation: pulse 1.5s infinite; background: #007bff; }
+        .circle.speaking { animation: wave 1s infinite; background: #28a745; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes wave { 0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.4); } 70% { box-shadow: 0 0 0 40px rgba(40,167,69,0); } 100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); } }
+        .btn-exit { margin-top: 60px; padding: 12px 40px; border: 1px solid #333; border-radius: 25px; background: transparent; color: #666; cursor: pointer; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="status" id="statusText">正在初始化...</div>
+    <div class="circle-container">
+        <div class="circle" id="mainCircle"></div>
+    </div>
+    <button class="btn-exit" onclick="window.close()">挂断</button>
+
+    <script>
+        const statusText = document.getElementById('statusText');
+        const circle = document.getElementById('mainCircle');
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startSession() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                statusText.innerText = '正在倾听...';
+                circle.classList.add('listening');
+                
+                // 这里后续会集成 WebSocket 连接到 Mac Mini 的后端
+                console.log('麦克风已就绪');
+            } catch (err) {
+                statusText.innerText = '请允许麦克风访问';
+                console.error(err);
+            }
+        }
+
+        window.onload = startSession;
+    </script>
+</body>
+</html>
