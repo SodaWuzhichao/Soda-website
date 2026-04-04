@@ -564,6 +564,7 @@ async function saveWork() {
   const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
   const uploadChunk = async (index) => {
     const start = index * CHUNK_SIZE;
@@ -571,7 +572,7 @@ async function saveWork() {
     const chunk = file.slice(start, end);
 
     const fd = new FormData();
-    fd.append('filename', file.name);
+    fd.append('filename', safeFilename);
     fd.append('chunkIndex', index);
     fd.append('totalChunks', totalParts);
     fd.append('file', chunk);
@@ -602,7 +603,7 @@ async function saveWork() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
+        filename: safeFilename,
         totalChunks: totalParts,
         folder: type === 'video' ? 'videos' : 'photos'
       })
