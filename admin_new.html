@@ -554,7 +554,7 @@ async function saveWork() {
   if (!file) { toast('请选择要上传的文件', 'err'); return; }
   const prog = document.getElementById('prog');
   const fill = document.getElementById('progFill');
-  const pText = document.getElementById('progPercent');
+  const pText = document.getElementById('progPct');
   prog.style.display = 'block'; fill.style.width = '0%'; pText.textContent = '0%';
 
   const t = tok();
