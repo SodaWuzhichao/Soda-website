@@ -187,7 +187,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <input type="file" id="fileInput" accept="video/*,image/*" onchange="handleFile(this)" />
           <div id="filePrev"></div>
         </div>
-        <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+
         <div id="coverSection" style="margin-top:12px;display:none">
           <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             封面选择
@@ -217,6 +217,13 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="fg"><label>描述</label><textarea id="editDesc" rows="3" placeholder="作品描述..."></textarea></div>
     </div>
     <div class="panel-ftr">
+      <div id="uploadProgress" style="display:none;margin-bottom:12px;text-align:center">
+        <div style="color:#fff;font-size:13px;margin-bottom:4px" id="progFileName">上传中...</div>
+        <div class="prog" style="height:6px;background:#2a2a30;border-radius:3px;overflow:hidden">
+          <div class="prog-fill" id="progFill" style="height:100%;background:linear-gradient(90deg,#f0c040,#ffed4a);width:0;transition:width .2s"></div>
+        </div>
+        <div style="color:#f0c040;font-size:12px;margin-top:4px" id="progPercent">0%</div>
+      </div>
       <button class="bs" onclick="closePanel()">取消</button>
       <button class="bp" onclick="saveWork()">保存</button>
     </div>
@@ -609,9 +616,14 @@ async function saveWork() {
   const fileInput = document.getElementById('fileInput');
   const file = fileInput.files[0];
   if (!file) { toast('请选择要上传的文件', 'err'); return; }
-  const prog = document.getElementById('prog');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const progFileName = document.getElementById('progFileName');
+  const progPercent = document.getElementById('progPercent');
   const fill = document.getElementById('progFill');
-  prog.style.display = 'block'; fill.style.width = '0%';
+  progFileName.textContent = '正在上传: ' + file.name;
+  uploadProgress.style.display = 'block';
+  fill.style.width = '0%';
+  progPercent.textContent = '0%';
 
   const t = tok();
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
@@ -646,7 +658,9 @@ async function saveWork() {
   try {
     for (let i = 0; i < totalParts; i++) {
       await uploadChunk(i);
-      fill.style.width = Math.round((i + 1) / totalParts * 85) + '%';
+      const pct = Math.round((i + 1) / totalParts * 85);
+      fill.style.width = pct + '%';
+      progPercent.textContent = pct + '%';
     }
 
     // 全部块上传完成，最后提交元数据合并
@@ -674,13 +688,14 @@ async function saveWork() {
 
     if (res.ok) {
       fill.style.width = '100%';
-      setTimeout(() => { prog.style.display='none'; loadWorks(); closePanel(); }, 500);
+      progPercent.textContent = '100%';
+      setTimeout(() => { uploadProgress.style.display='none'; loadWorks(); closePanel(); }, 500);
       toast('上传成功', 'ok');
     } else {
       throw new Error(await res.text());
     }
   } catch (e) {
-    prog.style.display = 'none';
+    uploadProgress.style.display='none';
     toast('上传失败: ' + e, 'err');
   }
 }
