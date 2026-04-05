@@ -39,7 +39,10 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .stat-card .label { color:#888; font-size:13px; margin-top:4px; }
 .works-table { background:#1a1a1f; border-radius:8px; overflow:hidden; border:1px solid #2a2a30; }
 .tbl-hdr { display:grid; grid-template-columns:60px 1fr 90px 90px 80px 140px; padding:12px 16px; background:#111; color:#888; font-size:12px; text-transform:uppercase; }
-.work-row { display:grid; grid-template-columns:36px 60px 1fr 90px 90px 80px 140px; padding:12px 16px; border-top:1px solid #1a1a1f; align-items:center; }
+.work-row { display:grid; grid-template-columns:36px 30px 60px 1fr 90px 90px 80px 140px; padding:12px 16px; border-top:1px solid #1a1a1f; align-items:center; cursor:grab; }
+.work-row:active { cursor: grabbing; }
+.work-row.dragging { opacity: 0.5; background: #2a2a30; }
+.work-row.drag-over { border-top: 2px solid #f0c040; }
 .row-checkbox { width:16px; height:16px; accent-color:#f0c040; cursor:pointer; }
 .batch-bar { display:none; align-items:center; gap:12px; padding:10px 16px; background:#1a1a1f; border-radius:6px; margin-bottom:12px; }
 .batch-bar.show { display:flex; }
@@ -175,7 +178,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div class="fg"><label>年份</label><input type="number" id="editYear" value="2025" /></div>
       </div>
       <div class="fg"><label>状态</label><select id="editStatus"><option value="published">已发布</option><option value="draft">草稿</option></select></div>
-      <div class="fg"><label>上传方式</label><select id="uploadMode" onchange="toggleMode()"><option value="url">外链</option><option value="file">本地上传</option></select></div>
+      <div class="fg"><label>上传方式</label><select id="uploadMode" onchange="toggleMode()"><option value="file" selected>本地上传</option><option value="url">外链</option></select></div>
       <div id="urlMode" class="fg"><label>外链 URL</label><input type="url" id="editUrl" placeholder="https://..." /></div>
       <div id="fileMode" style="display:none" class="fg">
         <label>上传文件</label>
@@ -324,8 +327,9 @@ function renderWorks() {
       ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
         +(hasVideo ? '<video src="'+url+'" muted preload="none" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:0;transition:opacity .2s" onmouseenter="this.style.opacity=1;this.play()" onmouseleave="this.style.opacity=0;this.pause();this.currentTime=0"></video>' : '')
       : (hasVideo ? '<video src="'+url+'" muted preload="metadata" style="width:100%;height:100%;object-fit:cover" onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0"></video>' : '');
-    return '<div class="work-row">'
+    return '<div class="work-row" draggable="true" data-id="'+w.id+'">'
       +'<input type="checkbox" class="row-checkbox" data-id="'+w.id+'" onchange="updateBatchBar()">'
+      +'<div class="drag-handle" style="color:#555;cursor:grab;font-size:16px">☰</div>'
       +'<div class="wthumb">'+thumbHtml+'</div>'
       +'<div class="wtitle"><div class="t">'+w.title+'</div><div class="s">'+(url||'无链接')+'</div></div>'
       +'<div><span class="badge '+(w.type==='video'?'bv':w.type==='live'?'blive':'bp2')+'">'+(w.type==='video'?'视频':w.type==='live'?'直播':'照片')+'</span></div>'
@@ -337,6 +341,70 @@ function renderWorks() {
       +'</div>'
     +'</div>';
   }).join('');
+  initDragDrop();
+}
+
+function initDragDrop() {
+  const list = document.getElementById('worksList');
+  let draggedEl = null;
+  list.addEventListener('dragstart', e => {
+    if (e.target.classList.contains('work-row')) {
+      draggedEl = e.target;
+      e.target.classList.add('dragging');
+    }
+  });
+  list.addEventListener('dragend', e => {
+    if (e.target.classList.contains('work-row')) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.work-row').forEach(el => el.classList.remove('drag-over'));
+    }
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const row = e.target.closest('.work-row');
+    if (row && row !== draggedEl) {
+      document.querySelectorAll('.work-row').forEach(el => el.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    }
+  });
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const row = e.target.closest('.work-row');
+    if (row && row !== draggedEl && draggedEl) {
+      const allRows = [...document.querySelectorAll('.work-row')];
+      const fromIdx = allRows.indexOf(draggedEl);
+      const toIdx = allRows.indexOf(row);
+      if (fromIdx < toIdx) row.parentNode.insertBefore(draggedEl, row.nextSibling);
+      else row.parentNode.insertBefore(draggedEl, row);
+      saveOrder();
+    }
+    document.querySelectorAll('.work-row').forEach(el => el.classList.remove('drag-over'));
+  });
+}
+
+async function saveOrder() {
+  const rows = document.querySelectorAll('.work-row');
+  const order = [...rows].map(r => r.dataset.id).filter(id => id);
+  try {
+    const res = await fetch(API + '/api/works/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order })
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      toast('排序已保存', 'ok');
+      // 更新本地 works 数组的 sort_order
+      order.forEach((id, idx) => {
+        const w = works.find(x => x.id === id);
+        if (w) w.sort_order = idx;
+      });
+    } else {
+      toast('保存排序失败', 'err');
+    }
+  } catch (err) {
+    toast('保存排序失败: ' + err.message, 'err');
+  }
 }
 
 function openAddPanel() {
@@ -346,7 +414,7 @@ function openAddPanel() {
   document.getElementById('editType').value = 'video';
   document.getElementById('editYear').value = new Date().getFullYear();
   document.getElementById('editStatus').value = 'published';
-  document.getElementById('uploadMode').value = 'url';
+  document.getElementById('uploadMode').value = 'file';
   document.getElementById('editUrl').value = '';
   document.getElementById('editDesc').value = '';
   document.getElementById('filePrev').innerHTML = '';
@@ -373,7 +441,7 @@ function openEdit(id) {
   document.getElementById('editStatus').value = w.status||'published';
   document.getElementById('editUrl').value = w.source_url||w.filename||'';
   document.getElementById('editDesc').value = w.description||'';
-  document.getElementById('uploadMode').value = 'url';
+  document.getElementById('uploadMode').value = w.filename ? 'file' : 'url';
   // 编辑模式：显示封面区，如果有视频 URL 则显示帧选择器
   document.getElementById('coverSection').style.display = 'block';
   const srcUrl = w.source_url || w.filename || '';
