@@ -95,11 +95,17 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   .page-header button { padding:6px 10px; font-size:11px; }
   .page-header .stats { gap:12px; font-size:12px; }
   .works-table { font-size:12px; }
-  .work-row { grid-template-columns:24px 32px 1fr auto; padding:8px 8px; gap:6px; }
-  .wthumb { width:32px; height:24px; }
-  .wtitle { display:flex; flex-direction:row; align-items:center; gap:4px; }
-  .wtitle .t { font-size:11px; flex:1; min-width:60px; }
-  .wtitle .s { font-size:9px; max-width:60px; }
+  .stats-grid { grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:16px; }
+  .stat-card { padding:12px 8px; }
+  .stat-card .num { font-size:1.2rem; }
+  .stat-card .label { font-size:10px; }
+  .tbl-hdr { display:none; }
+  .wthumb { width:40px; height:30px; background:#2a2a30; border-radius:4px; }
+  .work-row { grid-template-columns:24px 40px 1fr; gap:6px; padding:8px; }
+  .work-row > div:nth-child(4), .work-row > div:nth-child(5), .work-row > div:nth-child(6), .work-row > div:nth-child(7), .work-row > div:nth-child(8) { display:none; }
+  .wtitle { display:flex; flex-direction:column; gap:2px; }
+  .wtitle .t { font-size:12px; }
+  .wtitle .s { font-size:10px; }
   .badge { font-size:10px; padding:2px 6px; }
   .row-act { gap:4px; }
   .row-act button { padding:4px 8px; font-size:11px; }
@@ -165,7 +171,6 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="stat-card"><div class="num" id="sVideo">-</div><div class="label">视频</div></div>
       <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
       <div class="stat-card"><div class="num" id="sLive">-</div><div class="label">直播</div></div>
-      <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
       <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
     </div>
     <div class="batch-bar" id="batchBar">
@@ -333,7 +338,6 @@ function updateStats() {
   document.getElementById('sVideo').textContent = works.filter(w=>w.type==='video').length;
   document.getElementById('sPhoto').textContent = works.filter(w=>w.type==='photo').length;
   document.getElementById('sLive').textContent = works.filter(w=>w.type==='live').length;
-  document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
   document.getElementById('sDraft').textContent = works.filter(w=>w.status==='draft').length;
 }
 
