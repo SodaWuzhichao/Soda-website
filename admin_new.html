@@ -396,8 +396,8 @@ function renderWorks() {
   if (countEl) countEl.textContent = filtered.length < works.length ? `显示 ${filtered.length} / ${works.length} 条` : `共 ${works.length} 条`;
   if (!filtered.length) { list.innerHTML = '<div style="padding:32px;text-align:center;color:#888">无匹配作品</div>'; return; }
   list.innerHTML = filtered.map(w => {
-    const url = w.source_url || (w.filename ? 'https://api.soda567.dpdns.org/media/videos/'+w.filename : '');
-    const thumb = w.thumbnail ? 'https://api.soda567.dpdns.org/media/thumbnails/'+w.thumbnail : '';
+    const url = w.source_url || (w.filename ? 'http://localhost:5001/media/videos/'+w.filename : '');
+    const thumb = w.thumbnail ? 'http://localhost:5001/media/thumbnails/'+w.thumbnail : '';
     const hasVideo = w.type==='video' && url;
     const thumbHtml = thumb
       ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
