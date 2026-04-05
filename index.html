@@ -240,7 +240,7 @@ section {
 .works-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 24px;
   grid-auto-rows: 160px;
   grid-auto-flow: dense;
 }
@@ -248,17 +248,19 @@ section {
 .work-item {
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 0 20px rgba(255,215,0,0.1);
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
   cursor: pointer;
   background: var(--surface);
-  transition: transform 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   height: 100%;
 }
 
 .work-item:hover {
   transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(255,215,0,0.15);
+  border-color: rgba(255,215,0,0.3);
 }
 
 .work-item.portrait {
@@ -347,12 +349,19 @@ section {
 
 .tool-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
   padding: 32px;
   text-decoration: none;
   display: block;
   transition: all 0.3s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.tool-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 6px 24px rgba(255,215,0,0.15);
+  transform: translateY(-2px);
 }
 
 .tool-card:hover {
