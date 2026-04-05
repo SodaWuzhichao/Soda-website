@@ -123,7 +123,9 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   #filterBar select, #filterBar input { font-size:11px; padding:5px 8px; min-width:80px; }
   .login-box { padding:24px; width:90%; }
   .login-box h1 { font-size:1.5rem; }
-  #apiModeBtn { display:none; }
+  #apiModeBtn { position:absolute !important; bottom:60px; right:12px; left:auto !important; width:auto !important; }
+  .nav-item[onclick*="logout"] { position:absolute !important; bottom:24px; right:12px; left:auto !important; width:auto !important; }
+
 }
 @media (max-width: 480px) {
   .work-row { grid-template-columns:20px 32px 1fr; }
@@ -154,7 +156,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   </div>
 </a>
     <div class="nav-item">📁 作品管理</div>
-
+    <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="position:absolute;bottom:60px;width:100%;color:#888;font-size:13px">🌐 公网模式</div>
     <div class="nav-item" onclick="logout()" style="position:absolute;bottom:24px;width:100%">🚪 退出登录</div>
   </div>
   <div class="main-content">
@@ -268,6 +270,18 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 <div class="toast" id="toast"></div>
 <script>
 const API_WAN = 'https://api.soda567.dpdns.org';
+const API_LAN = 'http://192.168.0.129:5001';
+let API = localStorage.getItem('soda_api') || API_WAN;
+
+function toggleApiMode() {
+  API = (API === API_WAN) ? API_LAN : API_WAN;
+  localStorage.setItem('soda_api', API);
+  const btn = document.getElementById('apiModeBtn');
+  btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
+  btn.style.color = API === API_LAN ? '#5ad060' : '#888';
+  toast('已切换到 ' + (API === API_LAN ? '局域网直传' : '公网'), 'ok');
+  loadWorks();
+}
 let API = API_WAN;
 let works = [];
 let uploadedFilename = null;
@@ -310,6 +324,16 @@ document.addEventListener('keydown', e => {
 function showAdmin() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('adminLayout').style.display = 'flex';
+  // 初始化 API 模式按钮状态
+  const savedApi = localStorage.getItem('soda_api');
+  if (savedApi) {
+    API = savedApi;
+    const btn = document.getElementById('apiModeBtn');
+    if (btn) {
+      btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
+      btn.style.color = API === API_LAN ? '#5ad060' : '#888';
+    }
+  }
   loadWorks();
 }
 
