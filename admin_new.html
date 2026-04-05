@@ -76,7 +76,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .upload-area input { display:none; }
 .prog { height:4px; background:#2a2a30; border-radius:2px; margin-top:8px; overflow:hidden; display:none; }
 .prog-fill { height:100%; background:#f0c040; width:0; transition:width .3s; }
-.panel-ftr { padding:16px 24px; border-top:1px solid #2a2a30; display:flex; gap:12px; justify-content:flex-end; }
+.panel-ftr { padding:16px 24px; border-top:1px solid #2a2a30; display:flex; align-items:center; gap:12px; justify-content:flex-end; }
 .toast { position:fixed; bottom:24px; right:24px; background:#1a1a1f; border:1px solid #2a2a30; border-radius:8px; padding:14px 20px; font-size:14px; z-index:999; transform:translateY(80px); opacity:0; transition:all .3s; pointer-events:none; }
 .toast.show { transform:translateY(0); opacity:1; }
 .toast.ok { border-color:#5ad060; }
@@ -217,12 +217,12 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="fg"><label>描述</label><textarea id="editDesc" rows="3" placeholder="作品描述..."></textarea></div>
     </div>
     <div class="panel-ftr">
-      <div id="uploadProgress" style="display:none;margin-bottom:12px;text-align:center">
-        <div style="color:#fff;font-size:13px;margin-bottom:4px" id="progFileName">上传中...</div>
-        <div class="prog" style="height:6px;background:#2a2a30;border-radius:3px;overflow:hidden">
+      <div id="uploadProgress" style="display:none;flex:1;margin-right:16px;text-align:left">
+        <div style="color:#fff;font-size:12px;margin-bottom:4px" id="progFileName">上传中...</div>
+        <div class="prog" style="height:4px;background:#2a2a30;border-radius:2px;overflow:hidden">
           <div class="prog-fill" id="progFill" style="height:100%;background:linear-gradient(90deg,#f0c040,#ffed4a);width:0;transition:width .2s"></div>
         </div>
-        <div style="color:#f0c040;font-size:12px;margin-top:4px" id="progPercent">0%</div>
+        <div style="color:#f0c040;font-size:11px;margin-top:2px" id="progPercent">0%</div>
       </div>
       <button class="bs" onclick="closePanel()">取消</button>
       <button class="bp" onclick="saveWork()">保存</button>
