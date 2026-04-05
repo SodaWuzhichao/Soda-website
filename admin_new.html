@@ -101,11 +101,11 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   .stat-card .label { font-size:10px; }
   .tbl-hdr { display:none; }
   .wthumb { width:40px; height:30px; background:#2a2a30; border-radius:4px; }
-  .work-row { grid-template-columns:24px 40px 1fr; gap:6px; padding:8px; }
-  .work-row > div:nth-child(4), .work-row > div:nth-child(5), .work-row > div:nth-child(6), .work-row > div:nth-child(7), .work-row > div:nth-child(8) { display:none; }
-  .wtitle { display:flex; flex-direction:column; gap:2px; }
-  .wtitle .t { font-size:12px; }
-  .wtitle .s { font-size:10px; }
+  .work-row { grid-template-columns:24px 50px 1fr auto; gap:6px; padding:8px; }
+  .work-row > div:nth-child(5), .work-row > div:nth-child(6), .work-row > div:nth-child(7), .work-row > div:nth-child(8) { display:none; }
+  .wtitle { display:flex; flex-direction:row; gap:4px; }
+  .wtitle .t { font-size:11px; flex:1; }
+  .wtitle .s { font-size:9px; max-width:80px; }
   .badge { font-size:10px; padding:2px 6px; }
   .row-act { gap:4px; }
   .row-act button { padding:4px 8px; font-size:11px; }
