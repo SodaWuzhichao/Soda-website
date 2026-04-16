@@ -808,14 +808,19 @@ function setupFilter() {
 
 
 <!-- 视频播放器 -->
-<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal'||event.target.id==='modalVideo')closeVideo()">
+<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;" onclick="if(event.target.id==='videoModal')closeVideo()">
   <button onclick="closeVideo();event.stopPropagation();" style="position:absolute;top:20px;right:20px;z-index:10000;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-  <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
+  <div id="videoLoading" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">小片正在飞奔赶来中<span id="loadingDots">...</span></p>
     <p style="color:#888;margin-top:12px;font-size:14px;">右滑退出</p>
   </div>
-  <video id="modalVideo" style="display:none;width:100%;height:100%;object-fit:cover;" onclick="event.stopPropagation()"></video>
+  <div style="position:relative;width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;">
+    <video id="modalVideo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
+  </div>
+  <div style="padding:20px;text-align:center;color:#888;font-size:12px;background:#000;">
+    ESC键关闭 • 右滑退出
+  </div>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
