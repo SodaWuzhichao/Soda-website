@@ -88,7 +88,7 @@ nav {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 160px 40px 80px;
+  padding: 100px 40px 60px;
   overflow: hidden;
 }
 
@@ -195,13 +195,11 @@ section {
 
 .section-label {
   font-size: 0.75rem;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 12px;
   font-weight: 400;
-  overflow-wrap: break-word;
-  word-break: break-all;
 }
 
 .section-title {
@@ -412,24 +410,6 @@ footer {
     padding: 60px 24px;
   }
   
-  #hero {
-    padding: 140px 24px 60px;
-  }
-  
-  /* 关于我移动端 */
-  #about > div {
-    grid-template-columns: 1fr !important;
-    gap: 32px !important;
-  }
-  #about > div > div:first-child {
-    min-height: auto !important;
-    order: 2;
-  }
-  #about > div > div:last-child {
-    max-height: 450px !important;
-    order: 1;
-  }
-  
   .works-filter {
     gap: 4px;
     margin-bottom: 24px;
@@ -522,8 +502,8 @@ footer {
     <div class="section-label">About</div>
     <h2 class="section-title">关于我</h2>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:end;">
-    <div style="display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-height:500px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
+    <div>
       <h3 style="font-size:1.5rem;font-weight:300;margin-bottom:24px;">Soda</h3>
       <p style="color:var(--muted);line-height:1.8;margin-bottom:20px;">
         摄影师，也是直播画质的偏执狂。
@@ -535,7 +515,7 @@ footer {
         如果你也在意画面该有的样子，欢迎聊聊。
       </p>
     </div>
-    <div style="aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);max-height:550px;justify-self:end;">
+    <div style="aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);">
       <img src="images/profile.jpg" alt="Soda" style="width:100%;height:100%;object-fit:cover;">
     </div>
   </div>
@@ -808,49 +788,28 @@ function setupFilter() {
 
 
 <!-- 视频播放器 -->
-<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;" onclick="if(event.target.id==='videoModal')closeVideo()">
-  <button onclick="closeVideo();event.stopPropagation();" style="position:absolute;top:20px;right:20px;z-index:10000;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-  <div id="videoLoading" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
+<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal'||event.target.id==='modalVideo')closeVideo()">
+  <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">小片正在飞奔赶来中<span id="loadingDots">...</span></p>
     <p style="color:#888;margin-top:12px;font-size:14px;">右滑退出</p>
   </div>
-  <div style="position:relative;width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;padding:20px;">
-    <video id="modalVideo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;" onclick="event.stopPropagation()"></video>
-  </div>
-  <div style="padding:20px;text-align:center;color:#888;font-size:12px;background:#000;">
-    ESC键关闭 • 右滑退出
-  </div>
+  <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
 <script>
-let videoScrollY = 0; // 记录进入播放前的滚动位置
-
 function closeVideo() {
   const modal = document.getElementById('videoModal');
   const video = document.getElementById('modalVideo');
   const loading = document.getElementById('videoLoading');
-  
-  // 销毁Plyr实例
-  if(window.modalPlayer) {
-    window.modalPlayer.destroy();
-    window.modalPlayer = null;
-  }
-  
   modal.style.display = 'none';
   video.pause();
   video.src = '';
   loading.style.display = 'flex';
   video.style.display = 'none';
-  
-  // 恢复滚动位置（返回原视频位置）
-  if (videoScrollY > 0) {
-    window.scrollTo(0, videoScrollY);
-    videoScrollY = 0;
-  }
 }
 
 // ESC 键关闭
@@ -885,9 +844,6 @@ function setupVideoModal() {
         const video = document.getElementById('modalVideo');
         const loading = document.getElementById('videoLoading');
         
-        // 记录当前滚动位置，退出时返回
-        videoScrollY = window.scrollY;
-        
         // 显示加载提示
         loading.style.display = 'flex';
         video.style.display = 'none';
@@ -916,39 +872,28 @@ function setupVideoModal() {
             });
           }
         } else {
-          // 普通视频 - 使用Plyr播放器
+          // 普通视频 - 等待loadedmetadata后显示（比canplay更早触发）
           video.src = videoSrc;
-          
-          // 销毁之前的播放器实例
-          if(window.modalPlayer) window.modalPlayer.destroy();
-          
-          // 初始化Plyr
-          window.modalPlayer = new Plyr(video, {
-            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
-            settings: ['speed'],
-            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
-            keyboard: { focused: true, global: true },
-            resetOnEnd: true,
-            hideControls: false, // 强制显示控制栏
-            clickToPlay: true,
-            autoplay: false,
-            storage: { enabled: true, key: 'soda_player' }
-          });
-          
+          // 防止 error 在加载过程中提前触发
           let videoLoaded = false;
-          window.modalPlayer.on('ready', () => {
+          video.addEventListener('loadedmetadata', () => {
             videoLoaded = true;
             loading.style.display = 'none';
             video.style.display = 'block';
-            window.modalPlayer.play().catch(() => {});
-          });
-          
-          // 超时错误处理
-          setTimeout(() => {
+          }, { once: true });
+          video.addEventListener('canplay', () => {
             if (!videoLoaded) {
+              loading.style.display = 'none';
+              video.style.display = 'block';
+            }
+          }, { once: true });
+          // 仅在真正超时时显示错误
+          setTimeout(() => {
+            if (!videoLoaded && video.error) {
               loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
             }
           }, 15000);
+          video.play().catch(() => {});
         }
       }
     });
@@ -957,38 +902,6 @@ function setupVideoModal() {
 </script>
 <!-- HLS.js 播放器 -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<!-- Plyr 播放器 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3/dist/plyr.css">
-<script src="https://cdn.jsdelivr.net/npm/plyr@3/dist/plyr.polyfilled.min.js"></script>
-
-<style>
-/* 覆盖Plyr默认样式匹配网站风格 */
-.plyr { --plyr-color-main: #ffd700; --plyr-font-family: 'DM Sans', sans-serif; }
-.plyr__control--overlaid { background: rgba(255,215,0,0.9); }
-.plyr__progress--played, .plyr__volume--display { background: #ffd700; }
-
-/* 强制视频保持原始比例 */
-#modalVideo {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  width: auto !important;
-  height: auto !important;
-}
-
-/* Plyr 容器也要保持比例 */
-.plyr--video {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.plyr--video video {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-}
-</style>
 
 </body>
 </html>
