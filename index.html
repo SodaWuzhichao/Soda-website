@@ -815,8 +815,8 @@ function setupFilter() {
     <p style="color:#fff;margin-top:20px;font-size:16px;">小片正在飞奔赶来中<span id="loadingDots">...</span></p>
     <p style="color:#888;margin-top:12px;font-size:14px;">右滑退出</p>
   </div>
-  <div style="position:relative;width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;">
-    <video id="modalVideo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
+  <div style="position:relative;width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <video id="modalVideo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;" onclick="event.stopPropagation()"></video>
   </div>
   <div style="padding:20px;text-align:center;color:#888;font-size:12px;background:#000;">
     ESC键关闭 • 右滑退出
@@ -924,11 +924,14 @@ function setupVideoModal() {
           
           // 初始化Plyr
           window.modalPlayer = new Plyr(video, {
-            controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
             settings: ['speed'],
-            speed: { selected: 1, options: [0.75, 1, 1.25, 1.5, 2] },
-            keyboard: { focused: true, global: false },
-            resetOnEnd: false,
+            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+            keyboard: { focused: true, global: true },
+            resetOnEnd: true,
+            hideControls: false, // 强制显示控制栏
+            clickToPlay: true,
+            autoplay: false,
             storage: { enabled: true, key: 'soda_player' }
           });
           
