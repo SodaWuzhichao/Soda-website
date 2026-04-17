@@ -815,15 +815,7 @@ function closeVideo() {
 
 // ESC 键关闭
 document.addEventListener('keydown', e => {
-  const modal = document.getElementById('videoModal');
-  const video = document.getElementById('modalVideo');
-  if (modal && modal.style.display !== 'none' && e.key === 'Escape') {
-    e.preventDefault();
-    // 把焦点移到 document 上，避免被视频控件拦截
-    document.activeElement.blur();
-    document.body.focus();
-    closeVideo();
-  }
+  if (e.key === 'Escape') closeVideo();
 });
 
 let hlsInstance = null;
