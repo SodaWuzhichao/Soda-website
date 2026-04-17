@@ -819,8 +819,9 @@ document.addEventListener('keydown', e => {
   const video = document.getElementById('modalVideo');
   if (modal && modal.style.display !== 'none' && e.key === 'Escape') {
     e.preventDefault();
-    // 强制让视频失去焦点，避免被原生控件拦截
-    video.blur();
+    // 把焦点移到 document 上，避免被视频控件拦截
+    document.activeElement.blur();
+    document.body.focus();
     closeVideo();
   }
 });
