@@ -94,6 +94,10 @@ nav {
   <div class="loading" id="loading">
     <div class="loading-spinner"></div>
     <div>正在处理中，请稍候...</div>
+    <div style="margin-top:20px;width:200px;height:8px;background:#222;border-radius:4px;overflow:hidden;margin:20px auto;">
+      <div id="progressBar" style="width:0%;height:100%;background:var(--gold);transition:width 0.3s;"></div>
+    </div>
+    <div id="progressText" style="color:var(--gold);font-size:0.9rem;">0%</div>
   </div>
 
   <div class="error" id="error"></div>
@@ -146,28 +150,66 @@ async function handleFile() {
   error.style.display = 'none';
   resultArea.style.display = 'none';
 
+  // 设置进度条
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  progressBar.style.width = '0%';
+  progressText.textContent = '0%';
+
   const formData = new FormData();
   formData.append('file', file);
 
   try {
+    // 上传文件
+    progressText.textContent = '上传中...';
+    progressBar.style.width = '10%';
+    
     const response = await fetch(API_URL, {
       method: 'POST',
       body: formData
     });
 
-    if (!response.ok) throw new Error('处理失败');
+    if (!response.ok) throw new Error('上传失败');
 
     const data = await response.json();
+    const jobId = data.job_id;
+    
+    progressBar.style.width = '30%';
+    progressText.textContent = '30% - 已提交任务，等待转写...';
+    
+    // 轮询状态
+    let status = 'pending';
+    while (status === 'pending' || status === 'processing') {
+      await new Promise(r => setTimeout(r, 1000));
+      
+      const statusRes = await fetch('/api/status/' + jobId);
+      const statusData = await statusRes.json();
+      
+      status = statusData.status;
+      
+      if (status === 'processing') {
+        const queue = statusData.queue_position || 0;
+        progressBar.style.width = '50%';
+        progressText.textContent = `转写中... ${queue > 0 ? '(队列位置: ' + queue + ')' : ''}`;
+      } else if (status === 'completed') {
+        progressBar.style.width = '100%';
+        progressText.textContent = '完成!';
+      }
+    }
+
+    // 获取结果
+    const resultRes = await fetch('/api/status/' + jobId);
+    const resultData = await resultRes.json();
 
     loading.style.display = 'none';
     resultArea.style.display = 'block';
-    resultText.textContent = formatTextWithSegments(data.segments);
+    resultText.textContent = resultData.result || '（未能提取到文案）';
     document.getElementById('wordCount').textContent = `共 ${resultText.textContent.length} 字`;
 
   } catch (err) {
     loading.style.display = 'none';
     error.style.display = 'block';
-    error.textContent = '❌ 处理失败：' + err.message + '\n\n请确保后端服务已启动（运行 start.bat）';
+    error.textContent = '❌ 处理失败：' + err.message + '\n\n请确保后端服务已启动';
     uploadArea.style.display = 'block';
   }
 }
