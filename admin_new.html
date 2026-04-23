@@ -613,7 +613,7 @@ function captureFrame() {
     capturedCoverBlob = blob;
     const url = URL.createObjectURL(blob);
     document.getElementById('capturePrev').innerHTML =
-      '<img src="'+url+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:4px;border:2px solid #f0c040;margin-top:4px">'
+      '<img src="'+url+'" style="max-width:100%;max-height:120px;border-radius:4px;border:2px solid #f0c040;display:block;margin:8px auto 0">'
       +'<div style="color:#5ad060;font-size:12px;margin-top:4px;text-align:center">✓ 已选为封面</div>';
     // 清空文件上传封面
     document.getElementById('coverInput').value = '';
