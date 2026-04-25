@@ -532,7 +532,7 @@ function openEdit(id) {
   document.getElementById('uploadMode').value = w.filename ? 'file' : 'url';
   // 编辑模式：显示封面区，如果有视频 URL 则显示帧选择器
   document.getElementById('coverSection').style.display = 'block';
-  const srcUrl = w.source_url || w.filename || '';
+  const srcUrl = w.source_url || (w.filename ? (API.startsWith('http') ? API.replace(/\/api$/,'') : '') + '/media/videos/' + w.filename : '');
   const isVideo = w.type === 'video' && srcUrl;
   document.getElementById('framePickerWrap').style.display = isVideo ? 'block' : 'none';
   if (isVideo) {
