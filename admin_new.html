@@ -39,7 +39,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .stat-card .label { color:#888; font-size:12px; margin-top:4px; }
 .works-table { background:#1a1a1f; border-radius:8px; overflow:hidden; border:1px solid #2a2a30; }
 .tbl-hdr { display:grid; grid-template-columns:50px 1fr 80px 80px 70px 120px; padding:10px 12px; background:#111; color:#888; font-size:11px; text-transform:uppercase; }
-.work-row { display:grid; grid-template-columns:30px 24px 48px 1fr 80px 80px 70px 120px; padding:10px 12px; border-top:1px solid #1a1a1f; align-items:center; cursor:grab; }
+.work-row { display:grid; grid-template-columns:30px 24px 48px 1fr 80px 80px 70px 90px 120px; padding:10px 12px; border-top:1px solid #1a1a1f; align-items:center; cursor:grab; }
 .work-row:active { cursor: grabbing; }
 .work-row.dragging { opacity: 0.5; background: #2a2a30; }
 .work-row.drag-over { border-top: 2px solid #f0c040; }
@@ -421,6 +421,7 @@ function renderWorks() {
       +'<div><span class="badge '+(w.type==='video'?'bv':w.type==='live'?'blive':'bp2')+'">'+(w.type==='video'?'视频':w.type==='live'?'直播':'照片')+'</span></div>'
       +'<div><span class="badge '+(w.status==='published'?'bpub':'bdraft')+'">'+(w.status==='published'?'已发布':'草稿')+'</span></div>'
       +'<div style="color:#888">'+(w.year||'-')+'</div>'
+      +'<div style="color:#888">'+(w.width && w.height ? w.width+'x'+w.height : '-')+'</div>'
       +'<div class="row-act">'
         +'<button class="bs" onclick="openEdit(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">编辑</button>'
         +'<button class="bd" onclick="delWork(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">删除</button>'
