@@ -371,7 +371,10 @@ async function loadWorks() {
     fy.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
     renderWorks();
     updateStats();
-  } catch(e) { toast('加载失败: '+e.message, 'err'); }
+  } catch(e) { 
+    console.error('加载失败:', e);
+    toast('加载失败: '+e.message+' (API:'+API+')', 'err'); 
+  }
 }
 
 function updateStats() {
