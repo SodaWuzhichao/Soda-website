@@ -51,6 +51,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .wtitle { padding:0 8px; display:flex; flex-direction:row; align-items:center; gap:8px; flex-wrap:wrap; }
 .wtitle .t { font-size:12px; flex:1; min-width:100px; }
 .wtitle .s { font-size:10px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
+.meta-soft { color:rgba(232,232,232,0.52); font-size:12px; font-weight:200; letter-spacing:0.02em; }
 .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; }
 .bv { background:#1a3a5c; color:#5aa0d0; }
 .bp2 { background:#1a3a2a; color:#5ad080; }
@@ -421,8 +422,8 @@ function renderWorks() {
       +'<div class="wtitle"><div class="t">'+w.title+'</div><div class="s">'+(url||'无链接')+'</div></div>'
       +'<div><span class="badge '+(w.type==='video'?'bv':w.type==='live'?'blive':'bp2')+'">'+(w.type==='video'?'视频':w.type==='live'?'直播':'照片')+'</span></div>'
       +'<div><span class="badge '+(w.status==='published'?'bpub':'bdraft')+'">'+(w.status==='published'?'已发布':'草稿')+'</span></div>'
-      +'<div style="color:#888">'+(w.year||'-')+'</div>'
-      +'<div style="color:#888">'+(w.width && w.height ? w.width+'x'+w.height : '-')+'</div>'
+      +'<div class="meta-soft">'+(w.year||'-')+'</div>'
+      +'<div class="meta-soft">'+(w.width && w.height ? w.width+'×'+w.height : '-')+'</div>'
       +'<div class="row-act">'
         +'<button class="bs" onclick="openEdit(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">编辑</button>'
         +'<button class="bd" onclick="delWork(\''+w.id+'\')" style="padding:4px 10px;font-size:12px">删除</button>'
