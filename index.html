@@ -596,7 +596,15 @@ async function loadWorksFromAPI() {
       
       if (w.type === 'video' && videoUrl) {
         const poster = thumbUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1920 1080%22%3E%3Crect width=%221920%22 height=%221080%22 fill=%22%23141414%22/%3E%3C/svg%3E';
-        const ar = parseFloat(w.aspect_ratio) || 0;
+        // 优先用 width/height 计算比例，其次用 aspect_ratio
+        let ar = 0;
+        if (w.width && w.height) {
+          ar = w.width / w.height;
+        } else if (w.aspect_ratio) {
+          if (w.aspect_ratio === 'portrait') ar = 0.75;
+          else if (w.aspect_ratio === 'landscape') ar = 1.333;
+          else ar = parseFloat(w.aspect_ratio) || 0;
+        }
         const ratioClass = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
         return `
         <div class="work-item is-video ${ratioClass}" data-type="video" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
@@ -610,7 +618,15 @@ async function loadWorksFromAPI() {
           <div class="work-play"></div>
         </div>`;
       } else if (w.type === 'photo' && thumbUrl) {
-        const ar2 = parseFloat(w.aspect_ratio) || 0;
+        // 优先用 width/height 计算比例，其次用 aspect_ratio
+        let ar2 = 0;
+        if (w.width && w.height) {
+          ar2 = w.width / w.height;
+        } else if (w.aspect_ratio) {
+          if (w.aspect_ratio === 'portrait') ar2 = 0.75;
+          else if (w.aspect_ratio === 'landscape') ar2 = 1.333;
+          else ar2 = parseFloat(w.aspect_ratio) || 0;
+        }
         const ratioClass2 = ar2 > 1.2 ? 'landscape' : ar2 > 0 && ar2 < 0.8 ? 'portrait' : ar2 > 0 ? 'square' : 'portrait';
         return `
         <div class="work-item ${ratioClass2}" data-type="photo" data-src="${thumbUrl}" data-id="${w.id}" data-ratio="fixed">
@@ -621,7 +637,15 @@ async function loadWorksFromAPI() {
           </div>
         </div>`;
       } else if (w.type === 'live' && thumbUrl) {
-        const ar3 = parseFloat(w.aspect_ratio) || 0;
+        // 优先用 width/height 计算比例，其次用 aspect_ratio
+        let ar3 = 0;
+        if (w.width && w.height) {
+          ar3 = w.width / w.height;
+        } else if (w.aspect_ratio) {
+          if (w.aspect_ratio === 'portrait') ar3 = 0.75;
+          else if (w.aspect_ratio === 'landscape') ar3 = 1.333;
+          else ar3 = parseFloat(w.aspect_ratio) || 0;
+        }
         const ratioClass3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
         return `
         <div class="work-item is-video ${ratioClass3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
