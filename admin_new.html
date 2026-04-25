@@ -232,35 +232,38 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="fg"><label>上传方式</label><select id="uploadMode" onchange="toggleMode()"><option value="file" selected>本地上传</option><option value="url">外链</option></select></div>
       <div id="urlMode" class="fg"><label>外链 URL</label><input type="url" id="editUrl" placeholder="https://..." /></div>
       <div id="fileMode" style="display:none" class="fg">
-        <label>上传文件</label>
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-          <div style="color:#888;font-size:14px">点击选择文件<br><small>mp4 mov avi mkv webm jpg png webp</small></div>
+        <label>作品文件</label>
+        <div style="color:#777;font-size:12px;margin-bottom:8px">新建时用于上传作品源文件；编辑已有作品时，可用于替换当前作品文件。</div>
+        <div class="upload-area" onclick="document.getElementById('fileInput').value='';document.getElementById('fileInput').click()">
+          <div style="color:#888;font-size:14px">点击选择作品文件<br><small>视频：mp4 mov avi mkv webm / 图片：jpg png webp</small></div>
           <input type="file" id="fileInput" accept="video/*,image/*" onchange="handleFile(this)" />
           <div id="filePrev"></div>
         </div>
 
         <div id="coverSection" style="margin-top:12px;display:none">
           <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            封面选择
-            <span style="color:#888;font-size:12px">拖动滑块选帧，或上传图片</span>
+            封面设置
+            <span style="color:#888;font-size:12px">可从视频选帧，也可单独更换封面图</span>
           </label>
-          <!-- 帧选择器 -->
           <div id="framePickerWrap" style="background:#111;border-radius:6px;padding:10px;margin-bottom:8px">
             <video id="frameVideo" style="width:100%;max-height:180px;border-radius:4px;background:#000;display:block" preload="metadata" muted playsinline></video>
             <input type="range" id="frameSlider" min="0" max="100" value="0" step="0.1"
               style="width:100%;margin:8px 0;accent-color:#f0c040"
               oninput="seekFrame(this.value)">
-            <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
               <span id="frameTime" style="color:#888;font-size:12px">00:00</span>
-              <button class="bs" onclick="captureFrame()" style="padding:6px 14px;font-size:12px">用此帧作封面</button>
+              <div style="display:flex;gap:6px;align-items:center">
+                <button class="bs" onclick="stepFrame(-0.04)" style="padding:6px 10px;font-size:12px">前一帧</button>
+                <button class="bs" onclick="stepFrame(0.04)" style="padding:6px 10px;font-size:12px">后一帧</button>
+                <button class="bs" onclick="captureFrame()" style="padding:6px 14px;font-size:12px">用此帧作封面</button>
+              </div>
             </div>
             <canvas id="frameCanvas" style="display:none"></canvas>
             <div id="capturePrev" style="margin-top:8px"></div>
           </div>
-          <!-- 或上传自定义封面 -->
-          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">— 或上传自定义封面图 —</div>
+          <div style="text-align:center;color:#666;font-size:12px;margin-bottom:6px">— 或上传新的封面图 —</div>
           <div class="upload-area" style="padding:12px" onclick="document.getElementById('coverInput').value='';document.getElementById('coverInput').click()">
-            <div id="coverPrev" style="color:#888;font-size:12px;text-align:center">点击上传图片封面<br><small>jpg png webp</small></div>
+            <div id="coverPrev" style="color:#888;font-size:12px;text-align:center">点击上传封面图<br><small>jpg png webp</small></div>
             <input type="file" id="coverInput" accept="image/*" onchange="handleCover(this)" style="display:none" />
           </div>
         </div>
@@ -497,8 +500,7 @@ async function saveOrder() {
   }
 }
 
-function openAddPanel() {
-  document.getElementById('panelTitle').textContent = '添加作品';
+function resetPanelState() {
   document.getElementById('editId').value = '';
   document.getElementById('editTitle').value = '';
   document.getElementById('editType').value = 'video';
@@ -507,15 +509,26 @@ function openAddPanel() {
   document.getElementById('uploadMode').value = 'file';
   document.getElementById('editUrl').value = '';
   document.getElementById('editDesc').value = '';
+  document.getElementById('editResolution').value = '';
   document.getElementById('filePrev').innerHTML = '';
-  document.getElementById('coverPrev').innerHTML = '点击上传图片封面<br><small>jpg png webp</small>';
+  document.getElementById('coverPrev').innerHTML = '点击上传封面图<br><small>jpg png webp</small>';
   document.getElementById('coverInput').value = '';
+  document.getElementById('fileInput').value = '';
   document.getElementById('coverSection').style.display = 'none';
   document.getElementById('framePickerWrap').style.display = 'none';
   document.getElementById('capturePrev').innerHTML = '';
   document.getElementById('frameVideo').src = '';
+  document.getElementById('frameSlider').value = 0;
+  document.getElementById('frameTime').textContent = '00:00';
+  const uploadProgress = document.getElementById('uploadProgress');
+  if (uploadProgress) uploadProgress.style.display = 'none';
   capturedCoverBlob = null;
   uploadedFilename = null;
+}
+
+function openAddPanel() {
+  document.getElementById('panelTitle').textContent = '添加作品';
+  resetPanelState();
   toggleMode();
   document.getElementById('overlay').classList.add('open');
 }
@@ -523,6 +536,7 @@ function openAddPanel() {
 function openEdit(id) {
   const w = works.find(x=>x.id===id);
   if (!w) return;
+  resetPanelState();
   document.getElementById('panelTitle').textContent = '编辑作品';
   document.getElementById('editId').value = w.id;
   document.getElementById('editTitle').value = w.title||'';
@@ -531,10 +545,10 @@ function openEdit(id) {
   document.getElementById('editStatus').value = w.status||'published';
   document.getElementById('editUrl').value = w.source_url||w.filename||'';
   document.getElementById('editDesc').value = w.description||'';
+  document.getElementById('editResolution').value = (w.width && w.height) ? w.width + '×' + w.height : '未记录';
   document.getElementById('uploadMode').value = w.filename ? 'file' : 'url';
-  // 编辑模式：显示封面区，如果有视频 URL 则显示帧选择器
   document.getElementById('coverSection').style.display = 'block';
-  const srcUrl = w.source_url || (w.filename ? (API.startsWith('http') ? API.replace(/\/api$/,'') : '') + '/media/videos/' + w.filename : '');
+  const srcUrl = w.source_url || (w.filename ? API.replace(/\/api$/, '') + '/media/videos/' + w.filename : '');
   const isVideo = w.type === 'video' && srcUrl;
   document.getElementById('framePickerWrap').style.display = isVideo ? 'block' : 'none';
   if (isVideo) {
@@ -545,30 +559,22 @@ function openEdit(id) {
       slider.max = fv.duration;
       slider.value = 0;
       fv.currentTime = 0;
+      document.getElementById('frameTime').textContent = '00:00';
     };
-    capturedCoverBlob = null;
-    document.getElementById('capturePrev').innerHTML = '';
   }
-  const currentThumb = w.thumbnail_url || w.thumbnail || '';
+  const currentThumb = w.thumbnail_url || (w.thumbnail ? API.replace(/\/api$/, '') + '/media/thumbnails/' + w.thumbnail : '');
   if (currentThumb) {
-    document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">点击更换封面</small>';
+    document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">当前封面，点击可更换</small>';
   } else {
     document.getElementById('coverPrev').innerHTML = '暂无封面，点击上传<br><small>jpg png webp</small>';
   }
-  document.getElementById('coverInput').value = '';
-  document.getElementById('capturePrev').innerHTML = '';
-  document.getElementById('frameVideo').src = '';
-  capturedCoverBlob = null;
-  uploadedFilename = null;
   toggleMode();
   document.getElementById('overlay').classList.add('open');
 }
 
-function closePanel() { 
-  document.getElementById('overlay').classList.remove('open'); 
-  // 重置文件输入，避免下次点击不弹窗
-  document.getElementById('fileInput').value = '';
-  document.getElementById('coverInput').value = '';
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  resetPanelState();
 }
 
 function toggleMode() {
@@ -613,6 +619,15 @@ function seekFrame(val) {
   const m = String(Math.floor(t/60)).padStart(2,'0');
   const s = String(Math.floor(t%60)).padStart(2,'0');
   document.getElementById('frameTime').textContent = m+':'+s;
+}
+
+function stepFrame(delta) {
+  const fv = document.getElementById('frameVideo');
+  const slider = document.getElementById('frameSlider');
+  if (!fv || !isFinite(fv.duration)) return;
+  const next = Math.max(0, Math.min(fv.duration, (fv.currentTime || 0) + delta));
+  slider.value = next;
+  seekFrame(next);
 }
 
 function captureFrame() {
