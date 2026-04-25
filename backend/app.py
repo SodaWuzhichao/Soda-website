@@ -18,6 +18,20 @@ DB_PATH = os.path.join(BASE_DIR, 'soda.db')
 
 app = Flask(__name__)
 sock = Sock(app)
+
+# 启动时清理旧的临时文件（超过 1 小时）
+import time
+temp_dir = os.path.join(MEDIA_DIR, 'temp')
+if os.path.exists(temp_dir):
+    now = time.time()
+    cleaned = 0
+    for item in os.listdir(temp_dir):
+        item_path = os.path.join(temp_dir, item)
+        if os.path.isdir(item_path) and os.stat(item_path).st_mtime < now - 3600:  # 1小时
+            shutil.rmtree(item_path)
+            cleaned += 1
+    if cleaned:
+        print(f"[CLEAN] 已清理 {cleaned} 个临时目录")
 CORS(app)
 
 @app.route('/images/<path:filename>')
