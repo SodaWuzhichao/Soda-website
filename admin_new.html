@@ -704,12 +704,14 @@ async function saveWork() {
   const t = tok();
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
 
-  // 分块配置
-  const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
+  // 分块配置 - 增大到5MB减少请求次数
+  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_RETRIES = 3; // 重试次数
+  const CONCURRENT = 2; // 并行上传数
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-  const uploadChunk = async (index) => {
+  const uploadChunk = async (index, retry = 0) => {
     const start = index * CHUNK_SIZE;
     const end = Math.min(file.size, start + CHUNK_SIZE);
     const chunk = file.slice(start, end);
@@ -723,21 +725,45 @@ async function saveWork() {
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+      xhr.timeout = 60000; // 60秒超时
       xhr.open('POST', API + '/api/upload_chunk');
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
-      xhr.onload = () => (xhr.status === 200 ? resolve() : reject(xhr.responseText));
-      xhr.onerror = () => reject('网络错误');
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve();
+        else if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
+        else reject(xhr.responseText);
+      };
+      xhr.onerror = () => {
+        if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
+        else reject('网络错误');
+      };
       xhr.send(fd);
     });
   };
 
-  try {
-    for (let i = 0; i < totalParts; i++) {
-      await uploadChunk(i);
-      const pct = Math.round((i + 1) / totalParts * 85);
-      fill.style.width = pct + '%';
-      progPercent.textContent = pct + '%';
+  // 并行上传
+  const uploaded = new Array(totalParts).fill(false);
+  let current = 0;
+  
+  const worker = async () => {
+    while (current < totalParts) {
+      const idx = current++;
+      if (!uploaded[idx]) {
+        await uploadChunk(idx);
+        uploaded[idx] = true;
+        const done = uploaded.filter(Boolean).length;
+        const pct = Math.round(done / totalParts * 85);
+        fill.style.width = pct + '%';
+        progPercent.textContent = pct + '%';
+      }
     }
+  };
+
+  try {
+    // 启动并行worker
+    const workers = [];
+    for (let i = 0; i < CONCURRENT; i++) workers.push(worker());
+    await Promise.all(workers);
 
     // 全部块上传完成，最后提交元数据合并
     const fd = new FormData();
