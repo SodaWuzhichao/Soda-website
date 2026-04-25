@@ -704,13 +704,13 @@ async function saveWork() {
   const t = tok();
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
 
-  // 分块配置 - 增大到5MB减少请求次数
-  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
-  const MAX_RETRIES = 3; // 重试次数
-  const CONCURRENT = 2; // 并行上传数
+  // 分块配置 - 增大到10MB减少请求次数，更稳定
+  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_RETRIES = 5; // 增加重试次数
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
+  // 顺序上传 - 比并行更稳定
   const uploadChunk = async (index, retry = 0) => {
     const start = index * CHUNK_SIZE;
     const end = Math.min(file.size, start + CHUNK_SIZE);
@@ -721,47 +721,35 @@ async function saveWork() {
     fd.append('part_index', index);
     fd.append('total_parts', totalParts);
     fd.append('file', chunk);
-    console.log(`正在上传分块 ${index + 1}/${totalParts}`);
+    console.log(`上传分块 ${index + 1}/${totalParts}`);
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.timeout = 60000; // 60秒超时
+      xhr.timeout = 120000; // 2分钟超时，大文件需要更长时间
       xhr.open('POST', API + '/api/upload_chunk');
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
       xhr.onload = () => {
         if (xhr.status === 200) resolve();
-        else if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
+        else if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}/${MAX_RETRIES}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
         else reject(xhr.responseText);
       };
       xhr.onerror = () => {
-        if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
-        else reject('网络错误');
+        if (retry < MAX_RETRIES) { console.log(`分块${index}网络错误，重试${retry+1}/${MAX_RETRIES}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
+        else reject('网络错误，请检查网络连接');
       };
+      xhr.ontimeout = () => reject('上传超时');
       xhr.send(fd);
     });
   };
 
-  // 并行上传
-  const uploaded = new Array(totalParts).fill(false);
-  let current = 0;
-  
-  const worker = async () => {
-    while (current < totalParts) {
-      const idx = current++;
-      if (!uploaded[idx]) {
-        await uploadChunk(idx);
-        uploaded[idx] = true;
-        const done = uploaded.filter(Boolean).length;
-        const pct = Math.round(done / totalParts * 85);
-        fill.style.width = pct + '%';
-        progPercent.textContent = pct + '%';
-      }
-    }
-  };
-
   try {
-    // 启动并行worker
-    const workers = [];
+    // 顺序上传 - 稳定可靠
+    for (let i = 0; i < totalParts; i++) {
+      await uploadChunk(i);
+      const pct = Math.round((i + 1) / totalParts * 85);
+      fill.style.width = pct + '%';
+      progPercent.textContent = pct + '%';
+    }
     for (let i = 0; i < CONCURRENT; i++) workers.push(worker());
     await Promise.all(workers);
 
@@ -794,11 +782,15 @@ async function saveWork() {
       setTimeout(() => { uploadProgress.style.display='none'; loadWorks(); closePanel(); }, 500);
       toast('上传成功', 'ok');
     } else {
-      throw new Error(await res.text());
+      const errText = await res.text();
+      console.error('保存失败:', errText);
+      throw new Error('保存元数据失败: ' + (errText || res.status));
     }
   } catch (e) {
+    // 上传失败时清理临时文件
+    try { await fetch(API + '/api/upload_cancel?file_id=' + fileId, { headers: { 'Authorization': 'Bearer ' + t } }); } catch {}
     uploadProgress.style.display='none';
-    toast('上传失败: ' + e, 'err');
+    toast('上传失败: ' + e.message, 'err');
   }
 }
 
