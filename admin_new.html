@@ -38,7 +38,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .stat-card .num { font-size:2rem; font-weight:300; color:#f0c040; }
 .stat-card .label { color:#888; font-size:12px; margin-top:4px; }
 .works-table { background:#1a1a1f; border-radius:8px; overflow:hidden; border:1px solid #2a2a30; }
-.tbl-hdr { display:grid; grid-template-columns:50px 1fr 80px 80px 70px 120px; padding:10px 12px; background:#111; color:#888; font-size:11px; text-transform:uppercase; }
+.tbl-hdr { display:grid; grid-template-columns:30px 24px 48px 1fr 80px 80px 70px 90px 120px; padding:10px 12px; background:#111; color:#888; font-size:11px; text-transform:uppercase; }
 .work-row { display:grid; grid-template-columns:30px 24px 48px 1fr 80px 80px 70px 90px 120px; padding:10px 12px; border-top:1px solid #1a1a1f; align-items:center; cursor:grab; }
 .work-row:active { cursor: grabbing; }
 .work-row.dragging { opacity: 0.5; background: #2a2a30; }
@@ -211,7 +211,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <span id="filterCount" style="color:#888;font-size:12px;margin-left:4px"></span>
       </div>
     <div class="works-table">
-      <div class="tbl-hdr"><div>封面</div><div>标题</div><div>类型</div><div>状态</div><div>年份</div><div>操作</div></div>
+      <div class="tbl-hdr"><div></div><div></div><div></div><div>标题</div><div>类型</div><div>状态</div><div>分辨率</div><div>年份</div><div>操作</div></div>
       <div id="worksList"></div>
     </div>
   </div>
@@ -562,7 +562,12 @@ function openEdit(id) {
   document.getElementById('overlay').classList.add('open');
 }
 
-function closePanel() { document.getElementById('overlay').classList.remove('open'); }
+function closePanel() { 
+  document.getElementById('overlay').classList.remove('open'); 
+  // 重置文件输入，避免下次点击不弹窗
+  document.getElementById('fileInput').value = '';
+  document.getElementById('coverInput').value = '';
+}
 
 function toggleMode() {
   const m = document.getElementById('uploadMode').value;
@@ -810,6 +815,9 @@ async function saveWork() {
     // 上传失败时清理临时文件
     try { await fetch(API + '/api/upload_cancel?file_id=' + fileId, { headers: { 'Authorization': 'Bearer ' + t } }); } catch {}
     uploadProgress.style.display='none';
+    // 重置文件输入，避免下次点击不弹窗
+    document.getElementById('fileInput').value = '';
+    document.getElementById('coverInput').value = '';
     toast('上传失败: ' + e.message, 'err');
   }
 }
