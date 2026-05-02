@@ -577,7 +577,7 @@ function openEdit(id) {
   }
   const currentThumb = w.thumbnail_url || (w.thumbnail ? API.replace(/\/api$/, '') + '/media/thumbnails/' + w.thumbnail : '');
   if (currentThumb) {
-    document.getElementById('coverPrev').innerHTML = '<img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px"><br><small style="color:#888">当前封面，点击可更换</small>';
+    document.getElementById('coverPrev').innerHTML = '<div style="text-align:center"><img src="'+currentThumb+'" style="max-width:100%;max-height:120px;border-radius:4px;display:inline-block"></div><br><small style="color:#888">当前封面，点击可更换</small>';
   } else {
     document.getElementById('coverPrev').innerHTML = '暂无封面，点击上传<br><small>jpg png webp</small>';
   }
@@ -668,11 +668,11 @@ function captureFrame() {
       capturedCoverBlob = blob;
       const url = URL.createObjectURL(blob);
       document.getElementById('capturePrev').innerHTML =
-        '<img src="'+url+'" style="width:auto;height:auto;max-width:300px;max-height:200px;object-fit:contain;background:#000;border-radius:4px;border:2px solid #f0c040;margin-top:4px">'
+        '<div style="text-align:center"><img src="'+url+'" style="width:auto;height:auto;max-width:300px;max-height:200px;object-fit:contain;background:#000;border-radius:4px;border:2px solid #f0c040;margin-top:4px"></div>'
         +'<div style="color:#5ad060;font-size:12px;margin-top:4px;text-align:center">✓ 已选为封面</div>';
       document.getElementById('coverInput').value = '';
       document.getElementById('coverPrev').innerHTML =
-        '<img src="'+url+'" style="width:auto;height:auto;max-width:300px;max-height:200px;object-fit:contain;border-radius:4px;background:#000;display:block;margin:0 auto">'
+        '<div style="text-align:center"><img src="'+url+'" style="width:auto;height:auto;max-width:300px;max-height:200px;object-fit:contain;border-radius:4px;background:#000;display:inline-block"></div>'
         +'<div style="color:#5ad060;font-size:12px;margin-top:6px;text-align:center">当前待保存封面：已使用视频截帧</div>';
     }, 'image/jpeg', 0.92);
   } catch (e) {
@@ -700,7 +700,8 @@ function handleCover(input) {
       h = Math.min(maxH, img.height);
       w = h * ratio;
     }
-    prev.innerHTML = '<img src="'+url+'" style="width:'+w+'px;height:'+h+'px;object-fit:contain;border-radius:4px;background:#000;display:flex;align-items:center;justify-content:center">';
+    prev.innerHTML = '<img src="'+url+'" style="width:'+w+'px;height:'+h+'px;object-fit:contain;border-radius:4px;background:#000">';
+    prev.style.textAlign = 'center';
     URL.revokeObjectURL(url);
   };
   img.src = url;
@@ -781,28 +782,56 @@ async function saveWork() {
   const t = tok();
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
 
-  // 分块配置 - 增大到10MB减少请求次数，更稳定
-  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
-  const MAX_RETRIES = 5; // 增加重试次数
+  // 分块配置：公网弱网走小分块，局域网走大分块
+  const CHUNK_SIZE = API === API_LAN ? (10 * 1024 * 1024) : (2 * 1024 * 1024); // LAN=10MB, WAN=2MB
+  const MAX_RETRIES = API === API_LAN ? 5 : 8;
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-  // 顺序上传 - 比并行更稳定
+  // 断点续传：记录已成功上传的分块
+  const uploadedParts = new Set();
+  // 自适应分块：记录网络速度，动态调整分块大小
+  let adaptiveChunkSize = CHUNK_SIZE;
+  let speedSamples = [];
+
+  // 自适应分块大小：根据网络速度动态调整
+  function calcAdaptiveChunkSize() {
+    if (speedSamples.length < 2) return CHUNK_SIZE;
+    const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length; // bytes/sec
+    // 目标：每块 3-8 秒传完
+    const targetTime = 5; // 秒
+    let size = Math.floor(avgSpeed * targetTime);
+    // 限制范围：最小 512KB，最大 20MB
+    const minSize = 512 * 1024;
+    const maxSize = 20 * 1024 * 1024;
+    size = Math.max(minSize, Math.min(maxSize, size));
+    console.log(`自适应分块: avgSpeed=${(avgSpeed/1024/1024).toFixed(2)}MB/s, chunkSize=${(size/1024/1024).toFixed(2)}MB`);
+    return size;
+  }
+
+  // 顺序上传 - 比并行更稳定，支持断点续传
   const uploadChunk = async (index, retry = 0) => {
-    const start = index * CHUNK_SIZE;
-    const end = Math.min(file.size, start + CHUNK_SIZE);
+    // 断点续传：跳过已上传的分块
+    if (uploadedParts.has(index)) {
+      console.log(`跳过已上传分块 ${index + 1}/${totalParts}`);
+      return;
+    }
+
+    const start = index * adaptiveChunkSize;
+    const end = Math.min(file.size, start + adaptiveChunkSize);
     const chunk = file.slice(start, end);
+    const chunkStartTime = Date.now();
 
     const fd = new FormData();
     fd.append('file_id', fileId);
     fd.append('part_index', index);
     fd.append('total_parts', totalParts);
     fd.append('file', chunk);
-    console.log(`上传分块 ${index + 1}/${totalParts}`);
+    console.log(`上传分块 ${index + 1}/${totalParts} (${(chunk.size/1024/1024).toFixed(2)}MB)`);
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.timeout = 120000; // 2分钟超时，大文件需要更长时间
+      xhr.timeout = API === API_LAN ? 120000 : 60000; // 公网单块超时60s，快速失败快速重试
       xhr.open('POST', API + '/api/upload_chunk');
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
       xhr.upload.onprogress = (e) => {
@@ -814,30 +843,79 @@ async function saveWork() {
         progPercent.textContent = pct + '%';
       };
       xhr.onload = () => {
-        if (xhr.status === 200) resolve();
-        else if (retry < MAX_RETRIES) { console.log(`分块${index}失败，重试${retry+1}/${MAX_RETRIES}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
-        else reject(xhr.responseText || ('分块上传失败，状态码: ' + xhr.status));
+        if (xhr.status === 200) {
+          // 记录网络速度样本
+          const elapsed = (Date.now() - chunkStartTime) / 1000;
+          if (elapsed > 0) speedSamples.push(chunk.size / elapsed);
+          if (speedSamples.length > 5) speedSamples.shift();
+          adaptiveChunkSize = calcAdaptiveChunkSize();
+          uploadedParts.add(index); // 标记为已上传
+          resolve();
+        } else if (retry < MAX_RETRIES) {
+          const waitMs = Math.min(8000, 1000 * Math.pow(2, retry));
+          console.log(`分块${index}失败，${waitMs}ms后重试 ${retry+1}/${MAX_RETRIES}`);
+          setTimeout(() => uploadChunk(index, retry+1).then(resolve).catch(reject), waitMs);
+        } else {
+          reject((xhr.responseText || ('分块上传失败，状态码: ' + xhr.status)) + ` [chunk ${index+1}/${totalParts}]`);
+        }
       };
       xhr.onerror = () => {
-        if (retry < MAX_RETRIES) { console.log(`分块${index}网络错误，重试${retry+1}/${MAX_RETRIES}`); uploadChunk(index, retry+1).then(resolve).catch(reject); }
-        else reject('网络错误，请检查网络连接');
+        if (retry < MAX_RETRIES) {
+          const waitMs = Math.min(8000, 1000 * Math.pow(2, retry));
+          console.log(`分块${index}网络错误，${waitMs}ms后重试 ${retry+1}/${MAX_RETRIES}`);
+          setTimeout(() => uploadChunk(index, retry+1).then(resolve).catch(reject), waitMs);
+        } else {
+          reject(`网络错误，请检查网络连接 [chunk ${index+1}/${totalParts}]`);
+        }
       };
-      xhr.ontimeout = () => reject('上传超时');
+      xhr.ontimeout = () => {
+        if (retry < MAX_RETRIES) {
+          const waitMs = Math.min(8000, 1000 * Math.pow(2, retry));
+          console.log(`分块${index}超时，${waitMs}ms后重试 ${retry+1}/${MAX_RETRIES}`);
+          setTimeout(() => uploadChunk(index, retry+1).then(resolve).catch(reject), waitMs);
+        } else {
+          reject(`上传超时 [chunk ${index+1}/${totalParts}]`);
+        }
+      };
       xhr.send(fd);
     });
   };
 
   try {
-    // 顺序上传 - 稳定可靠
+    // 顺序上传 - 稳定可靠，支持断点续传
     for (let i = 0; i < totalParts; i++) {
-      progFileName.textContent = `正在上传: ${file.name}（第 ${i + 1}/${totalParts} 块）`;
+      const chunkLabel = uploadedParts.has(i) ? '（跳过已上传）' : `（第 ${i + 1}/${totalParts} 块，${API === API_LAN ? '局域网' : '公网'}模式）`;
+      progFileName.textContent = `正在上传: ${file.name} ${chunkLabel}`;
       await uploadChunk(i);
       const pct = Math.round((i + 1) / totalParts * 85);
       fill.style.width = pct + '%';
       progPercent.textContent = pct + '%';
     }
 
-    // 全部块上传完成，最后提交元数据合并
+    // 全部块上传完成：先服务端合并，再保存元数据
+    progFileName.textContent = `正在合并: ${file.name}`;
+    fill.style.width = '90%';
+    progPercent.textContent = '90%';
+
+    const mergeRes = await fetch(API + '/api/merge_chunks', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + t,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ file_id: fileId, filename: file.name })
+    });
+
+    if (!mergeRes.ok) {
+      const mergeErr = await mergeRes.text();
+      console.error('合并失败:', mergeErr);
+      throw new Error('服务端合并失败: ' + (mergeErr || mergeRes.status) + ' [API: ' + API + ']');
+    }
+
+    fill.style.width = '96%';
+    progPercent.textContent = '96%';
+    progFileName.textContent = `正在保存作品信息: ${file.name}`;
+
     const fd = new FormData();
     fd.append('title', title);
     fd.append('type', type);

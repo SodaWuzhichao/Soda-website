@@ -39,6 +39,22 @@ nav {
 .page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 200; letter-spacing: -2px; margin-bottom: 16px; }
 .page-desc { color: var(--muted); font-size: .95rem; margin-bottom: 48px; }
 
+/* 服务状态指示灯 */
+.status-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 32px; font-size: 0.85rem;
+}
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #666; transition: background 0.3s;
+}
+.status-dot.online { background: #5ad060; box-shadow: 0 0 6px rgba(90,208,96,0.5); }
+.status-dot.offline { background: #e05050; box-shadow: 0 0 6px rgba(224,80,80,0.5); }
+.status-text { color: var(--muted); }
+.status-text.online { color: #5ad060; }
+.status-text.offline { color: #e05050; }
+
 .upload-area {
   background: var(--surface); border: 2px dashed var(--border);
   border-radius: 8px; padding: 60px 40px; text-align: center;
@@ -63,6 +79,23 @@ nav {
 .loading { display: none; text-align: center; margin-top: 40px; }
 .loading-spinner { border: 3px solid var(--border); border-top: 3px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.progress-container {
+  margin-top: 20px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto;
+}
+.progress-bar-bg {
+  width: 100%; height: 10px; background: #222; border-radius: 5px; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, var(--gold), #ffed4a);
+  width: 0%; transition: width 0.3s; border-radius: 5px;
+}
+.progress-label {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; font-size: 0.85rem;
+}
+.progress-pct { color: var(--gold); font-weight: 400; font-size: 1.1rem; }
+.progress-phase { color: var(--muted); }
 
 .error { display: none; background: #441111; border: 1px solid #661111; border-radius: 8px; padding: 16px; margin-top: 24px; color: #ff6666; }
 
@@ -90,6 +123,12 @@ nav {
   <h1 class="page-title">视频/音频转文案</h1>
   <p class="page-desc">上传视频或音频文件，自动提取文案内容</p>
 
+  <!-- 服务状态指示灯 -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">检测后端服务中...</span>
+  </div>
+
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">🎬</div>
     <div class="upload-text">点击或拖拽文件到这里</div>
@@ -99,11 +138,16 @@ nav {
 
   <div class="loading" id="loading">
     <div class="loading-spinner"></div>
-    <div>正在处理中，请稍候...</div>
-    <div style="margin-top:20px;width:200px;height:8px;background:#222;border-radius:4px;overflow:hidden;margin:20px auto;">
-      <div id="progressBar" style="width:0%;height:100%;background:var(--gold);transition:width 0.3s;"></div>
+    <div id="loadingText">正在处理中，请稍候...</div>
+    <div class="progress-container">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-label">
+        <span class="progress-phase" id="progressPhase">准备中</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
     </div>
-    <div id="progressText" style="color:var(--gold);font-size:0.9rem;">0%</div>
   </div>
 
   <div class="error" id="error"></div>
@@ -125,9 +169,32 @@ const error = document.getElementById('error');
 const resultArea = document.getElementById('resultArea');
 const resultText = document.getElementById('resultText');
 
-// 后端服务地址
-const API_URL = 'https://api.soda567.dpdns.org/api/transcribe';
+const API_BASE = 'https://api.soda567.dpdns.org';
 
+// ===== 服务状态检测 =====
+async function checkServiceStatus() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  try {
+    const res = await fetch(API_BASE + '/api/health', { method: 'GET', signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      dot.className = 'status-dot online';
+      text.className = 'status-text online';
+      text.textContent = '后端服务正常运行';
+      return true;
+    }
+  } catch (e) {}
+  dot.className = 'status-dot offline';
+  text.className = 'status-text offline';
+  text.textContent = '后端服务不可用，请联系管理员';
+  return false;
+}
+checkServiceStatus();
+// 每30秒检测一次
+setInterval(checkServiceStatus, 30000);
+
+// ===== 上传逻辑 =====
 uploadArea.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', handleFile);
 
@@ -146,121 +213,133 @@ uploadArea.addEventListener('drop', (e) => {
   }
 });
 
+function setProgress(pct, phase) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = Math.round(pct) + '%';
+  if (phase) document.getElementById('progressPhase').textContent = phase;
+}
+
 async function handleFile() {
   const file = fileInput.files[0];
   if (!file) return;
+
+  // 先检查服务状态
+  const serviceOk = await checkServiceStatus();
+  if (!serviceOk) {
+    error.style.display = 'block';
+    error.textContent = '❌ 后端服务不可用，请稍后再试或联系管理员';
+    return;
+  }
 
   // 隐藏上传区域，显示加载
   uploadArea.style.display = 'none';
   loading.style.display = 'block';
   error.style.display = 'none';
   resultArea.style.display = 'none';
-
-  // 设置进度条
-  const progressBar = document.getElementById('progressBar');
-  const progressText = document.getElementById('progressText');
-  progressBar.style.width = '0%';
-  progressText.textContent = '0%';
-
-  const formData = new FormData();
-  formData.append('file', file);
+  setProgress(0, '准备上传');
 
   try {
-    // 上传文件
-    progressText.textContent = '上传中...';
-    progressBar.style.width = '10%';
-    
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: formData
-    });
+    // ===== 阶段1：上传文件（带进度） =====
+    const taskId = await uploadWithProgress(file);
 
-    if (!response.ok) throw new Error('上传失败');
+    // ===== 阶段2：轮询转写状态 =====
+    setProgress(30, '已提交，等待转写...');
+    const result = await pollUntilDone(taskId);
 
-    const data = await response.json();
-    const jobId = data.job_id;
-    
-    progressBar.style.width = '30%';
-    progressText.textContent = '30% - 已提交任务，等待转写...';
-    
-    // 轮询状态
-    let status = 'pending';
-    while (status === 'pending' || status === 'processing') {
-      await new Promise(r => setTimeout(r, 1000));
-      
-      const statusRes = await fetch('/api/status/' + jobId);
-      const statusData = await statusRes.json();
-      
-      status = statusData.status;
-      
-      if (status === 'processing') {
-        const queue = statusData.queue_position || 0;
-        progressBar.style.width = '50%';
-        progressText.textContent = `转写中... ${queue > 0 ? '(队列位置: ' + queue + ')' : ''}`;
-      } else if (status === 'completed') {
-        progressBar.style.width = '100%';
-        progressText.textContent = '完成!';
-      }
-    }
-
-    // 获取结果
-    const resultRes = await fetch('/api/status/' + jobId);
-    const resultData = await resultRes.json();
-
+    // ===== 阶段3：显示结果 =====
+    setProgress(100, '完成!');
     loading.style.display = 'none';
     resultArea.style.display = 'block';
-    resultText.textContent = resultData.result || '（未能提取到文案）';
+    resultText.textContent = result || '（未能提取到文案）';
     document.getElementById('wordCount').textContent = `共 ${resultText.textContent.length} 字`;
 
   } catch (err) {
     loading.style.display = 'none';
     error.style.display = 'block';
-    error.textContent = '❌ 处理失败：' + err.message + '\n\n请确保后端服务已启动';
+    error.textContent = '❌ 处理失败：' + err.message;
     uploadArea.style.display = 'block';
   }
 }
 
-function formatTextWithSegments(segments) {
-  if (!segments || segments.length === 0) return '';
+function uploadWithProgress(file) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
 
-  let result = '';
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    const nextSeg = segments[i + 1];
-    const text = seg.text.trim();
+    // 上传进度追踪
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const uploadPct = (e.loaded / e.total) * 30; // 上传占 0-30%
+      setProgress(uploadPct, `上传中 ${Math.round(e.loaded / 1024 / 1024)}MB / ${Math.round(e.total / 1024 / 1024)}MB`);
+    };
 
-    if (!text) continue;
-
-    result += text;
-
-    if (nextSeg) {
-      const pause = nextSeg.start - seg.end;
-      if (pause > 1.5) {
-        result += '。\n';
-      } else if (pause > 0.8) {
-        result += '，';
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          const taskId = data.task_id;
+          if (!taskId) {
+            reject(new Error('服务返回数据异常：缺少 task_id'));
+            return;
+          }
+          setProgress(30, '上传完成');
+          resolve(taskId);
+        } catch (e) {
+          reject(new Error('解析服务响应失败'));
+        }
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || '上传失败，状态码: ' + xhr.status));
+        } catch (e) {
+          reject(new Error('上传失败，状态码: ' + xhr.status));
+        }
       }
-    } else {
-      result += '。';
-    }
-  }
+    };
 
-  return result.trim();
+    xhr.onerror = () => reject(new Error('网络错误，请检查网络连接'));
+    xhr.ontimeout = () => reject(new Error('上传超时，请重试'));
+    xhr.timeout = 300000; // 5分钟超时
+
+    xhr.open('POST', API_BASE + '/api/transcribe');
+    xhr.send(formData);
+  });
 }
 
-function formatText(text) {
-  text = text.replace(/\s+/g, '');
+async function pollUntilDone(taskId) {
+  const maxWait = 600; // 最多等10分钟
+  const startTime = Date.now();
 
-  text = text
-    .replace(/(了|的|吧|呢|啊|呀|吗|嘛|哦|哈|嗯|唉)([^，。！？、；：])/g, '$1，$2')
-    .replace(/([，、；：]){2,}/g, '，')
-    .replace(/(.{30,50}?)(然后|接着|后来|于是|所以|因此|但是|可是|不过|而且|并且|同时)/g, '$1。$2')
-    .replace(/(.{40,60}?)([^，。！？、；：])/g, '$1。$2');
+  while (true) {
+    if (Date.now() - startTime > maxWait * 1000) {
+      throw new Error('转写超时（超过10分钟），请重试');
+    }
 
-  return text
-    .replace(/([。！？])\s*/g, '$1\n')
-    .replace(/([，、；：])\s*/g, '$1')
-    .trim();
+    await new Promise(r => setTimeout(r, 2000)); // 每2秒查一次
+
+    const res = await fetch(API_BASE + '/api/status/' + taskId);
+    if (!res.ok) throw new Error('查询转写状态失败');
+
+    const data = await res.json();
+    const status = data.status;
+
+    if (status === 'completed') {
+      setProgress(100, '转写完成');
+      return data.result || '';
+    } else if (status === 'error') {
+      throw new Error(data.error || '转写失败');
+    } else if (status === 'processing') {
+      // 转写中：30% - 95%
+      const elapsed = (Date.now() - startTime) / 1000;
+      const estimated = Math.min(95, 30 + (elapsed / 300) * 65); // 假设5分钟完成
+      setProgress(estimated, '转写中，请耐心等待...');
+    } else {
+      // pending
+      const queuePos = data.queue_position || 0;
+      setProgress(30, queuePos > 0 ? `排队中（第${queuePos}位）` : '等待转写开始...');
+    }
+  }
 }
 
 function copyText() {
