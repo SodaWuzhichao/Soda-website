@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SODA | 视觉创作者</title>
-<meta name="description" content="Soda的个人作品集，用镜头记录生活，用代码创造工具。展示视频创作、摄影作品和在线工具。">
+<meta name="description" content="Soda的个人作品集,用镜头记录生活,用代码创造工具。展示视频创作、摄影作品和在线工具。">
 <meta name="keywords" content="视觉创作,视频制作,摄影,作品集,Soda567">
 <meta name="author" content="Soda">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -216,6 +216,36 @@ section {
   font-weight: 200;
 }
 
+/* 分组标题 */
+.work-group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 0 12px;
+  scroll-margin-top: 100px;
+}
+.work-group-header:first-child { padding-top: 0; }
+.work-group-header .group-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+.work-group-header .group-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  font-weight: 200;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.work-group-header .group-count {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.25);
+  font-weight: 300;
+}
+
 /* WORKS GRID */
 .works-filter {
   display: flex;
@@ -408,41 +438,41 @@ footer {
   .nav-container {
     padding: 16px 24px;
   }
-  
+
   .nav-links {
     gap: 24px;
   }
-  
+
   section {
     padding: 60px 24px;
   }
-  
+
   #hero {
     padding: 150px 24px 40px;
   }
-  
+
   .hero-bg {
     padding: 100px 24px;
     gap: 8px;
   }
-  
+
   .works-filter {
     gap: 4px;
     margin-bottom: 24px;
   }
-  
+
   .filter-btn {
     padding: 5px 12px;
     font-size: 0.75rem;
     border-radius: 16px;
   }
-  
+
   .works-grid,
   .tools-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 8px;
   }
-  
+
   .work-item.landscape {
     grid-column: span 1;
     grid-row: span 1;
@@ -514,7 +544,7 @@ footer {
   </div>
   <div class="hero-content">
     <h1 class="hero-title">视觉创作者</h1>
-    <p class="hero-subtitle">用镜头记录生活，用代码创造工具</p>
+    <p class="hero-subtitle">用镜头记录生活,用代码创造工具</p>
     <div class="hero-cta">
       <a href="#works" class="btn btn-primary">查看作品</a>
       <a href="tools/index.html" class="btn btn-secondary">在线工具</a>
@@ -550,13 +580,13 @@ footer {
     <div style="">
       <h3 style="font-size:1.5rem;font-weight:300;margin-bottom:24px;">Soda</h3>
       <p style="color:var(--muted);line-height:1.8;margin-bottom:20px;">
-        摄影师，也是直播画质的偏执狂。
+        摄影师,也是直播画质的偏执狂。
       </p>
       <p style="color:var(--muted);line-height:1.8;margin-bottom:20px;">
-        从电影调色逻辑出发，专注为品牌与创作者打造电影级直播间——灯光、色彩、构图，每一个细节都经得起全屏审视。九年幕后经验，服务过芒果TV、快手、爱奇艺等头部平台。
+        从电影调色逻辑出发,专注为品牌与创作者打造电影级直播间--灯光、色彩、构图,每一个细节都经得起全屏审视。九年幕后经验,服务过芒果TV、快手、爱奇艺等头部平台。
       </p>
       <p style="color:var(--muted);line-height:1.8;">
-        如果你也在意画面该有的样子，欢迎聊聊。
+        如果你也在意画面该有的样子,欢迎聊聊。
       </p>
     </div>
     <div style="aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);max-width:100%;">
@@ -573,7 +603,7 @@ footer {
   </div>
   <div style="text-align:center;max-width:600px;margin:0 auto;">
     <p style="color:var(--muted);margin-bottom:32px;">
-      如有合作或咨询，欢迎通过以下方式联系我
+      如有合作或咨询,欢迎通过以下方式联系我
     </p>
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="navigator.clipboard.writeText('1085029979@qq.com');alert('邮箱已复制: 1085029979@qq.com')">邮箱</button>
@@ -598,117 +628,125 @@ footer {
 </script>
 
 <script>
+// 作品数据缓存
+let _cachedWorks = null;
+
+// 渲染作品列表(从缓存或数据源)
+function renderWorksGrid(works) {
+  const grid = document.getElementById('worksGrid');
+  const API_URL = 'https://api.soda567.dpdns.org';
+  const MEDIA_URL = 'https://api.soda567.dpdns.org/media';
+
+  if (!works || works.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">暂无作品</div>';
+    return;
+  }
+
+  // 生成单个作品卡片
+  function renderCard(w) {
+    const videoUrl = w.source_url ||
+      (w.filename ? MEDIA_URL + '/' + (w.filename.endsWith('.m3u8') ? 'hls/' : 'videos/') + w.filename : '');
+    const thumbVersion = encodeURIComponent(w.updated_at || w.created_at || Date.now());
+    const thumbUrl = w.thumbnail ?
+      MEDIA_URL + '/thumbnails/' + w.thumbnail + '?v=' + thumbVersion : '';
+
+    if (w.type === 'video' && videoUrl) {
+      const poster = thumbUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1920 1080%22%3E%3Crect width=%221920%22 height=%221080%22 fill=%22%23141414%22/%3E%3C/svg%3E';
+      let ar = 0;
+      if (w.width && w.height) ar = w.width / w.height;
+      else if (w.aspect_ratio) {
+        if (w.aspect_ratio === 'portrait') ar = 0.75;
+        else if (w.aspect_ratio === 'landscape') ar = 1.333;
+        else ar = parseFloat(w.aspect_ratio) || 0;
+      }
+      const rc = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
+      return `<div class="work-item is-video ${rc}" data-type="video" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
+        <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${poster}" style="pointer-events:none"></video>
+        <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">VIDEO · ${w.year || 2025}</div></div>
+        <div class="work-play"></div></div>`;
+    } else if (w.type === 'photo' && thumbUrl) {
+      let ar2 = 0;
+      if (w.width && w.height) ar2 = w.width / w.height;
+      else if (w.aspect_ratio) {
+        if (w.aspect_ratio === 'portrait') ar2 = 0.75;
+        else if (w.aspect_ratio === 'landscape') ar2 = 1.333;
+        else ar2 = parseFloat(w.aspect_ratio) || 0;
+      }
+      const rc2 = ar2 > 1.2 ? 'landscape' : ar2 > 0 && ar2 < 0.8 ? 'portrait' : ar2 > 0 ? 'square' : 'portrait';
+      return `<div class="work-item ${rc2}" data-type="photo" data-src="${thumbUrl}" data-id="${w.id}" data-ratio="fixed">
+        <img src="${thumbUrl}" alt="${w.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+        <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">PHOTO · ${w.year || 2025}</div></div></div>`;
+    } else if (w.type === 'live' && thumbUrl) {
+      let ar3 = 0;
+      if (w.width && w.height) ar3 = w.width / w.height;
+      else if (w.aspect_ratio) {
+        if (w.aspect_ratio === 'portrait') ar3 = 0.75;
+        else if (w.aspect_ratio === 'landscape') ar3 = 1.333;
+        else ar3 = parseFloat(w.aspect_ratio) || 0;
+      }
+      const rc3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
+      return `<div class="work-item is-video ${rc3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
+        <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${thumbUrl}" style="pointer-events:none"></video>
+        <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">LIVE · ${w.year || 2025}</div></div>
+        <div class="work-play"></div></div>`;
+    }
+    return '';
+  }
+
+  // 分组配置
+  const GROUP_ORDER = [
+    { type: 'video', label: '视频作品', icon: '▶' },
+    { type: 'photo', label: '照片作品', icon: '◎' },
+    { type: 'live',  label: '直播案例', icon: '●' }
+  ];
+
+  const activeFilter = document.querySelector('.filter-btn.active')?.dataset?.filter || 'all';
+
+  if (activeFilter === 'all') {
+    let html = '';
+    for (const g of GROUP_ORDER) {
+      const gw = works.filter(w => w.type === g.type);
+      if (gw.length === 0) continue;
+      html += `<div class="work-group-header">
+        <span class="group-label">${g.icon} ${g.label}</span>
+        <span class="group-count">${gw.length}</span>
+        <span class="group-line"></span></div>`;
+      html += gw.map(renderCard).join('');
+    }
+    grid.innerHTML = html;
+  } else {
+    const filtered = works.filter(w => w.type === activeFilter);
+    grid.innerHTML = filtered.map(renderCard).join('');
+  }
+
+  setupHoverAndRatio();
+  setupFilter();
+  setupVideoModal();
+}
+
 // 从 API 加载作品
 async function loadWorksFromAPI() {
   const grid = document.getElementById('worksGrid');
-  
-  // 显示加载状态
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">加载中...</div>';
-  
+
   try {
     const API_URL = 'https://api.soda567.dpdns.org';
-    const MEDIA_URL = 'https://api.soda567.dpdns.org/media';
     const res = await fetch(API_URL + '/api/works?status=published');
     if (!res.ok) throw new Error('API 请求失败');
     const works = await res.json();
-    
-    if (!works || works.length === 0) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">暂无作品</div>';
-      return;
-    }
-    
-    grid.innerHTML = works.map(w => {
-      // 视频 URL：优先用 source_url（小红书），否则用本地 media
-      const videoUrl = w.source_url || 
-        (w.filename ? MEDIA_URL + '/' + (w.filename.endsWith('.m3u8') ? 'hls/' : 'videos/') + w.filename : '');
-      const thumbVersion = encodeURIComponent(w.updated_at || w.created_at || Date.now());
-      const thumbUrl = w.thumbnail ? 
-        MEDIA_URL + '/thumbnails/' + w.thumbnail + '?v=' + thumbVersion : '';
-      
-      if (w.type === 'video' && videoUrl) {
-        const poster = thumbUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1920 1080%22%3E%3Crect width=%221920%22 height=%221080%22 fill=%22%23141414%22/%3E%3C/svg%3E';
-        // 优先用 width/height 计算比例，其次用 aspect_ratio
-        let ar = 0;
-        if (w.width && w.height) {
-          ar = w.width / w.height;
-        } else if (w.aspect_ratio) {
-          if (w.aspect_ratio === 'portrait') ar = 0.75;
-          else if (w.aspect_ratio === 'landscape') ar = 1.333;
-          else ar = parseFloat(w.aspect_ratio) || 0;
-        }
-        const ratioClass = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
-        return `
-        <div class="work-item is-video ${ratioClass}" data-type="video" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
-          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
-            poster="${poster}"
-            style="pointer-events:none"></video>
-          <div class="work-overlay">
-            <div class="work-title">${w.title}</div>
-            <div class="work-meta">VIDEO · ${w.year || 2025}</div>
-          </div>
-          <div class="work-play"></div>
-        </div>`;
-      } else if (w.type === 'photo' && thumbUrl) {
-        // 优先用 width/height 计算比例，其次用 aspect_ratio
-        let ar2 = 0;
-        if (w.width && w.height) {
-          ar2 = w.width / w.height;
-        } else if (w.aspect_ratio) {
-          if (w.aspect_ratio === 'portrait') ar2 = 0.75;
-          else if (w.aspect_ratio === 'landscape') ar2 = 1.333;
-          else ar2 = parseFloat(w.aspect_ratio) || 0;
-        }
-        const ratioClass2 = ar2 > 1.2 ? 'landscape' : ar2 > 0 && ar2 < 0.8 ? 'portrait' : ar2 > 0 ? 'square' : 'portrait';
-        return `
-        <div class="work-item ${ratioClass2}" data-type="photo" data-src="${thumbUrl}" data-id="${w.id}" data-ratio="fixed">
-          <img src="${thumbUrl}" alt="${w.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-          <div class="work-overlay">
-            <div class="work-title">${w.title}</div>
-            <div class="work-meta">PHOTO · ${w.year || 2025}</div>
-          </div>
-        </div>`;
-      } else if (w.type === 'live' && thumbUrl) {
-        // 优先用 width/height 计算比例，其次用 aspect_ratio
-        let ar3 = 0;
-        if (w.width && w.height) {
-          ar3 = w.width / w.height;
-        } else if (w.aspect_ratio) {
-          if (w.aspect_ratio === 'portrait') ar3 = 0.75;
-          else if (w.aspect_ratio === 'landscape') ar3 = 1.333;
-          else ar3 = parseFloat(w.aspect_ratio) || 0;
-        }
-        const ratioClass3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
-        return `
-        <div class="work-item is-video ${ratioClass3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
-          <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata"
-            poster="${thumbUrl}"
-            style="pointer-events:none"></video>
-          <div class="work-overlay">
-            <div class="work-title">${w.title}</div>
-            <div class="work-meta">LIVE · ${w.year || 2025}</div>
-          </div>
-          <div class="work-play"></div>
-        </div>`;
-      }
-      return '';
-    }).join('');
-    
-    // 重新绑定悬停和比例检测
-    setupHoverAndRatio();
-    // 重新绑定筛选
-    setupFilter();
-    // 重新绑定视频点击
-    setupVideoModal();
-    
+    _cachedWorks = works;
+    renderWorksGrid(works);
   } catch (err) {
     console.error('加载作品失败:', err);
-    // Fallback: 从 localStorage 加载
-    const saved = localStorage.getItem('soda_works');
-    if (saved) {
-      console.log('使用 localStorage 缓存');
-      renderWorksFromData(JSON.parse(saved));
+    if (_cachedWorks) {
+      renderWorksGrid(_cachedWorks);
     } else {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">作品加载失败，请刷新重试</div>';
+      const saved = localStorage.getItem('soda_works');
+      if (saved) {
+        renderWorksGrid(JSON.parse(saved));
+      } else {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">作品加载失败,请刷新重试</div>';
+      }
     }
   }
 }
@@ -718,16 +756,16 @@ loadWorksFromAPI();
 function setupHoverAndRatio() {
   const workItems = document.querySelectorAll('.work-item');
 
-  // IntersectionObserver 懒加载视频（进入视口才加载，移出暂停）
+  // IntersectionObserver 懒加载视频(进入视口才加载,移出暂停)
   const videoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const item = entry.target;
       const video = item.querySelector('video[data-src]');
       if (!video) return;
       const videoSrc = item.dataset.src;
-      
+
       if (entry.isIntersecting) {
-        // 进入视口：加载视频
+        // 进入视口:加载视频
         if (videoSrc && videoSrc.includes('.m3u8')) {
           // HLS视频用hls.js加载
           if (typeof Hls !== 'undefined' && Hls.isSupported() && !item.hlsInstance) {
@@ -741,7 +779,7 @@ function setupHoverAndRatio() {
           video.load();
         }
       } else {
-        // 离开视口：暂停并释放内存
+        // 离开视口:暂停并释放内存
         video.pause();
         if (item.hlsInstance) {
           item.hlsInstance.destroy();
@@ -758,17 +796,17 @@ function setupHoverAndRatio() {
     const customRatio = item.dataset.ratio;
 
     if (video) {
-      // 懒加载：先观察，进入视口再加载
+      // 懒加载:先观察,进入视口再加载
       videoObserver.observe(item);
 
-      // 默认竖版，视频加载后按实际比例修正
+      // 默认竖版,视频加载后按实际比例修正
       const applyRatio = (ratio) => {
         item.classList.remove('portrait','landscape','square');
         if (ratio > 1.2) item.classList.add('landscape');
         else if (ratio < 0.8) item.classList.add('portrait');
         else item.classList.add('square');
       };
-      // 先给默认 portrait，避免布局塌陷
+      // 先给默认 portrait,避免布局塌陷
       if (!customRatio || customRatio === 'auto') item.classList.add('portrait');
       video.addEventListener('loadedmetadata', () => {
         if (!customRatio || customRatio === 'auto') {
@@ -835,24 +873,24 @@ function setupHoverAndRatio() {
 }
 
 // 作品筛选
+// 筛选按钮事件绑定（只绑定一次，用事件委托避免重复）
+let _filterBound = false;
 function setupFilter() {
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const filter = btn.dataset.filter;
-      const workItems = document.querySelectorAll('.work-item');
-      workItems.forEach(item => {
-        if (filter === 'all') {
-          item.style.display = 'block';
-        } else {
-          item.style.display = item.dataset.type === filter ? 'block' : 'none';
-        }
-      });
-      // 筛选后重新绑定hover事件
-      setupHoverAndRatio();
-    });
+  if (_filterBound) return;
+  _filterBound = true;
+  const filterBar = document.querySelector('.works-filter');
+  if (!filterBar) return;
+  filterBar.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 用缓存数据重新渲染，不重新请求 API
+    if (_cachedWorks) {
+      renderWorksGrid(_cachedWorks);
+    } else {
+      loadWorksFromAPI();
+    }
   });
 }
 </script>
@@ -922,14 +960,14 @@ function setupVideoModal() {
         const modal = document.getElementById('videoModal');
         const video = document.getElementById('modalVideo');
         const loading = document.getElementById('videoLoading');
-        
+
         // 显示加载提示
         loading.style.display = 'flex';
         video.style.display = 'none';
         modal.style.display = 'flex';
         updateExitHint();
-        
-        // 如果是HLS (.m3u8)，使用hls.js播放
+
+        // 如果是HLS (.m3u8),使用hls.js播放
         if (videoSrc.includes('.m3u8')) {
           if (hlsInstance) {
             hlsInstance.destroy();
@@ -952,7 +990,7 @@ function setupVideoModal() {
             });
           }
         } else {
-          // 普通视频 - 等待loadedmetadata后显示（比canplay更早触发）
+          // 普通视频 - 等待loadedmetadata后显示(比canplay更早触发)
           video.src = videoSrc;
           // 防止 error 在加载过程中提前触发
           let videoLoaded = false;
