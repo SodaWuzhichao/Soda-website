@@ -863,7 +863,7 @@ function setupFilter() {
   <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">小片正在飞奔赶来中<span id="loadingDots">...</span></p>
-    <p style="color:#888;margin-top:12px;font-size:14px;">右滑退出</p>
+    <p style="color:#888;margin-top:12px;font-size:14px;" id="exitHint"></p>
   </div>
   <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
 </div>
@@ -887,6 +887,14 @@ function closeVideo() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeVideo();
 });
+
+// 根据设备类型显示不同的退出提示
+function updateExitHint() {
+  const hint = document.getElementById('exitHint');
+  if (!hint) return;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 1024);
+  hint.textContent = isMobile ? '右滑退出' : '按 ESC 退出';
+}
 
 let hlsInstance = null;
 let touchStartX = 0;
@@ -919,6 +927,7 @@ function setupVideoModal() {
         loading.style.display = 'flex';
         video.style.display = 'none';
         modal.style.display = 'flex';
+        updateExitHint();
         
         // 如果是HLS (.m3u8)，使用hls.js播放
         if (videoSrc.includes('.m3u8')) {
