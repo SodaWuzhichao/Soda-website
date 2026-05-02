@@ -221,29 +221,22 @@ section {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 48px 0 12px;
-  scroll-margin-top: 100px;
+  gap: 20px;
+  padding: 56px 0 8px;
 }
 .work-group-header:first-child { padding-top: 0; }
 .work-group-header .group-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--border), transparent);
+  background: var(--border);
 }
 .work-group-header .group-label {
   font-family: 'DM Sans', sans-serif;
-  font-size: clamp(1rem, 2vw, 1.4rem);
-  font-weight: 200;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.work-group-header .group-count {
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.25);
+  font-size: 0.7rem;
   font-weight: 300;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
 }
 
 /* WORKS GRID */
@@ -695,9 +688,9 @@ function renderWorksGrid(works) {
 
   // 分组配置
   const GROUP_ORDER = [
-    { type: 'video', label: '视频作品', icon: '▶' },
-    { type: 'photo', label: '照片作品', icon: '◎' },
-    { type: 'live',  label: '直播案例', icon: '●' }
+    { type: 'video', label: 'Video' },
+    { type: 'photo', label: 'Photo' },
+    { type: 'live',  label: 'Live' }
   ];
 
   const activeFilter = document.querySelector('.filter-btn.active')?.dataset?.filter || 'all';
@@ -708,9 +701,10 @@ function renderWorksGrid(works) {
       const gw = works.filter(w => w.type === g.type);
       if (gw.length === 0) continue;
       html += `<div class="work-group-header">
-        <span class="group-label">${g.icon} ${g.label}</span>
-        <span class="group-count">${gw.length}</span>
-        <span class="group-line"></span></div>`;
+        <span class="group-line"></span>
+        <span class="group-label">${g.label}</span>
+        <span class="group-line"></span>
+      </div>`;
       html += gw.map(renderCard).join('');
     }
     grid.innerHTML = html;
