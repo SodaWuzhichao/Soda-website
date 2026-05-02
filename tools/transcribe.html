@@ -31,6 +31,7 @@ nav {
 .page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 200; letter-spacing: -2px; margin-bottom: 16px; }
 .page-desc { color: var(--muted); font-size: .95rem; margin-bottom: 48px; }
 
+/* 状态指示灯 */
 .status-bar {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px; background: var(--surface); border: 1px solid var(--border);
@@ -46,6 +47,21 @@ nav {
 .status-text.online { color: #5ad060; }
 .status-text.offline { color: #e05050; }
 
+/* 语言选择 */
+.lang-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px; font-size: 0.9rem;
+}
+.lang-bar label { color: var(--muted); font-size: 0.85rem; }
+.lang-select {
+  padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 0.85rem;
+  font-family: 'DM Sans', sans-serif; font-weight: 300;
+  cursor: pointer; transition: border-color 0.3s;
+}
+.lang-select:hover, .lang-select:focus { border-color: var(--gold); outline: none; }
+
+/* 上传区 */
 .upload-area {
   background: var(--surface); border: 2px dashed var(--border);
   border-radius: 8px; padding: 60px 40px; text-align: center;
@@ -57,6 +73,7 @@ nav {
 .upload-text { font-size: 1.1rem; margin-bottom: 8px; }
 .upload-hint { font-size: .85rem; color: var(--muted); }
 
+/* 结果区域 */
 .result-area { display: none; margin-top: 40px; }
 .result-title { font-size: 1.2rem; margin-bottom: 16px; font-weight: 300; }
 .result-text {
@@ -64,9 +81,42 @@ nav {
   border-radius: 8px; padding: 24px; line-height: 1.8;
   min-height: 200px; white-space: pre-wrap;
 }
-.btn { padding: 12px 28px; background: var(--gold); color: var(--bg); border: none; border-radius: 4px; cursor: pointer; font-weight: 500; transition: background .3s; margin-top: 16px; }
-.btn:hover { background: #f5d060; }
 
+/* 按钮组（参考主页风格） */
+.btn-group {
+  display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;
+}
+.btn {
+  padding: 14px 28px; border-radius: 6px; text-decoration: none;
+  font-weight: 300; font-size: 0.9rem; transition: all 0.3s;
+  cursor: pointer; border: none; font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.5px;
+}
+.btn-primary {
+  background: var(--gold); color: var(--bg);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,215,0,0.3);
+}
+.btn-secondary {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  border-color: var(--text);
+  transform: translateY(-2px);
+}
+.btn-ghost {
+  background: transparent; color: var(--muted);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-ghost:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* 加载 */
 .loading { display: none; text-align: center; margin-top: 40px; }
 .loading-spinner { border: 3px solid var(--border); border-top: 3px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -94,6 +144,8 @@ nav {
   nav { padding-left: 24px; padding-right: 24px; }
   .container { padding: 60px 24px; }
   .upload-area { padding: 40px 20px; }
+  .btn-group { flex-direction: column; }
+  .btn { width: 100%; text-align: center; }
 }
 </style>
 </head>
@@ -117,6 +169,18 @@ nav {
   <div class="status-bar" id="statusBar">
     <div class="status-dot" id="statusDot"></div>
     <span class="status-text" id="statusText">检测后端服务中...</span>
+  </div>
+
+  <!-- 语言选择 -->
+  <div class="lang-bar">
+    <label for="langSelect">转写语言</label>
+    <select class="lang-select" id="langSelect">
+      <option value="zh" selected>中文</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="auto">自动检测</option>
+    </select>
   </div>
 
   <div class="upload-area" id="uploadArea">
@@ -145,9 +209,11 @@ nav {
   <div class="result-area" id="resultArea">
     <div class="result-title">提取结果 <span id="wordCount" style="color:var(--muted);font-size:0.9rem;margin-left:12px;"></span></div>
     <div class="result-text" id="resultText"></div>
-    <button class="btn" onclick="copyText()">复制文案</button>
-    <button class="btn" onclick="downloadText()" style="background:#2a2a30;margin-left:12px;">导出TXT</button>
-    <button class="btn" onclick="reset()" style="background:#2a2a30;margin-left:12px;">重新上传</button>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="copyText()">📋 复制文案</button>
+      <button class="btn btn-secondary" onclick="downloadText()">📥 导出 TXT</button>
+      <button class="btn btn-ghost" onclick="reset()">🔄 重新上传</button>
+    </div>
   </div>
 </div>
 
@@ -229,9 +295,8 @@ function formatSize(bytes) {
   return (bytes/1024/1024).toFixed(1) + 'MB';
 }
 
-// ===== 音频压缩（用 Web Audio API 重采样，大幅减小文件体积）=====
+// ===== 音频压缩 =====
 async function compressAudio(file) {
-  // 如果文件已经很小（<5MB），直接上传
   if (file.size < 5 * 1024 * 1024) {
     console.log('文件较小，跳过压缩:', formatSize(file.size));
     return file;
@@ -244,11 +309,7 @@ async function compressAudio(file) {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-    // 提取单声道、16kHz
     const channelData = audioBuffer.getChannelData(0);
-
-    // 转为 WAV（16kHz, 16bit, mono）
     const wavBlob = encodeWAV(channelData, 16000);
     await audioCtx.close();
 
@@ -264,30 +325,25 @@ async function compressAudio(file) {
 function encodeWAV(samples, sampleRate) {
   const buffer = new ArrayBuffer(44 + samples.length * 2);
   const view = new DataView(buffer);
-
-  // WAV header
   writeString(view, 0, 'RIFF');
   view.setUint32(4, 36 + samples.length * 2, true);
   writeString(view, 8, 'WAVE');
   writeString(view, 12, 'fmt ');
   view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // mono
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, sampleRate * 2, true);
   view.setUint16(32, 2, true);
   view.setUint16(34, 16, true);
   writeString(view, 36, 'data');
   view.setUint32(40, samples.length * 2, true);
-
-  // 采样数据
   let offset = 44;
   for (let i = 0; i < samples.length; i++) {
     const s = Math.max(-1, Math.min(1, samples[i]));
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     offset += 2;
   }
-
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
@@ -308,19 +364,13 @@ async function handleFile() {
   setProgress(0, '准备上传');
 
   try {
-    // ===== 阶段0：压缩音频 =====
     const uploadFile = await compressAudio(file);
-    const fileSizeMB = (uploadFile.size / 1024 / 1024).toFixed(1);
-    console.log('准备上传:', uploadFile.name || 'compressed.wav', '大小:', fileSizeMB + 'MB');
+    const lang = document.getElementById('langSelect').value;
+    const taskId = await uploadFileToServer(uploadFile, file.name, lang);
 
-    // ===== 阶段1：上传文件 =====
-    const taskId = await uploadFileToServer(uploadFile, file.name);
-
-    // ===== 阶段2：轮询转写状态 =====
     setProgress(30, '已提交，等待转写...');
     const result = await pollUntilDone(taskId);
 
-    // ===== 阶段3：显示结果 =====
     setProgress(100, '完成!');
     loading.style.display = 'none';
     resultArea.style.display = 'block';
@@ -333,14 +383,14 @@ async function handleFile() {
   }
 }
 
-async function uploadFileToServer(file, originalName) {
+async function uploadFileToServer(file, originalName, lang) {
   const formData = new FormData();
-  const fileName = originalName || 'audio.wav';
-  formData.append('file', file, fileName);
+  formData.append('file', file, originalName || 'audio.wav');
+  formData.append('language', lang);
 
   const url = API_BASE + '/api/transcribe';
   const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
-  console.log('开始上传:', url, '文件:', fileName, '大小:', fileSizeMB + 'MB');
+  console.log('开始上传:', url, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang);
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -370,7 +420,7 @@ async function uploadFileToServer(file, originalName) {
           reject(new Error('解析响应失败：' + xhr.responseText.substring(0, 200)));
         }
       } else if (xhr.status === 524) {
-        reject(new Error('上传超时（Cloudflare限制）。文件较大时请尝试：\n1. 使用更短的音频\n2. 在局域网环境下使用'));
+        reject(new Error('上传超时（Cloudflare限制）。文件较大时请尝试更短的音频'));
       } else {
         try {
           const errData = JSON.parse(xhr.responseText);
@@ -381,15 +431,8 @@ async function uploadFileToServer(file, originalName) {
       }
     };
 
-    xhr.onerror = () => {
-      console.error('XHR 网络错误');
-      reject(new Error('网络错误，请检查网络连接后重试'));
-    };
-
-    xhr.ontimeout = () => {
-      reject(new Error('上传超时，请尝试更小的文件'));
-    };
-
+    xhr.onerror = () => reject(new Error('网络错误，请检查网络连接后重试'));
+    xhr.ontimeout = () => reject(new Error('上传超时，请尝试更小的文件'));
     xhr.timeout = 300000;
     xhr.open('POST', url);
     xhr.send(formData);
@@ -400,7 +443,6 @@ async function pollUntilDone(taskId) {
   const maxWait = 600;
   const startTime = Date.now();
   const statusUrl = API_BASE + '/api/status/' + taskId;
-  console.log('开始轮询:', statusUrl);
 
   while (true) {
     if (Date.now() - startTime > maxWait * 1000) {
@@ -413,7 +455,6 @@ async function pollUntilDone(taskId) {
       const res = await fetch(statusUrl, { mode: 'cors' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      console.log('轮询状态:', data.status);
 
       if (data.status === 'completed') {
         setProgress(100, '转写完成');
@@ -429,10 +470,7 @@ async function pollUntilDone(taskId) {
         setProgress(30, queuePos > 0 ? `排队中（第${queuePos}位）` : '等待转写开始...');
       }
     } catch (e) {
-      console.error('轮询失败:', e);
-      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-        continue;
-      }
+      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) continue;
       throw e;
     }
   }
