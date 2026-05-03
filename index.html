@@ -219,25 +219,9 @@ section {
 /* 分组标题 */
 .work-group-header {
   grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 56px 0 8px;
+  padding: 40px 0 4px;
 }
 .work-group-header:first-child { padding-top: 0; }
-.work-group-header .group-line {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-.work-group-header .group-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 300;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.2);
-}
 
 /* WORKS GRID */
 .works-filter {
@@ -700,11 +684,7 @@ function renderWorksGrid(works) {
     for (const g of GROUP_ORDER) {
       const gw = works.filter(w => w.type === g.type);
       if (gw.length === 0) continue;
-      html += `<div class="work-group-header">
-        <span class="group-line"></span>
-        <span class="group-label">${g.label}</span>
-        <span class="group-line"></span>
-      </div>`;
+      html += `<div class="work-group-header"></div>`;
       html += gw.map(renderCard).join('');
     }
     grid.innerHTML = html;
