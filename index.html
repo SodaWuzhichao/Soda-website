@@ -219,7 +219,7 @@ section {
 /* 分组标题 */
 .work-group-header {
   grid-column: 1 / -1;
-  padding: 2px 0 0;
+  padding: 56px 0 8px;
 }
 .work-group-header:first-child { padding-top: 0; }
 
@@ -253,6 +253,7 @@ section {
 .works-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   grid-auto-rows: 160px;
   grid-auto-flow: dense;
 }
@@ -267,7 +268,6 @@ section {
   background: var(--surface);
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   height: 100%;
-  margin: 8px;
 }
 
 .work-item:hover {
