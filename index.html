@@ -968,14 +968,10 @@ function closeVideo() {
   video.style.display = 'none';
 }
 
-// ESC 键关闭（捕获阶段，防止原生控件拦截）
+// ESC 键关闭
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    document.activeElement?.blur();
-    closeVideo();
-  }
-}, { capture: true });
+  if (e.key === 'Escape') closeVideo();
+});
 
 // 根据设备类型显示不同的退出提示
 function updateExitHint() {
