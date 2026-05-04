@@ -216,12 +216,14 @@ section {
   font-weight: 200;
 }
 
-/* 分组标题 */
-.work-group-header {
-  grid-column: 1 / -1;
-  height: 56px;
+/* WORKS LAYOUT */
+.works-content {
+  margin-top: 28px;
 }
-.work-group-header:first-child { height: 0; }
+
+.works-group + .works-group {
+  margin-top: 28px;
+}
 
 /* WORKS GRID */
 .works-filter {
@@ -541,7 +543,7 @@ footer {
     <button class="filter-btn" data-filter="photo">照片</button>
     <button class="filter-btn" data-filter="live">直播</button>
   </div>
-  <div class="works-grid" id="worksGrid">
+  <div class="works-content" id="worksGrid">
   <!-- 作品由 API 动态加载 -->
 </div>
 </section>
@@ -615,7 +617,7 @@ function renderWorksGrid(works) {
   const MEDIA_URL = 'https://api.soda567.dpdns.org/media';
 
   if (!works || works.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">暂无作品</div>';
+    grid.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">暂无作品</div>';
     return;
   }
 
@@ -684,13 +686,12 @@ function renderWorksGrid(works) {
     for (const g of GROUP_ORDER) {
       const gw = works.filter(w => w.type === g.type);
       if (gw.length === 0) continue;
-      html += `<div class="work-group-header"></div>`;
-      html += gw.map(renderCard).join('');
+      html += `<div class="works-group"><div class="works-grid">${gw.map(renderCard).join('')}</div></div>`;
     }
     grid.innerHTML = html;
   } else {
     const filtered = works.filter(w => w.type === activeFilter);
-    grid.innerHTML = filtered.map(renderCard).join('');
+    grid.innerHTML = `<div class="works-grid">${filtered.map(renderCard).join('')}</div>`;
   }
 
   setupHoverAndRatio();
@@ -701,7 +702,7 @@ function renderWorksGrid(works) {
 // 从 API 加载作品
 async function loadWorksFromAPI() {
   const grid = document.getElementById('worksGrid');
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">加载中...</div>';
+  grid.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">加载中...</div>';
 
   try {
     const API_URL = 'https://api.soda567.dpdns.org';
@@ -719,7 +720,7 @@ async function loadWorksFromAPI() {
       if (saved) {
         renderWorksGrid(JSON.parse(saved));
       } else {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">作品加载失败,请刷新重试</div>';
+        grid.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">作品加载失败,请刷新重试</div>';
       }
     }
   }
