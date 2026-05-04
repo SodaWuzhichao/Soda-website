@@ -8,8 +8,9 @@
 <meta name="keywords" content="视觉创作,视频制作,摄影,作品集,Soda567">
 <meta name="author" content="Soda">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
-<!-- 预加载首屏封面 -->
-<link rel="preload" as="image" href="images/cover1.webp">
+<!-- 预加载首屏资源 -->
+<link rel="preload" as="image" href="images/logo-icon.svg" fetchpriority="high">
+<link rel="preload" as="image" href="images/cover1.webp" fetchpriority="high">
 <link rel="preload" as="image" href="images/cover2.webp">
 <link rel="preload" as="image" href="images/cover3.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +35,21 @@ body {
   font-family: 'DM Sans', -apple-system, sans-serif;
   font-weight: 200;
   line-height: 1.6;
+}
+
+img {
+  display: block;
+}
+
+.fade-media {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.fade-media.is-loaded {
+  opacity: 1;
+  transform: none;
 }
 
 /* NAV */
@@ -112,6 +128,7 @@ nav {
   aspect-ratio: 2/3;
   border-radius: 4px;
   overflow: hidden;
+  background: #111;
 }
 
 .hero-bg-item img {
@@ -499,7 +516,7 @@ footer {
 <nav>
   <div class="nav-container">
     <a href="/" class="logo" style="display:flex;align-items:center;gap:8px;text-decoration:none;line-height:1;">
-  <img src="images/logo-icon.png" style="height:52px;width:auto;border-radius:4px;">
+  <img src="images/logo-icon.svg" alt="Soda Logo" width="43" height="52" fetchpriority="high" decoding="sync" class="fade-media is-loaded" style="height:52px;width:auto;border-radius:4px;">
   <div style="display:flex;flex-direction:column;justify-content:center;">
     <span style="font-weight:700;font-family:'DM Sans',sans-serif;letter-spacing:-0.5px;color:#fff;font-size:1.2em;">soda</span>
     <span style="font-weight:200;font-family:'DM Sans',sans-serif;letter-spacing:3.5px;font-size:0.65em;opacity:0.8;color:#fff;margin-top:2px;">MEDIA</span>
@@ -517,9 +534,9 @@ footer {
 <!-- HERO -->
 <section id="hero">
   <div class="hero-bg">
-    <div class="hero-bg-item"><img src="images/cover1.webp" alt=""></div>
-    <div class="hero-bg-item"><img src="images/cover2.webp" alt=""></div>
-    <div class="hero-bg-item"><img src="images/cover3.webp" alt=""></div>
+    <div class="hero-bg-item"><img src="images/cover1.webp" alt="" width="2443" height="3647" fetchpriority="high" decoding="async" class="fade-media"></div>
+    <div class="hero-bg-item"><img src="images/cover2.webp" alt="" width="1500" height="2239" decoding="async" class="fade-media"></div>
+    <div class="hero-bg-item"><img src="images/cover3.webp" alt="" width="3017" height="4526" decoding="async" class="fade-media"></div>
   </div>
   <div class="hero-content">
     <h1 class="hero-title">视觉创作者</h1>
@@ -568,8 +585,8 @@ footer {
         如果你也在意画面该有的样子,欢迎聊聊。
       </p>
     </div>
-    <div style="aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);max-width:100%;">
-      <img src="images/profile.jpg" alt="Soda" style="width:100%;height:100%;object-fit:cover;">
+    <div style="aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);max-width:100%;background:#111;">
+      <img src="images/profile.jpg" alt="Soda" width="576" height="768" decoding="async" class="fade-media" style="width:100%;height:100%;object-fit:cover;">
     </div>
   </div>
 </section>
@@ -653,7 +670,7 @@ function renderWorksGrid(works) {
       }
       const rc2 = ar2 > 1.2 ? 'landscape' : ar2 > 0 && ar2 < 0.8 ? 'portrait' : ar2 > 0 ? 'square' : 'portrait';
       return `<div class="work-item ${rc2}" data-type="photo" data-src="${thumbUrl}" data-id="${w.id}" data-ratio="fixed">
-        <img src="${thumbUrl}" alt="${w.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+        <img src="${thumbUrl}" alt="${w.title}" loading="lazy" decoding="async" class="fade-media" style="width:100%;height:100%;object-fit:cover;">
         <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">PHOTO · ${w.year || 2025}</div></div></div>`;
     } else if (w.type === 'live' && thumbUrl) {
       let ar3 = 0;
@@ -729,6 +746,15 @@ async function loadWorksFromAPI() {
 loadWorksFromAPI();
 
 function setupHoverAndRatio() {
+  document.querySelectorAll('img.fade-media').forEach(img => {
+    const markLoaded = () => img.classList.add('is-loaded');
+    if (img.complete) markLoaded();
+    else {
+      img.addEventListener('load', markLoaded, { once: true });
+      img.addEventListener('error', markLoaded, { once: true });
+    }
+  });
+
   const workItems = document.querySelectorAll('.work-item');
 
   // IntersectionObserver 懒加载视频(进入视口才加载,移出暂停)
