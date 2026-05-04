@@ -968,14 +968,30 @@ function closeVideo() {
   video.style.display = 'none';
 }
 
-// ESC 键关闭（捕获阶段，防止原生控件拦截）
-document.addEventListener('keydown', e => {
+// ESC 键关闭（多层拦截：window捕获 + 元素级 + keyup 兜底）
+function escapeHandler(e) {
   if (e.key === 'Escape') {
     e.preventDefault();
+    e.stopImmediatePropagation();
+    // 任何焦点元素一律 blur
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    closeVideo();
+    return false;
+  }
+}
+// 第一层：window 捕获阶段（最高优先级，在 shadow DOM 之前拦截）
+window.addEventListener('keydown', escapeHandler, true);
+// 第二层：直接挂载到 video 元素（shadow DOM 内的 keydown 也能捕获）
+document.getElementById('modalVideo')?.addEventListener('keydown', escapeHandler);
+// 第三层：keyup 兜底（有些浏览器 keydown 被吞，keyup 反而能出来）
+window.addEventListener('keyup', function(e) {
+  if (e.key === 'Escape') {
     document.activeElement?.blur();
     closeVideo();
   }
-}, { capture: true });
+}, true);
 
 // 根据设备类型显示不同的退出提示
 function updateExitHint() {
