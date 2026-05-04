@@ -940,7 +940,11 @@ function setupFilter() {
 
 
 <!-- 视频播放器 -->
-<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal'||event.target.id==='modalVideo')closeVideo()">
+<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal'||event.target.id==='modalVideo')closeVideo()" onmousedown="document.activeElement?.blur()">
+  <!-- 关闭按钮 — 始终可点，不受进度条焦点影响 -->
+  <button id="videoCloseBtn" onclick="closeVideo()" aria-label="关闭视频"
+    style="position:fixed;top:24px;right:28px;z-index:10001;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0.5;transition:opacity .2s;line-height:1;"
+    onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">✕</button>
   <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">宝贝，等等我马上给你看<span id="loadingDots">...</span></p>
@@ -968,30 +972,10 @@ function closeVideo() {
   video.style.display = 'none';
 }
 
-// ESC 键关闭（多层拦截：window捕获 + 元素级 + keyup 兜底）
-function escapeHandler(e) {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    // 任何焦点元素一律 blur
-    if (document.activeElement && typeof document.activeElement.blur === 'function') {
-      document.activeElement.blur();
-    }
-    closeVideo();
-    return false;
-  }
-}
-// 第一层：window 捕获阶段（最高优先级，在 shadow DOM 之前拦截）
-window.addEventListener('keydown', escapeHandler, true);
-// 第二层：直接挂载到 video 元素（shadow DOM 内的 keydown 也能捕获）
-document.getElementById('modalVideo')?.addEventListener('keydown', escapeHandler);
-// 第三层：keyup 兜底（有些浏览器 keydown 被吞，keyup 反而能出来）
-window.addEventListener('keyup', function(e) {
-  if (e.key === 'Escape') {
-    document.activeElement?.blur();
-    closeVideo();
-  }
-}, true);
+// ESC 键关闭（仅对非进度条聚焦状态生效，点进度条后请点 ✕ 按钮）
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeVideo();
+});
 
 // 根据设备类型显示不同的退出提示
 function updateExitHint() {
