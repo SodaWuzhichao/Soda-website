@@ -277,6 +277,33 @@ section {
   grid-auto-flow: dense;
 }
 
+.works-grid.skeleton-grid {
+  opacity: 1;
+}
+
+.skeleton-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.skeleton-card.portrait {
+  grid-row: span 4;
+}
+
+.skeleton-card.landscape {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.skeleton-card.square {
+  grid-row: span 2;
+}
+
 .work-item {
   position: relative;
   overflow: hidden;
@@ -627,6 +654,21 @@ footer {
 // 作品数据缓存
 let _cachedWorks = null;
 
+function renderWorksSkeleton() {
+  const grid = document.getElementById('worksGrid');
+  if (!grid) return;
+  grid.innerHTML = `
+    <div class="works-grid skeleton-grid">
+      <div class="skeleton-card portrait"></div>
+      <div class="skeleton-card landscape"></div>
+      <div class="skeleton-card square"></div>
+      <div class="skeleton-card portrait"></div>
+      <div class="skeleton-card square"></div>
+      <div class="skeleton-card landscape"></div>
+    </div>
+  `;
+}
+
 // 渲染作品列表(从缓存或数据源)
 function renderWorksGrid(works) {
   const grid = document.getElementById('worksGrid');
@@ -719,11 +761,11 @@ function renderWorksGrid(works) {
 // 从 API 加载作品
 async function loadWorksFromAPI() {
   const grid = document.getElementById('worksGrid');
-  grid.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">加载中...</div>';
+  renderWorksSkeleton();
 
   try {
     const API_URL = 'https://api.soda567.dpdns.org';
-    const res = await fetch(API_URL + '/api/works?status=published');
+    const res = await fetch(API_URL + '/api/works?status=published', { cache: 'force-cache' });
     if (!res.ok) throw new Error('API 请求失败');
     const works = await res.json();
     _cachedWorks = works;
@@ -908,6 +950,10 @@ function setupFilter() {
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 </style>
 
 <script>
