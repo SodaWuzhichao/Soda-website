@@ -285,7 +285,7 @@ function setProgress(pct, phase) {
 function showError(msg) {
   loading.style.display = 'none';
   errorDiv.style.display = 'block';
-  errorDiv.textContent = msg;
+  errorDiv.innerHTML = String(msg).replace(/\n/g, '<br>');
   uploadArea.style.display = 'block';
 }
 
@@ -295,7 +295,112 @@ function formatSize(bytes) {
   return (bytes/1024/1024).toFixed(1) + 'MB';
 }
 
-// ===== 音频压缩 =====
+function getSafeAudioContext(sampleRate) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) throw new Error('当前浏览器不支持音频处理');
+  return sampleRate ? new AudioCtx({ sampleRate }) : new AudioCtx();
+}
+
+function replaceExtension(filename, ext) {
+  const base = (filename || 'media').replace(/\.[^.]+$/, '');
+  return `${base}${ext}`;
+}
+
+function getFileExtension(filename) {
+  const match = (filename || '').match(/\.([^.]+)$/);
+  return match ? match[1].toLowerCase() : '';
+}
+
+function isVideoFile(file) {
+  const type = (file.type || '').toLowerCase();
+  if (type.startsWith('video/')) return true;
+  return ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi'].includes(getFileExtension(file.name));
+}
+
+function isIOSLike() {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isSafariLike() {
+  const ua = navigator.userAgent || '';
+  return /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/i.test(ua);
+}
+
+function isFeishuBrowser() {
+  const ua = navigator.userAgent || '';
+  return /Lark|Feishu/i.test(ua);
+}
+
+function isIOSFeishuWebView() {
+  return isFeishuBrowser() && isIOSLike();
+}
+
+function getEnvironmentWarning(file) {
+  if (!file) return '';
+  if (isIOSFeishuWebView() && isVideoFile(file)) {
+    return [
+      '当前是飞书内置浏览器里的 iPhone 页面。',
+      '这个环境下视频音轨提取和大文件上传兼容性很差，容易在上传后直接失败。',
+      '请点右上角「…」→ 用 Safari 打开；或者先把视频导出成音频（m4a/mp3）再上传。'
+    ].join('\n');
+  }
+  return '';
+}
+
+function getFriendlyNetworkError(context) {
+  if (isIOSFeishuWebView()) {
+    if (context === 'upload') {
+      return '飞书内置浏览器（iPhone）对当前上传链路兼容性不足，已停止继续重试。请点右上角「…」→ 用 Safari 打开后再上传；如果是视频，也建议先导出成音频（m4a/mp3）。';
+    }
+    return '飞书内置浏览器（iPhone）与当前转写轮询链路兼容性不足。请改用 Safari / 系统浏览器打开此页面查看结果。';
+  }
+  return context === 'upload'
+    ? '网络错误，请检查网络连接后重试'
+    : '获取转写进度失败，请检查网络后重试';
+}
+
+function supportsMediaElementExtraction() {
+  return typeof MediaRecorder !== 'undefined';
+}
+
+async function preprocessMedia(file) {
+  if (isVideoFile(file)) {
+    return prepareVideoAudio(file);
+  }
+  return compressAudio(file);
+}
+
+async function prepareVideoAudio(file) {
+  try {
+    return await decodeMediaFileToWav(file, {
+      startPct: 4,
+      endPct: 18,
+      startLabel: '提取视频音轨中...',
+      endLabel: '音轨已整理完成'
+    });
+  } catch (decodeError) {
+    console.warn('直接解码视频音轨失败:', decodeError);
+
+    if (isIOSLike() || isSafariLike()) {
+      throw new Error('当前 iPhone / Safari 无法稳定提取这个视频的音轨。为避免直接上传原视频，请先在相册或剪映里导出成音频（m4a/mp3）后再上传，或改用桌面端 Chrome 重试。');
+    }
+
+    if (!supportsMediaElementExtraction()) {
+      throw new Error('当前浏览器不支持前端提取视频音轨。请先把视频导出成音频后再上传，或换桌面端 Chrome / Safari 最新版重试。');
+    }
+
+    const extractedAudio = await extractAudioFromVideo(file);
+    return decodeMediaFileToWav(extractedAudio, {
+      startPct: 12,
+      endPct: 18,
+      startLabel: '整理提取出的音轨...',
+      endLabel: '音轨已整理完成'
+    });
+  }
+}
+
+// ===== 音频压缩 / 视频抽音轨 =====
 async function compressAudio(file) {
   if (file.size < 5 * 1024 * 1024) {
     console.log('文件较小，跳过压缩:', formatSize(file.size));
@@ -303,23 +408,179 @@ async function compressAudio(file) {
   }
 
   console.log('开始压缩音频:', formatSize(file.size));
-  setProgress(5, '压缩音频中...');
+  return decodeMediaFileToWav(file, {
+    startPct: 8,
+    endPct: 15,
+    startLabel: '压缩音频中...',
+    endLabel: '音频已准备完成',
+    fallbackToOriginal: true
+  });
+}
 
+async function decodeMediaFileToWav(file, options = {}) {
+  const {
+    startPct = 8,
+    endPct = 15,
+    startLabel = '处理中...',
+    endLabel = '处理完成',
+    fallbackToOriginal = false
+  } = options;
+
+  let audioCtx;
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    const channelData = audioBuffer.getChannelData(0);
-    const wavBlob = encodeWAV(channelData, 16000);
-    await audioCtx.close();
+    setProgress(startPct, startLabel);
+    audioCtx = getSafeAudioContext(16000);
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-    console.log('压缩完成:', formatSize(wavBlob.size));
-    setProgress(10, '压缩完成');
-    return wavBlob;
+    const arrayBuffer = await file.arrayBuffer();
+    setProgress(startPct + Math.max(1, (endPct - startPct) * 0.25), startLabel);
+
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    setProgress(startPct + Math.max(2, (endPct - startPct) * 0.65), '正在转换为轻量音频...');
+
+    const monoData = mixToMono(audioBuffer);
+    const wavBlob = encodeWAV(monoData, 16000);
+    const outputFile = new File([wavBlob], replaceExtension(file.name || 'audio', '.wav'), { type: 'audio/wav' });
+
+    console.log('音频整理完成:', formatSize(file.size), '→', formatSize(outputFile.size));
+    setProgress(endPct, `${endLabel}（${formatSize(outputFile.size)}）`);
+    return outputFile;
   } catch (e) {
-    console.warn('音频压缩失败，使用原始文件:', e);
-    return file;
+    console.warn('音频处理失败:', e);
+    if (fallbackToOriginal) {
+      return file;
+    }
+    throw e;
+  } finally {
+    if (audioCtx && audioCtx.state !== 'closed') {
+      await audioCtx.close().catch(() => {});
+    }
   }
+}
+
+function mixToMono(audioBuffer) {
+  const { numberOfChannels, length } = audioBuffer;
+  if (numberOfChannels === 1) return audioBuffer.getChannelData(0);
+
+  const mono = new Float32Array(length);
+  for (let ch = 0; ch < numberOfChannels; ch++) {
+    const channel = audioBuffer.getChannelData(ch);
+    for (let i = 0; i < length; i++) mono[i] += channel[i] / numberOfChannels;
+  }
+  return mono;
+}
+
+async function extractAudioFromVideo(file) {
+  const hasAudioContext = !!(window.AudioContext || window.webkitAudioContext);
+  const hasMediaRecorder = typeof MediaRecorder !== 'undefined';
+  if (!hasAudioContext || !hasMediaRecorder) {
+    throw new Error('当前浏览器不支持前端提取视频音轨（缺少 Web Audio 或 MediaRecorder）。请改用最新版 Safari / Chrome，或先把视频导出成音频后再上传。');
+  }
+
+  const mimeType = getSupportedRecorderMimeType();
+  console.log('开始前端提取视频音轨:', file.name, formatSize(file.size), mimeType || 'browser-default');
+  setProgress(3, '正在提取视频音轨...');
+
+  const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.src = objectUrl;
+  video.preload = 'auto';
+  video.muted = true;
+  video.playsInline = true;
+  video.crossOrigin = 'anonymous';
+  video.style.position = 'fixed';
+  video.style.left = '-9999px';
+  video.style.width = '1px';
+  video.style.height = '1px';
+  document.body.appendChild(video);
+
+  let audioCtx;
+  let recorder;
+  try {
+    await waitForMediaReady(video);
+    audioCtx = getSafeAudioContext();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+    const source = audioCtx.createMediaElementSource(video);
+    const destination = audioCtx.createMediaStreamDestination();
+    const silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0;
+
+    source.connect(destination);
+    source.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
+
+    const chunks = [];
+    recorder = new MediaRecorder(destination.stream, mimeType ? { mimeType } : undefined);
+
+    const extractedBlob = await new Promise((resolve, reject) => {
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) chunks.push(event.data);
+      };
+      recorder.onerror = (event) => reject(event.error || new Error('录制视频音轨失败'));
+      recorder.onstop = () => {
+        const recordedType = chunks[0]?.type || mimeType || 'audio/webm';
+        resolve(new Blob(chunks, { type: recordedType }));
+      };
+      video.onerror = () => reject(new Error('视频加载失败，无法提取音轨'));
+      video.ontimeupdate = () => {
+        if (!video.duration || !isFinite(video.duration)) return;
+        const ratio = Math.min(video.currentTime / video.duration, 1);
+        setProgress(3 + ratio * 7, `提取视频音轨中 ${Math.round(ratio * 100)}%`);
+      };
+      video.onended = () => {
+        if (recorder.state !== 'inactive') recorder.stop();
+      };
+
+      recorder.start(1000);
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => reject(new Error('当前浏览器阻止了视频自动播放，无法提取音轨。请改用音频文件上传，或换 Chrome / Safari 最新版重试。')));
+      }
+    });
+
+    console.log('视频音轨提取完成:', formatSize(extractedBlob.size));
+    return new File([extractedBlob], replaceExtension(file.name, '.audio.webm'), { type: extractedBlob.type || 'audio/webm' });
+  } catch (e) {
+    console.warn('视频音轨提取失败:', e);
+    throw e;
+  } finally {
+    try { video.pause(); } catch (_) {}
+    video.removeAttribute('src');
+    video.load();
+    video.remove();
+    URL.revokeObjectURL(objectUrl);
+    if (recorder && recorder.state !== 'inactive') {
+      try { recorder.stop(); } catch (_) {}
+    }
+    if (audioCtx && audioCtx.state !== 'closed') {
+      await audioCtx.close().catch(() => {});
+    }
+  }
+}
+
+function waitForMediaReady(mediaEl) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      mediaEl.onloadedmetadata = null;
+      mediaEl.oncanplay = null;
+      mediaEl.onerror = null;
+    };
+    mediaEl.onloadedmetadata = () => {
+      if (mediaEl.readyState >= 2) {
+        cleanup();
+        resolve();
+      }
+    };
+    mediaEl.oncanplay = () => {
+      cleanup();
+      resolve();
+    };
+    mediaEl.onerror = () => {
+      cleanup();
+      reject(new Error('视频解析失败，可能是不支持的编码格式'));
+    };
+  });
 }
 
 function encodeWAV(samples, sampleRate) {
@@ -357,6 +618,13 @@ async function handleFile() {
   const file = fileInput.files[0];
   if (!file) return;
 
+  const envWarning = getEnvironmentWarning(file);
+  if (envWarning) {
+    showError('⚠️ ' + envWarning);
+    fileInput.value = '';
+    return;
+  }
+
   uploadArea.style.display = 'none';
   loading.style.display = 'block';
   errorDiv.style.display = 'none';
@@ -364,11 +632,11 @@ async function handleFile() {
   setProgress(0, '准备上传');
 
   try {
-    const uploadFile = await compressAudio(file);
+    const uploadFile = await preprocessMedia(file);
     const lang = document.getElementById('langSelect').value;
-    const taskId = await uploadFileToServer(uploadFile, file.name, lang);
+    const taskId = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang);
 
-    setProgress(30, '已提交，等待转写...');
+    setProgress(35, '上传完成，正在进入转写队列...');
     const result = await pollUntilDone(taskId);
 
     setProgress(100, '完成!');
@@ -398,8 +666,8 @@ async function uploadFileToServer(file, originalName, lang) {
 
     xhr.upload.onprogress = (e) => {
       if (!e.lengthComputable) return;
-      const pct = (e.loaded / e.total) * 30;
-      const elapsed = (Date.now() - startTime) / 1000;
+      const pct = Math.min(35, (e.loaded / e.total) * 35);
+      const elapsed = Math.max((Date.now() - startTime) / 1000, 0.1);
       const speed = (e.loaded / 1024 / 1024 / elapsed).toFixed(1);
       const loadedMB = (e.loaded / 1024 / 1024).toFixed(1);
       setProgress(pct, `上传中 ${loadedMB}/${fileSizeMB}MB (${speed}MB/s)`);
@@ -411,7 +679,7 @@ async function uploadFileToServer(file, originalName, lang) {
         try {
           const data = JSON.parse(xhr.responseText);
           if (data.task_id) {
-            setProgress(30, '上传完成');
+            setProgress(35, '上传完成，正在排队...');
             resolve(data.task_id);
           } else {
             reject(new Error('服务返回异常：' + xhr.responseText.substring(0, 200)));
@@ -431,7 +699,7 @@ async function uploadFileToServer(file, originalName, lang) {
       }
     };
 
-    xhr.onerror = () => reject(new Error('网络错误，请检查网络连接后重试'));
+    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('upload')));
     xhr.ontimeout = () => reject(new Error('上传超时，请尝试更小的文件'));
     xhr.timeout = 300000;
     xhr.open('POST', url);
@@ -439,10 +707,22 @@ async function uploadFileToServer(file, originalName, lang) {
   });
 }
 
+function estimateQueuedProgress(elapsedSec, queuePos) {
+  const queueBoost = queuePos > 0 ? Math.min(10, queuePos * 1.5) : 4;
+  return Math.min(68, 36 + queueBoost + elapsedSec * 0.6);
+}
+
+function estimateProcessingProgress(elapsedSec, currentPct) {
+  const timeBased = 68 + elapsedSec * 0.45;
+  const stepped = currentPct + 5;
+  return Math.min(96, Math.max(timeBased, stepped));
+}
+
 async function pollUntilDone(taskId) {
   const maxWait = 600;
   const startTime = Date.now();
   const statusUrl = API_BASE + '/api/status/' + taskId;
+  let visualPct = 35;
 
   while (true) {
     if (Date.now() - startTime > maxWait * 1000) {
@@ -455,6 +735,7 @@ async function pollUntilDone(taskId) {
       const res = await fetch(statusUrl, { mode: 'cors' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
+      const elapsed = (Date.now() - startTime) / 1000;
 
       if (data.status === 'completed') {
         setProgress(100, '转写完成');
@@ -462,15 +743,20 @@ async function pollUntilDone(taskId) {
       } else if (data.status === 'error') {
         throw new Error(data.error || '转写失败');
       } else if (data.status === 'processing') {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const estimated = Math.min(95, 30 + (elapsed / 300) * 65);
-        setProgress(estimated, '转写中，请耐心等待...');
+        visualPct = estimateProcessingProgress(elapsed, visualPct);
+        setProgress(visualPct, '转写中，正在持续生成文案...');
       } else {
         const queuePos = data.queue_position || 0;
-        setProgress(30, queuePos > 0 ? `排队中（第${queuePos}位）` : '等待转写开始...');
+        visualPct = Math.max(visualPct, estimateQueuedProgress(elapsed, queuePos));
+        setProgress(visualPct, queuePos > 0 ? `排队中（前面还有 ${queuePos} 个任务）` : '任务已提交，服务端正在准备转写...');
       }
     } catch (e) {
-      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) continue;
+      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+        if (isIOSFeishuWebView()) {
+          throw new Error(getFriendlyNetworkError('poll'));
+        }
+        continue;
+      }
       throw e;
     }
   }
