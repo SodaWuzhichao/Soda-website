@@ -765,7 +765,7 @@ async function loadWorksFromAPI() {
 
   try {
     const API_URL = 'https://api.soda567.dpdns.org';
-    const res = await fetch(API_URL + '/api/works?status=published', { cache: 'force-cache' });
+    const res = await fetch(API_URL + '/api/works?status=published', { cache: 'no-cache' });
     if (!res.ok) throw new Error('API 请求失败');
     const works = await res.json();
     _cachedWorks = works;
