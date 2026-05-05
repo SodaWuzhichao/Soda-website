@@ -365,9 +365,10 @@ function supportsMediaElementExtraction() {
 }
 
 async function preprocessMedia(file) {
-  // iPhone 上传视频时，直接拦截引导，不尝试前端解码（极慢且大概率卡住）
+  // iPhone / 手机上不尝试前端抽音轨，直接传原文件让后端处理
   if (isIOSLike() && isVideoFile(file)) {
-    throw new Error('iPhone 浏览器无法在前端快速处理视频。请先把视频在「照片」或「剪映」里导出成音频（m4a/mp3），然后上传音频文件；或者换桌面端 Chrome 处理。');
+    console.log('iPhone 视频：直接上传，由后端提取音轨');
+    return file;
   }
   if (isVideoFile(file)) {
     return prepareVideoAudio(file);
