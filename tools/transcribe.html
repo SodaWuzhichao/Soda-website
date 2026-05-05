@@ -337,24 +337,11 @@ function isIOSFeishuWebView() {
 }
 
 function getEnvironmentWarning(file) {
-  if (!file) return '';
-  if (isIOSFeishuWebView() && isVideoFile(file)) {
-    return [
-      '当前是飞书内置浏览器里的 iPhone 页面。',
-      '这个环境下视频音轨提取和大文件上传兼容性很差，容易在上传后直接失败。',
-      '请点右上角「…」→ 用 Safari 打开；或者先把视频导出成音频（m4a/mp3）再上传。'
-    ].join('\n');
-  }
+  // 飞书浏览器限制已解除，正常允许上传
   return '';
 }
 
 function getFriendlyNetworkError(context) {
-  if (isIOSFeishuWebView()) {
-    if (context === 'upload') {
-      return '飞书内置浏览器（iPhone）对当前上传链路兼容性不足，已停止继续重试。请点右上角「…」→ 用 Safari 打开后再上传；如果是视频，也建议先导出成音频（m4a/mp3）。';
-    }
-    return '飞书内置浏览器（iPhone）与当前转写轮询链路兼容性不足。请改用 Safari / 系统浏览器打开此页面查看结果。';
-  }
   return context === 'upload'
     ? '网络错误，请检查网络连接后重试'
     : '获取转写进度失败，请检查网络后重试';
