@@ -63,7 +63,7 @@ button{cursor:pointer} button.primary{background:var(--gold);color:#111;border-c
 </div>
 <script>
 const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://127.0.0.1:5001' : 'https://api.soda567.dpdns.org';
-const CHUNK_SIZE = 8 * 1024 * 1024;
+const CHUNK_SIZE = 2 * 1024 * 1024;
 const POLL_MS = 2000;
 let polling = null;
 
@@ -93,7 +93,7 @@ function resetUI() {
   setMeta('fileMeta', '-');
 }
 
-async function uploadChunk(file, fileId, idx, total) {
+async function uploadChunk(file, fileId, idx, total, onProgress) {
   const start = idx * CHUNK_SIZE;
   const end = Math.min(file.size, start + CHUNK_SIZE);
   const blob = file.slice(start, end);
@@ -103,10 +103,31 @@ async function uploadChunk(file, fileId, idx, total) {
   fd.append('part_index', String(idx));
   fd.append('total_parts', String(total));
   fd.append('filename', file.name);
-  const res = await fetch(API_BASE + '/api/transcribe/upload_chunk', { method: 'POST', body: fd });
-  const data = await res.json();
-  if (!res.ok || data.status !== 'ok') throw new Error(data.message || data.error || `分片 ${idx+1} 上传失败`);
-  return {start, end, data};
+
+  return await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable || !onProgress) return;
+      onProgress({ loaded: e.loaded, total: e.total, start, end, idx, totalParts: total });
+    };
+    xhr.onload = async () => {
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
+          resolve({ start, end, data });
+        } else {
+          reject(new Error(data.message || data.error || `分片 ${idx + 1} 上传失败`));
+        }
+      } catch (err) {
+        reject(new Error(`分片 ${idx + 1} 响应解析失败`));
+      }
+    };
+    xhr.onerror = () => reject(new Error(`分片 ${idx + 1} 网络错误`));
+    xhr.ontimeout = () => reject(new Error(`分片 ${idx + 1} 上传超时`));
+    xhr.timeout = 600000;
+    xhr.open('POST', API_BASE + '/api/transcribe/upload_chunk');
+    xhr.send(fd);
+  });
 }
 
 async function completeUpload(file, fileId, language) {
@@ -189,8 +210,13 @@ $('startBtn').addEventListener('click', async () => {
   log(`开始上传：${file.name}，共 ${total} 片`);
   try {
     for (let i = 0; i < total; i++) {
-      setBar((i / total) * 60, `上传分片 ${i+1}/${total}`);
-      const {start, end} = await uploadChunk(file, fileId, i, total);
+      const {start, end} = await uploadChunk(file, fileId, i, total, ({ loaded, total: partTotal, idx, totalParts }) => {
+        const uploadedBefore = idx * CHUNK_SIZE;
+        const overallLoaded = Math.min(file.size, uploadedBefore + loaded);
+        const pct = (overallLoaded / file.size) * 60;
+        setBar(pct, `上传分片 ${idx + 1}/${totalParts}`);
+      });
+      setBar(((i + 1) / total) * 60, `上传分片 ${i+1}/${total}`);
       log(`分片 ${i+1}/${total} 上传完成：${start}-${end}`);
     }
     setBar(65, '服务端合并文件中');
