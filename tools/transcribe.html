@@ -365,19 +365,22 @@ async function preprocessMedia(file) {
 
 async function prepareVideoAudio(file) {
   try {
-    // Phase 1: 添加 fallback，失败时返回原文件让后端处理
     return await decodeMediaFileToWav(file, {
-      fallbackToOriginal: true,
       startPct: 4,
       endPct: 18,
       startLabel: '提取视频音轨中...',
       endLabel: '音轨已整理完成'
     });
   } catch (decodeError) {
-    console.warn('视频处理失败，上传原文件让后端提取音轨:', decodeError.message);
-    // Phase 1: fallback 返回原文件，不再抛异常
-    return file;
-  }
+    console.warn('直接解码视频音轨失败:', decodeError);
+
+    if (isIOSLike() || isSafariLike()) {
+      throw new Error('当前 iPhone / Safari 无法稳定提取这个视频的音轨。为避免直接上传原视频，请先在相册或剪映里导出成音频（m4a/mp3）后再上传，或改用桌面端 Chrome 重试。');
+    }
+
+    if (!supportsMediaElementExtraction()) {
+      throw new Error('当前浏览器不支持前端提取视频音轨。请先把视频导出成音频后再上传，或换桌面端 Chrome / Safari 最新版重试。');
+    }
 
     const extractedAudio = await extractAudioFromVideo(file);
     return decodeMediaFileToWav(extractedAudio, {
@@ -390,12 +393,20 @@ async function prepareVideoAudio(file) {
 }
 
 // ===== 音频压缩 / 视频抽音轨 =====
-// ===== Phase 1: 跳过前端压缩，让后端处理 =====
 async function compressAudio(file) {
-  // 长期主义策略：减少前端处理，降低内存 OOM 风险
-  // 后端 Whisper 服务更专业，让它处理
-  console.log('跳过前端压缩，上传原文件让后端处理:', formatSize(file.size));
-  return file;
+  if (file.size < 5 * 1024 * 1024) {
+    console.log('文件较小，跳过压缩:', formatSize(file.size));
+    return file;
+  }
+
+  console.log('开始压缩音频:', formatSize(file.size));
+  return decodeMediaFileToWav(file, {
+    startPct: 8,
+    endPct: 15,
+    startLabel: '压缩音频中...',
+    endLabel: '音频已准备完成',
+    fallbackToOriginal: true
+  });
 }
 
 async function decodeMediaFileToWav(file, options = {}) {
@@ -633,64 +644,59 @@ async function handleFile() {
 }
 
 async function uploadFileToServer(file, originalName, lang) {
-  const CHUNK_SIZE = 2 * 1024 * 1024;
-  if (file.size <= CHUNK_SIZE) return uploadDirect(file, originalName, lang);
-  return uploadInChunks(file, originalName, lang);
-}
-async function uploadDirect(file, originalName, lang) {
-  const fd = new FormData();
-  fd.append('file', file, originalName || 'audio.wav');
-  fd.append('language', lang);
+  const formData = new FormData();
+  formData.append('file', file, originalName || 'audio.wav');
+  formData.append('language', lang);
+
   const url = API_BASE + '/api/transcribe';
-  const mb = (file.size / 1024 / 1024).toFixed(1);
+  const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+  console.log('开始上传:', url, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang);
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const start = Date.now();
-    xhr.upload.onprogress = e => {
+    const startTime = Date.now();
+
+    xhr.upload.onprogress = (e) => {
       if (!e.lengthComputable) return;
-      const p = Math.min(35, (e.loaded / e.total) * 35);
-      const spd = (e.loaded / 1024 / 1024 / Math.max((Date.now() - start) / 1000, 0.1)).toFixed(1);
-      setProgress(p, `上传中 ${(e.loaded/1024/1024).toFixed(1)}/${mb}MB (${spd}MB/s)`);
+      const pct = Math.min(35, (e.loaded / e.total) * 35);
+      const elapsed = Math.max((Date.now() - startTime) / 1000, 0.1);
+      const speed = (e.loaded / 1024 / 1024 / elapsed).toFixed(1);
+      const loadedMB = (e.loaded / 1024 / 1024).toFixed(1);
+      setProgress(pct, `上传中 ${loadedMB}/${fileSizeMB}MB (${speed}MB/s)`);
     };
+
     xhr.onload = () => {
-      try {
-        const d = JSON.parse(xhr.responseText);
-        d.task_id ? (setProgress(35, '排队中...'), resolve(d.task_id)) : reject(new Error('异常'));
-      } catch (e) { reject(e); }
+      console.log('上传响应:', xhr.status, xhr.responseText);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.task_id) {
+            setProgress(35, '上传完成，正在排队...');
+            resolve(data.task_id);
+          } else {
+            reject(new Error('服务返回异常：' + xhr.responseText.substring(0, 200)));
+          }
+        } catch (e) {
+          reject(new Error('解析响应失败：' + xhr.responseText.substring(0, 200)));
+        }
+      } else if (xhr.status === 524) {
+        reject(new Error('上传超时（Cloudflare限制）。文件较大时请尝试更短的音频'));
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || 'HTTP ' + xhr.status));
+        } catch (e) {
+          reject(new Error('HTTP ' + xhr.status + '：' + xhr.responseText.substring(0, 200)));
+        }
+      }
     };
-    xhr.onerror = () => reject(new Error('网络错误'));
-    xhr.ontimeout = () => reject(new Error('超时'));
-    xhr.timeout = 600000;
+
+    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('upload')));
+    xhr.ontimeout = () => reject(new Error('上传超时，请尝试更小的文件'));
+    xhr.timeout = 600000; // 10分钟超时，适配手机大文件上传
     xhr.open('POST', url);
-    xhr.send(fd);
+    xhr.send(formData);
   });
-}
-async function uploadInChunks(file, name, lang) {
-  const id = 't' + Date.now() + Math.random().toString(36).substr(2, 9);
-  const CS = 2 * 1024 * 1024;
-  const tot = Math.ceil(file.size / CS);
-  console.log('分片:', id, tot);
-  for (let i = 0; i < tot; i++) {
-    const fd = new FormData();
-    fd.append('file', file.slice(i * CS, Math.min((i + 1) * CS, file.size)), name);
-    fd.append('file_id', id);
-    fd.append('part_index', String(i));
-    fd.append('total_parts', String(tot));
-    fd.append('filename', name);
-    setProgress((i / tot) * 35, `分片${i+1}/${tot}`);
-    const r = await fetch(API_BASE + '/api/transcribe/upload_chunk', { method: 'POST', body: fd });
-    if (!r.ok) throw new Error('分片失败');
-  }
-  setProgress(35, '合并...');
-  const r2 = await fetch(API_BASE + '/api/transcribe/complete', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_id: id, filename: name, content_type: file.type, language: lang })
-  });
-  if (!r2.ok) throw new Error('合并失败');
-  const d = await r2.json();
-  if (d.task_id) return d.task_id;
-  throw new Error('异常');
-}
 }
 
 function estimateQueuedProgress(elapsedSec, queuePos) {
