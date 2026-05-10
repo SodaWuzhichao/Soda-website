@@ -606,6 +606,14 @@ function writeString(view, offset, string) {
   }
 }
 
+const TRANSCRIBE_CHUNK_SIZE = 512 * 1024;
+const TRANSCRIBE_MAX_RETRIES = 3;
+const TRANSCRIBE_STATUS_POLL_MS = 2000;
+
+function getResumeKey(file) {
+  return `transcribe_resume:${file.name}:${file.size}:${file.lastModified}`;
+}
+
 async function handleFile() {
   const file = fileInput.files[0];
   if (!file) return;
@@ -626,10 +634,7 @@ async function handleFile() {
   try {
     const uploadFile = await preprocessMedia(file);
     const lang = document.getElementById('langSelect').value;
-    const taskId = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang);
-
-    setProgress(35, '上传完成，正在进入转写队列...');
-    const result = await pollUntilDone(taskId);
+    const result = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang);
 
     setProgress(100, '完成!');
     loading.style.display = 'none';
@@ -643,90 +648,168 @@ async function handleFile() {
   }
 }
 
-async function uploadFileToServer(file, originalName, lang) {
+async function uploadChunkToServer(file, fileId, idx, totalParts, onProgress) {
+  const start = idx * TRANSCRIBE_CHUNK_SIZE;
+  const end = Math.min(file.size, start + TRANSCRIBE_CHUNK_SIZE);
+  const chunk = file.slice(start, end);
   const formData = new FormData();
-  formData.append('file', file, originalName || 'audio.wav');
-  formData.append('language', lang);
-
-  const url = API_BASE + '/api/transcribe';
-  const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
-  console.log('开始上传:', url, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang);
+  formData.append('file', chunk, `${file.name}.part${idx}`);
+  formData.append('file_id', fileId);
+  formData.append('part_index', String(idx));
+  formData.append('total_parts', String(totalParts));
+  formData.append('filename', file.name);
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const startTime = Date.now();
-
     xhr.upload.onprogress = (e) => {
-      if (!e.lengthComputable) return;
-      const pct = Math.min(35, (e.loaded / e.total) * 35);
-      const elapsed = Math.max((Date.now() - startTime) / 1000, 0.1);
-      const speed = (e.loaded / 1024 / 1024 / elapsed).toFixed(1);
-      const loadedMB = (e.loaded / 1024 / 1024).toFixed(1);
-      setProgress(pct, `上传中 ${loadedMB}/${fileSizeMB}MB (${speed}MB/s)`);
+      if (!e.lengthComputable || !onProgress) return;
+      onProgress({ loaded: e.loaded, total: e.total, idx, totalParts, start, end });
     };
-
     xhr.onload = () => {
-      console.log('上传响应:', xhr.status, xhr.responseText);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (data.task_id) {
-            setProgress(35, '上传完成，正在排队...');
-            resolve(data.task_id);
-          } else {
-            reject(new Error('服务返回异常：' + xhr.responseText.substring(0, 200)));
-          }
-        } catch (e) {
-          reject(new Error('解析响应失败：' + xhr.responseText.substring(0, 200)));
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
+          resolve({ start, end, data });
+        } else {
+          reject(new Error(data.message || data.error || `分片 ${idx + 1} 上传失败`));
         }
-      } else if (xhr.status === 524) {
-        reject(new Error('上传超时（Cloudflare限制）。文件较大时请尝试更短的音频'));
-      } else {
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          reject(new Error(errData.error || 'HTTP ' + xhr.status));
-        } catch (e) {
-          reject(new Error('HTTP ' + xhr.status + '：' + xhr.responseText.substring(0, 200)));
-        }
+      } catch (e) {
+        reject(new Error(`分片 ${idx + 1} 响应解析失败`));
       }
     };
-
-    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('upload')));
-    xhr.ontimeout = () => reject(new Error('上传超时，请尝试更小的文件'));
-    xhr.timeout = 600000; // 10分钟超时，适配手机大文件上传
-    xhr.open('POST', url);
+    xhr.onerror = () => reject(new Error(`分片 ${idx + 1} 网络错误`));
+    xhr.ontimeout = () => reject(new Error(`分片 ${idx + 1} 上传超时`));
+    xhr.timeout = 600000;
+    xhr.open('POST', API_BASE + '/api/transcribe/upload_chunk');
     xhr.send(formData);
   });
 }
 
+async function completeChunkUpload(file, fileId, lang) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300 && data.task_id) {
+          resolve(data);
+        } else {
+          reject(new Error(data.error || 'complete 未返回 task_id'));
+        }
+      } catch (e) {
+        reject(new Error('complete 响应解析失败'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('complete 网络错误'));
+    xhr.ontimeout = () => reject(new Error('complete 超时'));
+    xhr.timeout = 600000;
+    xhr.open('POST', API_BASE + '/api/transcribe/complete');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({
+      file_id: fileId,
+      filename: file.name,
+      content_type: file.type || '',
+      language: lang,
+    }));
+  });
+}
+
+async function uploadFileToServer(file, originalName, lang) {
+  const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+  const totalParts = Math.max(1, Math.ceil(file.size / TRANSCRIBE_CHUNK_SIZE));
+  const resumeKey = getResumeKey(file);
+  let resume = null;
+  try {
+    resume = JSON.parse(localStorage.getItem(resumeKey) || 'null');
+  } catch (_) {}
+
+  const fileId = resume?.fileId || (`web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+  let nextIndex = Number.isInteger(resume?.nextIndex) ? resume.nextIndex : 0;
+  console.log('开始分片上传:', API_BASE, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang, '分片数:', totalParts);
+
+  for (let i = nextIndex; i < totalParts; i++) {
+    let lastErr = null;
+    for (let attempt = 1; attempt <= TRANSCRIBE_MAX_RETRIES; attempt++) {
+      try {
+        await uploadChunkToServer(file, fileId, i, totalParts, ({ loaded, idx, totalParts: allParts }) => {
+          const uploadedBefore = idx * TRANSCRIBE_CHUNK_SIZE;
+          const overallLoaded = Math.min(file.size, uploadedBefore + loaded);
+          const pct = (overallLoaded / file.size) * 60;
+          const loadedMB = (overallLoaded / 1024 / 1024).toFixed(1);
+          setProgress(pct, `上传中 ${loadedMB}/${fileSizeMB}MB（第 ${idx + 1}/${allParts} 片，尝试 ${attempt}/${TRANSCRIBE_MAX_RETRIES}）`);
+        });
+        localStorage.setItem(resumeKey, JSON.stringify({ fileId, nextIndex: i + 1 }));
+        setProgress(((i + 1) / totalParts) * 60, `已上传 ${i + 1}/${totalParts} 片`);
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`分片 ${i + 1}/${totalParts} 第 ${attempt}/${TRANSCRIBE_MAX_RETRIES} 次失败`, err);
+        if (attempt < TRANSCRIBE_MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, attempt * 1500));
+        }
+      }
+    }
+    if (lastErr) {
+      throw lastErr;
+    }
+  }
+
+  setProgress(65, '上传完成，服务端合并中...');
+  const completeData = await completeChunkUpload(file, fileId, lang);
+  localStorage.removeItem(resumeKey);
+  setProgress(72, '后台任务已创建，开始轮询...');
+  return await pollUntilDone(completeData.task_id);
+}
+
 function estimateQueuedProgress(elapsedSec, queuePos) {
   const queueBoost = queuePos > 0 ? Math.min(10, queuePos * 1.5) : 4;
-  return Math.min(68, 36 + queueBoost + elapsedSec * 0.6);
+  return Math.min(90, 72 + queueBoost + elapsedSec * 0.5);
 }
 
 function estimateProcessingProgress(elapsedSec, currentPct) {
-  const timeBased = 68 + elapsedSec * 0.45;
-  const stepped = currentPct + 5;
-  return Math.min(96, Math.max(timeBased, stepped));
+  const timeBased = 84 + elapsedSec * 0.35;
+  const stepped = currentPct + 2.2;
+  return Math.min(97, Math.max(timeBased, stepped));
+}
+
+async function fetchTaskStatus(taskId) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if ((xhr.status >= 200 && xhr.status < 300) || data.status === 'error') {
+          resolve(data);
+        } else {
+          reject(new Error(data.error || '状态查询失败'));
+        }
+      } catch (e) {
+        reject(new Error('状态响应解析失败'));
+      }
+    };
+    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('poll')));
+    xhr.ontimeout = () => reject(new Error('状态查询超时'));
+    xhr.timeout = 30000;
+    xhr.open('GET', API_BASE + '/api/status/' + encodeURIComponent(taskId));
+    xhr.send();
+  });
 }
 
 async function pollUntilDone(taskId) {
   const maxWait = 600;
   const startTime = Date.now();
-  const statusUrl = API_BASE + '/api/status/' + taskId;
-  let visualPct = 35;
+  let visualPct = 72;
 
   while (true) {
     if (Date.now() - startTime > maxWait * 1000) {
       throw new Error('转写超时（超过10分钟），请重试');
     }
 
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, TRANSCRIBE_STATUS_POLL_MS));
 
     try {
-      const res = await fetch(statusUrl, { mode: 'cors' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
+      const data = await fetchTaskStatus(taskId);
       const elapsed = (Date.now() - startTime) / 1000;
 
       if (data.status === 'completed') {
@@ -734,7 +817,13 @@ async function pollUntilDone(taskId) {
         return data.result || '';
       } else if (data.status === 'error') {
         throw new Error(data.error || '转写失败');
-      } else if (data.status === 'processing') {
+      } else if (data.phase === 'preprocessing') {
+        visualPct = Math.max(78, visualPct);
+        setProgress(visualPct, '媒体预处理中...');
+      } else if (data.phase === 'submitting') {
+        visualPct = Math.max(84, visualPct);
+        setProgress(visualPct, '正在提交到转写队列...');
+      } else if (data.phase === 'transcribing' || data.status === 'processing') {
         visualPct = estimateProcessingProgress(elapsed, visualPct);
         setProgress(visualPct, '转写中，正在持续生成文案...');
       } else {
@@ -743,7 +832,7 @@ async function pollUntilDone(taskId) {
         setProgress(visualPct, queuePos > 0 ? `排队中（前面还有 ${queuePos} 个任务）` : '任务已提交，服务端正在准备转写...');
       }
     } catch (e) {
-      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('网络错误')) {
         if (isIOSFeishuWebView()) {
           throw new Error(getFriendlyNetworkError('poll'));
         }
