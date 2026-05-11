@@ -172,15 +172,32 @@ nav {
   </div>
 
   <!-- 语言选择 -->
-  <div class="lang-bar">
+  <div class="lang-bar" style="flex-wrap:wrap;row-gap:10px;">
     <label for="langSelect">转写语言</label>
     <select class="lang-select" id="langSelect">
       <option value="zh" selected>中文</option>
       <option value="en">English</option>
       <option value="ja">日本語</option>
       <option value="ko">한국어</option>
-      <option value="auto">自动检测</option>
+      <option value="auto">自动识别</option>
     </select>
+
+    <label for="modeSelect" style="margin-left:8px;">转写模式</label>
+    <select class="lang-select" id="modeSelect">
+      <option value="fast">快速</option>
+      <option value="balanced" selected>均衡</option>
+      <option value="accurate">高精度</option>
+    </select>
+  </div>
+
+  <div class="lang-bar" style="margin-top:-10px; align-items:flex-start;">
+    <label style="display:flex;align-items:center;gap:8px;color:var(--text);cursor:pointer;">
+      <input type="checkbox" id="vadToggle" style="accent-color: var(--gold); width:16px; height:16px; cursor:pointer;">
+      <span>智能识别人声（减少静音干扰）</span>
+    </label>
+  </div>
+  <div class="page-desc" style="font-size:0.82rem;margin:-8px 0 24px 0;">
+    适合会议、采访、长录音等停顿较多的内容。普通短口播一般不必开启。
   </div>
 
   <div class="upload-area" id="uploadArea">
@@ -634,7 +651,9 @@ async function handleFile() {
   try {
     const uploadFile = await preprocessMedia(file);
     const lang = document.getElementById('langSelect').value;
-    const result = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang);
+    const mode = document.getElementById('modeSelect').value;
+    const vadEnabled = document.getElementById('vadToggle').checked;
+    const result = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang, mode, vadEnabled);
 
     setProgress(100, '完成!');
     loading.style.display = 'none';
@@ -685,7 +704,7 @@ async function uploadChunkToServer(file, fileId, idx, totalParts, onProgress) {
   });
 }
 
-async function completeChunkUpload(file, fileId, lang) {
+async function completeChunkUpload(file, fileId, lang, mode, vadEnabled) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.onload = () => {
@@ -710,11 +729,13 @@ async function completeChunkUpload(file, fileId, lang) {
       filename: file.name,
       content_type: file.type || '',
       language: lang,
+      mode,
+      vad: vadEnabled,
     }));
   });
 }
 
-async function uploadFileToServer(file, originalName, lang) {
+async function uploadFileToServer(file, originalName, lang, mode, vadEnabled) {
   const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
   const totalParts = Math.max(1, Math.ceil(file.size / TRANSCRIBE_CHUNK_SIZE));
   const resumeKey = getResumeKey(file);
@@ -725,7 +746,7 @@ async function uploadFileToServer(file, originalName, lang) {
 
   const fileId = resume?.fileId || (`web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
   let nextIndex = Number.isInteger(resume?.nextIndex) ? resume.nextIndex : 0;
-  console.log('开始分片上传:', API_BASE, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang, '分片数:', totalParts);
+  console.log('开始分片上传:', API_BASE, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang, '模式:', mode, 'VAD:', vadEnabled, '分片数:', totalParts);
 
   for (let i = nextIndex; i < totalParts; i++) {
     let lastErr = null;
@@ -756,7 +777,7 @@ async function uploadFileToServer(file, originalName, lang) {
   }
 
   setProgress(65, '上传完成，服务端合并中...');
-  const completeData = await completeChunkUpload(file, fileId, lang);
+  const completeData = await completeChunkUpload(file, fileId, lang, mode, vadEnabled);
   localStorage.removeItem(resumeKey);
   setProgress(72, '后台任务已创建，开始轮询...');
   return await pollUntilDone(completeData.task_id);
