@@ -184,7 +184,7 @@ nav {
   </div>
 
   <!-- 语言选择 -->
-  <div class="lang-grid">
+  <div class="lang-grid" style="grid-template-columns:minmax(0, 1fr); margin-bottom:24px;">
     <div class="field-group">
       <label for="langSelect">转写语言</label>
       <select class="lang-select" id="langSelect">
@@ -195,25 +195,6 @@ nav {
         <option value="auto">自动识别</option>
       </select>
     </div>
-
-    <div class="field-group">
-      <label for="modeSelect">转写模式</label>
-      <select class="lang-select" id="modeSelect">
-        <option value="fast">快速</option>
-        <option value="balanced" selected>均衡</option>
-        <option value="accurate">高精度</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="lang-bar" style="margin-top:0; margin-bottom:8px; align-items:flex-start;">
-    <label style="display:flex;align-items:center;gap:8px;color:var(--text);cursor:pointer;">
-      <input type="checkbox" id="vadToggle" style="accent-color: var(--gold); width:16px; height:16px; cursor:pointer;">
-      <span>智能识别人声（减少静音干扰）</span>
-    </label>
-  </div>
-  <div class="page-desc" style="font-size:0.82rem;margin:-8px 0 24px 0;">
-    适合会议、采访、长录音等停顿较多的内容。普通短口播一般不必开启。
   </div>
 
   <div class="upload-area" id="uploadArea">
@@ -667,8 +648,8 @@ async function handleFile() {
   try {
     const uploadFile = await preprocessMedia(file);
     const lang = document.getElementById('langSelect').value;
-    const mode = document.getElementById('modeSelect').value;
-    const vadEnabled = document.getElementById('vadToggle').checked;
+    const mode = 'balanced';
+    const vadEnabled = false;
     const result = await uploadFileToServer(uploadFile, uploadFile.name || file.name, lang, mode, vadEnabled);
 
     setProgress(100, '完成!');
