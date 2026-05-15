@@ -71,7 +71,7 @@ nav {
 .page-desc {
   color: var(--muted);
   font-size: .95rem;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   line-height: 1.8;
   max-width: 560px;
 }
@@ -390,7 +390,6 @@ nav {
 
 <div class="container">
   <h1 class="page-title">抖音链接转文案</h1>
-  <p class="page-desc">粘贴抖音分享链接，系统会自动解析、抓取并转成文案。你只需要等结果出来。</p>
 
   <div class="status-bar" id="servicePill">
     <div class="status-dot" id="serviceDot"></div>
@@ -399,10 +398,9 @@ nav {
 
   <section class="panel">
     <div class="input-row">
-      <input id="douyinUrl" class="url-input" type="text" inputmode="url" placeholder="粘贴抖音分享链接，支持口令中的 http(s) 链接">
+      <input id="douyinUrl" class="url-input" type="text" inputmode="url" placeholder="粘贴抖音分享链接或口令里的链接">
       <button class="btn btn-primary" id="submitBtn" type="button">开始提取</button>
     </div>
-    <div class="helper-text">默认按中文处理，提交后会自动追踪进度。</div>
 
     <div class="progress-card hidden" id="progressCard">
       <div class="card-head">
@@ -451,11 +449,11 @@ nav {
     <div class="result-card">
       <div class="card-head">
         <div class="card-title">结果</div>
-        <div class="card-badge" id="resultBadge">等待输入</div>
+        <div class="card-badge" id="resultBadge">待输入</div>
       </div>
-      <div class="result-box" id="resultBox"><span class="result-placeholder">结果会显示在这里。</span></div>
+      <div class="result-box" id="resultBox"><span class="result-placeholder">等待结果</span></div>
       <div class="result-actions">
-        <div class="result-note" id="resultNote">完成后可直接复制文案。</div>
+        <div class="result-note" id="resultNote"></div>
         <div class="btn-group">
           <button class="btn btn-secondary" id="copyBtn" type="button">复制</button>
           <button class="btn btn-ghost" id="resetBtn" type="button">清空</button>
@@ -596,11 +594,11 @@ function setError(message) {
   errorBox.textContent = message;
 }
 
-function setResult(text, badge = '等待输入', note = '完成后可直接复制文案。') {
+function setResult(text, badge = '待输入', note = '') {
   resultBadge.textContent = badge;
   resultNote.textContent = note;
   if (!text) {
-    resultBox.innerHTML = '<span class="result-placeholder">结果会显示在这里。</span>';
+    resultBox.innerHTML = '<span class="result-placeholder">等待结果</span>';
     return;
   }
   resultBox.textContent = text;
@@ -761,7 +759,7 @@ async function pollTask(taskId) {
       progressFill.style.width = '12%';
       progressText.textContent = `任务已经提交成功，正在等待进度返回（第 ${transientStatusErrors} 次重试）。`;
       setError('');
-      setResult('任务已提交，正在连接进度服务，请稍候。', '连接中', '如果接口稍慢，页面会自动重试。');
+      setResult('任务已提交，正在连接进度服务，请稍候。', '连接中');
       pollTimer = setTimeout(() => pollTask(taskId), POLL_INTERVAL_MS + transientStatusErrors * 800);
       return;
     }
@@ -774,7 +772,7 @@ async function pollTask(taskId) {
     progressFill.style.width = '20%';
     progressText.textContent = `任务 ID：${taskId}。提交已经发出，但页面暂时拿不到后续状态。`;
     setError(`${friendly}\n\n如果你是刚提交就看到这个提示，通常不是链接有问题，而是状态服务没及时同步出来。可稍后重试，或把任务 ID 发给管理员排查。`);
-    setResult(`任务已提交，但当前无法继续追踪进度。\n任务 ID：${taskId}`, '状态异常', '建议稍后再试；如果持续出现，请排查后端状态同步。');
+    setResult(`任务已提交，但当前无法继续追踪进度。\n任务 ID：${taskId}`, '状态异常');
   }
 }
 
@@ -799,7 +797,7 @@ async function startSubmit() {
   progressPercent.textContent = '8%';
   progressFill.style.width = '8%';
   progressText.textContent = '正在把链接交给后端...';
-  setResult('任务准备中，稍等一下。', '提交中', '提交成功后会自动进入进度追踪。');
+  setResult('任务准备中，稍等一下。', '提交中');
   submitBtn.disabled = true;
   submitBtn.textContent = '提交中...';
 
@@ -833,7 +831,7 @@ async function startSubmit() {
     progressFill.style.width = '100%';
     progressText.textContent = '这次请求没有成功进入处理流程。';
     setError(friendly);
-    setResult(friendly, '启动失败', '请检查链接是否完整，或稍后再试。');
+    setResult(friendly, '启动失败');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = '开始提取';
@@ -868,7 +866,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   resetMeta();
   setProgressVisible(false);
   setError('');
-  setResult('', '等待输入', '完成后可直接复制文案。');
+  setResult('', '待输入');
   progressPhaseLabel.textContent = '正在准备任务';
   progressPercent.textContent = '0%';
   progressFill.style.width = '0%';
