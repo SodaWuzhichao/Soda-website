@@ -3,270 +3,344 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>抖音文案提取 | SODA567</title>
+<title>抖音链接转文案 | SODA567</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --bg: #080808;
-  --surface: rgba(255,255,255,0.04);
-  --surface-strong: rgba(255,255,255,0.06);
-  --border: rgba(255,255,255,0.08);
-  --text: #f5f5f7;
-  --muted: rgba(245,245,247,0.58);
-  --subtle: rgba(245,245,247,0.36);
-  --accent: #f3d36a;
-  --accent-ink: #151515;
-  --danger: #ff8b93;
-  --danger-bg: rgba(135, 26, 38, 0.28);
-  --ok: #7ddc8b;
-  --ok-bg: rgba(34, 95, 44, 0.28);
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-soft: rgba(255,255,255,0.03);
+  --gold: #ffd700;
+  --text: #e8e8e8;
+  --muted: #666;
+  --muted-soft: rgba(232,232,232,0.52);
+  --border: #222;
+  --success: #5ad060;
+  --danger: #ff6b6b;
 }
 body {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(243,211,106,0.14), transparent 28%),
-    linear-gradient(180deg, #0b0b0b 0%, #070707 100%);
+  background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  min-height: 100vh;
 }
 nav {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 24px 32px;
+  align-items: center;
+  padding: 24px 48px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-size: 1.2rem;
+  color: var(--text);
+  font-weight: 300;
+  text-decoration: none;
+  letter-spacing: 1px;
 }
 .nav-back {
-  color: var(--muted);
+  padding: 10px 20px;
+  border-radius: 6px;
   text-decoration: none;
-  font-size: 13px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  transition: color .2s ease, border-color .2s ease;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text);
 }
-.nav-back:hover { color: var(--text); border-color: rgba(243,211,106,0.4); }
-.page {
-  max-width: 920px;
+.nav-back:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.container {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 56px 24px 96px;
+  padding: 80px 48px 96px;
 }
-.hero {
-  max-width: 760px;
-  margin: 0 auto 28px;
-  text-align: center;
+.page-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 200;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
 }
-.eyebrow {
-  display: inline-flex;
+.page-desc {
+  color: var(--muted);
+  font-size: .95rem;
+  margin-bottom: 40px;
+  line-height: 1.8;
+  max-width: 560px;
+}
+.status-bar {
+  display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.03);
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 12px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  margin-bottom: 22px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
 }
-.hero h1 {
-  font-size: clamp(2.5rem, 6vw, 4.4rem);
-  line-height: 1.02;
-  letter-spacing: -0.06em;
-  font-weight: 400;
-}
-.hero p {
-  margin-top: 18px;
-  color: var(--muted);
-  line-height: 1.85;
-  font-size: 15px;
-}
-.shell {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 24px;
-  border-radius: 28px;
-  background: rgba(255,255,255,0.035);
-  border: 1px solid var(--border);
-  box-shadow: 0 24px 70px rgba(0,0,0,0.28);
-  backdrop-filter: blur(18px);
-}
-.service-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 18px;
-}
-.service-dot {
-  width: 9px;
-  height: 9px;
+.status-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #6d6d72;
-  box-shadow: 0 0 0 4px rgba(255,255,255,0.04);
+  background: #666;
+  transition: background 0.3s;
+  flex: 0 0 auto;
 }
-.service-pill.online .service-dot { background: var(--ok); box-shadow: 0 0 0 4px rgba(125,220,139,0.12); }
-.service-pill.offline .service-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(255,139,147,0.12); }
-.composer {
+.status-dot.online { background: #5ad060; box-shadow: 0 0 6px rgba(90,208,96,0.5); }
+.status-dot.offline { background: #e05050; box-shadow: 0 0 6px rgba(224,80,80,0.5); }
+.status-text { color: var(--muted); }
+.status-text.online { color: #5ad060; }
+.status-text.offline { color: #e05050; }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+.input-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
 }
-.input-wrap {
-  position: relative;
-}
-.input-wrap input {
+.url-input {
   width: 100%;
-  height: 60px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.22);
-  color: var(--text);
-  padding: 0 20px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
-}
-.input-wrap input::placeholder { color: rgba(245,245,247,0.34); }
-.input-wrap input:focus {
-  border-color: rgba(243,211,106,0.55);
-  box-shadow: 0 0 0 4px rgba(243,211,106,0.08);
-  background: rgba(0,0,0,0.28);
-}
-.primary-btn {
-  height: 60px;
-  border: none;
-  border-radius: 18px;
-  padding: 0 26px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--accent-ink);
-  background: var(--accent);
-  cursor: pointer;
-  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
-  white-space: nowrap;
-}
-.primary-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(243,211,106,0.18); }
-.primary-btn:disabled { opacity: .62; cursor: not-allowed; }
-.microcopy {
-  margin-top: 12px;
-  color: var(--subtle);
-  font-size: 12px;
-  line-height: 1.8;
-}
-.card {
-  margin-top: 16px;
-  border-radius: 20px;
+  height: 54px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(0,0,0,0.16);
+  background: #101010;
+  color: var(--text);
+  padding: 0 16px;
+  font-size: 0.95rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.url-input::placeholder { color: rgba(232,232,232,0.32); }
+.url-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255,215,0,0.08);
+}
+.btn {
+  padding: 14px 28px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 300;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+  cursor: pointer;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.5px;
+}
+.btn-primary { background: var(--gold); color: var(--bg); }
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,215,0,0.3);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--text);
+  transform: translateY(-2px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+.btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+.helper-text {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.progress-card,
+.result-card,
+.error-box {
+  margin-top: 18px;
+}
+.hidden { display: none !important; }
+.progress-card,
+.result-card {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 14px;
   padding: 18px;
 }
-.card.hidden { display: none; }
 .card-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
-.card-title { font-size: 14px; color: var(--text); }
+.card-title {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+}
 .card-badge {
-  font-size: 12px;
-  color: var(--muted);
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  color: var(--muted-soft);
+  background: rgba(255,255,255,0.02);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.progress-copy {
-  color: #d9d9dc;
-  font-size: 13px;
-  line-height: 1.8;
-  white-space: pre-wrap;
+.progress-main {
+  display: grid;
+  gap: 12px;
 }
-.meta-row {
+.progress-current {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.progress-phase-label {
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: var(--text);
+}
+.progress-percent {
+  color: var(--gold);
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+.progress-track {
+  width: 100%;
+  height: 10px;
+  background: #222;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), #ffed4a);
+  border-radius: inherit;
+  transition: width .28s ease;
+}
+.progress-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.progress-step {
+  padding-top: 10px;
+  border-top: 1px solid #242424;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  min-width: 0;
+}
+.progress-step.active,
+.progress-step.done {
+  border-top-color: rgba(255,215,0,0.55);
+  color: var(--text);
+}
+.progress-step.done { color: #d5d5d5; }
+.progress-detail {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.75;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 14px;
 }
 .meta-item {
+  min-width: 0;
   padding: 14px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid rgba(255,255,255,0.04);
 }
-.meta-item .k {
-  color: var(--subtle);
-  font-size: 11px;
-  letter-spacing: .08em;
+.meta-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-.meta-item .v {
+.meta-value {
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
   word-break: break-word;
-}
-.error-box {
-  margin-top: 16px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,139,147,0.24);
-  background: var(--danger-bg);
-  color: #ffb7bd;
-  white-space: pre-wrap;
-  line-height: 1.75;
-  font-size: 13px;
 }
 .result-box {
-  min-height: 240px;
+  min-height: 220px;
+  padding: 18px;
+  border-radius: 10px;
+  background: #101010;
+  border: 1px solid var(--border);
   color: var(--text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.9;
-  font-size: 14px;
+  font-size: 0.92rem;
 }
-.result-placeholder { color: var(--subtle); }
+.result-placeholder { color: var(--muted); }
 .result-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: 14px;
   flex-wrap: wrap;
+  margin-top: 16px;
 }
 .result-note {
-  color: var(--subtle);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
 }
-.secondary-actions {
+.btn-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
-.ghost-btn {
-  height: 42px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  padding: 0 16px;
-  cursor: pointer;
-  transition: color .18s ease, border-color .18s ease;
+.error-box {
+  padding: 16px;
+  background: rgba(123, 24, 24, 0.22);
+  border: 1px solid rgba(255, 107, 107, 0.24);
+  border-radius: 12px;
+  color: #ff8b8b;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
-.ghost-btn:hover:not(:disabled) { color: var(--text); border-color: rgba(243,211,106,0.35); }
 .toast {
   position: fixed;
   left: 50%;
@@ -278,87 +352,113 @@ nav {
   padding: 12px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(14,14,14,0.92);
+  background: rgba(14,14,14,0.94);
   color: var(--text);
   font-size: 13px;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.ok { border-color: rgba(125,220,139,0.25); color: var(--ok); }
-.toast.err { border-color: rgba(255,139,147,0.25); color: var(--danger); }
+.toast.ok { border-color: rgba(90,208,96,0.28); color: var(--success); }
+.toast.err { border-color: rgba(255,107,107,0.28); color: var(--danger); }
 @media (max-width: 768px) {
-  nav { padding: 20px 18px; }
-  .page { padding: 28px 16px 72px; }
-  .shell { padding: 18px; border-radius: 22px; }
-  .composer { grid-template-columns: 1fr; }
-  .primary-btn { width: 100%; }
-  .meta-row { grid-template-columns: 1fr 1fr; }
+  nav { padding-left: 24px; padding-right: 24px; }
+  .container { padding: 60px 24px 72px; }
+  .panel { padding: 18px; }
+  .input-row { grid-template-columns: 1fr; }
+  .btn-primary { width: 100%; }
+  .progress-steps,
+  .meta-grid { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 520px) {
-  .hero h1 { letter-spacing: -0.08em; }
-  .meta-row { grid-template-columns: 1fr; }
+@media (max-width: 560px) {
+  .progress-steps,
+  .meta-grid { grid-template-columns: 1fr; }
+  .btn-group { width: 100%; }
+  .btn-group .btn { width: 100%; text-align: center; }
 }
 </style>
 </head>
 <body>
 <nav>
-  <a href="../index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;line-height:1;">
+  <a href="../index.html" class="logo" style="display:flex;align-items:center;gap:8px;text-decoration:none;line-height:1;">
     <img src="../images/logo-icon.png" style="height:52px;width:auto;border-radius:4px;">
     <div style="display:flex;flex-direction:column;justify-content:center;">
       <span style="font-weight:700;font-family:'DM Sans',sans-serif;letter-spacing:-0.5px;color:#fff;font-size:1.2em;">soda</span>
-      <span style="font-weight:300;font-family:'DM Sans',sans-serif;letter-spacing:3.5px;font-size:0.65em;opacity:0.8;color:#fff;margin-top:2px;">MEDIA</span>
+      <span style="font-weight:200;font-family:'DM Sans',sans-serif;letter-spacing:3.5px;font-size:0.65em;opacity:0.8;color:#fff;margin-top:2px;">MEDIA</span>
     </div>
   </a>
-  <a href="index.html" class="nav-back">工具页</a>
+  <a href="index.html" class="nav-back">返回工具页</a>
 </nav>
 
-<div class="page">
-  <section class="hero">
-    <div class="eyebrow">抖音链接 · 自动转文案</div>
-    <h1>贴链接，等结果。</h1>
-    <p>把抖音分享链接丢进来，系统会自动解析、下载、预处理并进入转写流程。你只需要等结果出来。</p>
-  </section>
+<div class="container">
+  <h1 class="page-title">抖音链接转文案</h1>
+  <p class="page-desc">粘贴抖音分享链接，系统会自动解析、抓取并转成文案。你只需要等结果出来。</p>
 
-  <section class="shell">
-    <div class="service-pill" id="servicePill">
-      <span class="service-dot"></span>
-      <span id="serviceText">正在检测服务状态…</span>
+  <div class="status-bar" id="servicePill">
+    <div class="status-dot" id="serviceDot"></div>
+    <span class="status-text" id="serviceText">检测后端服务中...</span>
+  </div>
+
+  <section class="panel">
+    <div class="input-row">
+      <input id="douyinUrl" class="url-input" type="text" inputmode="url" placeholder="粘贴抖音分享链接，支持口令中的 http(s) 链接">
+      <button class="btn btn-primary" id="submitBtn" type="button">开始提取</button>
     </div>
+    <div class="helper-text">默认按中文处理，提交后会自动追踪进度。</div>
 
-    <div class="composer">
-      <label class="input-wrap">
-        <input id="douyinUrl" type="text" inputmode="url" placeholder="粘贴抖音分享链接，支持口令里的 http(s) 链接">
-      </label>
-      <button class="primary-btn" id="submitBtn" type="button">开始提取</button>
-    </div>
-    <div class="microcopy">默认按中文 + 平衡模式处理。提交后会自动追踪进度；如果后端没把状态同步出来，也会直接告诉你原因。</div>
-
-    <div class="card hidden" id="progressCard">
+    <div class="progress-card hidden" id="progressCard">
       <div class="card-head">
         <div class="card-title" id="progressTitle">处理中</div>
-        <div class="card-badge" id="phaseBadge">等待中</div>
+        <div class="card-badge" id="phaseBadge">准备中</div>
       </div>
-      <div class="progress-copy" id="progressText">任务准备中…</div>
-      <div class="meta-row">
-        <div class="meta-item"><div class="k">任务状态</div><div class="v" id="taskStatus">-</div></div>
-        <div class="meta-item"><div class="k">当前阶段</div><div class="v" id="taskPhase">-</div></div>
-        <div class="meta-item"><div class="k">队列位置</div><div class="v" id="taskQueue">-</div></div>
-        <div class="meta-item"><div class="k">视频标题</div><div class="v" id="taskTitle">-</div></div>
+
+      <div class="progress-main">
+        <div class="progress-current">
+          <div class="progress-phase-label" id="progressPhaseLabel">正在准备任务</div>
+          <div class="progress-percent" id="progressPercent">0%</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-steps">
+          <div class="progress-step" id="stepParsing">解析链接</div>
+          <div class="progress-step" id="stepDownloading">获取视频</div>
+          <div class="progress-step" id="stepTranscribing">转写中</div>
+          <div class="progress-step" id="stepCompleted">已完成</div>
+        </div>
+        <div class="progress-detail" id="progressText">任务准备中...</div>
+        <div class="meta-grid">
+          <div class="meta-item">
+            <div class="meta-label">任务状态</div>
+            <div class="meta-value" id="taskStatus">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">当前阶段</div>
+            <div class="meta-value" id="taskPhase">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">视频标题</div>
+            <div class="meta-value" id="taskTitle">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">任务 ID</div>
+            <div class="meta-value" id="taskIdMeta">-</div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="error-box hidden" id="errorBox"></div>
 
-    <div class="card">
+    <div class="result-card">
       <div class="card-head">
         <div class="card-title">结果</div>
         <div class="card-badge" id="resultBadge">等待输入</div>
       </div>
       <div class="result-box" id="resultBox"><span class="result-placeholder">结果会显示在这里。</span></div>
       <div class="result-actions">
-        <div class="result-note" id="resultNote">支持复制结果；失败时会尽量给出人话提示。</div>
-        <div class="secondary-actions">
-          <button class="ghost-btn" id="copyBtn" type="button">复制</button>
-          <button class="ghost-btn" id="resetBtn" type="button">清空</button>
+        <div class="result-note" id="resultNote">完成后可直接复制文案。</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" id="copyBtn" type="button">复制</button>
+          <button class="btn btn-ghost" id="resetBtn" type="button">清空</button>
         </div>
       </div>
     </div>
@@ -379,8 +479,8 @@ const STATUS_LABELS = {
 };
 const PHASE_LABELS = {
   parsing: '解析链接',
-  downloading: '下载素材',
-  preprocessing: '音频预处理',
+  downloading: '获取视频',
+  preprocessing: '整理音频',
   submitting: '提交转写',
   queued: '排队中',
   transcribing: '转写中',
@@ -392,6 +492,21 @@ const PHASE_LABELS = {
 const POLL_INTERVAL_MS = 2500;
 const EARLY_STATUS_GRACE_MS = 18000;
 const MAX_TRANSIENT_STATUS_ERRORS = 6;
+const STEP_ORDER = ['parsing', 'downloading', 'transcribing', 'completed'];
+const STEP_CONFIG = {
+  parsing: { percent: 20, label: '正在解析链接' },
+  downloading: { percent: 42, label: '正在获取视频' },
+  preprocessing: { percent: 56, label: '正在整理音频' },
+  submitting: { percent: 68, label: '正在提交转写' },
+  queued: { percent: 76, label: '正在排队' },
+  transcribing: { percent: 88, label: '正在转写' },
+  completed: { percent: 100, label: '已完成' },
+  error: { percent: 100, label: '处理失败' },
+  sync_failed: { percent: 76, label: '状态同步失败' },
+  upstream_error: { percent: 100, label: '上游失败' },
+  pending: { percent: 10, label: '任务准备中' },
+  processing: { percent: 60, label: '正在处理' }
+};
 
 let currentTaskId = '';
 let pollTimer = null;
@@ -399,11 +514,15 @@ let transientStatusErrors = 0;
 let taskStartedAt = 0;
 
 const servicePill = document.getElementById('servicePill');
+const serviceDot = document.getElementById('serviceDot');
 const serviceText = document.getElementById('serviceText');
 const progressCard = document.getElementById('progressCard');
 const progressTitle = document.getElementById('progressTitle');
 const phaseBadge = document.getElementById('phaseBadge');
 const progressText = document.getElementById('progressText');
+const progressPhaseLabel = document.getElementById('progressPhaseLabel');
+const progressPercent = document.getElementById('progressPercent');
+const progressFill = document.getElementById('progressFill');
 const resultBox = document.getElementById('resultBox');
 const resultBadge = document.getElementById('resultBadge');
 const resultNote = document.getElementById('resultNote');
@@ -411,6 +530,16 @@ const errorBox = document.getElementById('errorBox');
 const submitBtn = document.getElementById('submitBtn');
 const douyinUrl = document.getElementById('douyinUrl');
 const toastEl = document.getElementById('toast');
+const taskStatusEl = document.getElementById('taskStatus');
+const taskPhaseEl = document.getElementById('taskPhase');
+const taskTitleEl = document.getElementById('taskTitle');
+const taskIdMetaEl = document.getElementById('taskIdMeta');
+const stepEls = {
+  parsing: document.getElementById('stepParsing'),
+  downloading: document.getElementById('stepDownloading'),
+  transcribing: document.getElementById('stepTranscribing'),
+  completed: document.getElementById('stepCompleted')
+};
 
 function showToast(message, type = '') {
   toastEl.textContent = message;
@@ -421,17 +550,10 @@ function showToast(message, type = '') {
   }, 2200);
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function setServiceStatus(ok, text) {
-  servicePill.className = `service-pill ${ok ? 'online' : 'offline'}`;
+  servicePill.className = 'status-bar';
+  serviceDot.className = `status-dot ${ok ? 'online' : 'offline'}`;
+  serviceText.className = `status-text ${ok ? 'online' : 'offline'}`;
   serviceText.textContent = text;
 }
 
@@ -443,11 +565,11 @@ async function checkServiceStatus() {
     clearTimeout(timeoutId);
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.status === 'ok') {
-      setServiceStatus(true, '服务正常，可以直接提交');
+      setServiceStatus(true, '后端服务正常运行');
       return true;
     }
   } catch (_) {}
-  setServiceStatus(false, '服务暂时不可用，当前无法正常提取');
+  setServiceStatus(false, '后端服务暂不可用');
   return false;
 }
 checkServiceStatus();
@@ -474,7 +596,7 @@ function setError(message) {
   errorBox.textContent = message;
 }
 
-function setResult(text, badge = '等待输入', note = '支持复制结果；失败时会尽量给出人话提示。') {
+function setResult(text, badge = '等待输入', note = '完成后可直接复制文案。') {
   resultBadge.textContent = badge;
   resultNote.textContent = note;
   if (!text) {
@@ -485,24 +607,18 @@ function setResult(text, badge = '等待输入', note = '支持复制结果；�
 }
 
 function resetMeta() {
-  document.getElementById('taskStatus').textContent = '-';
-  document.getElementById('taskPhase').textContent = '-';
-  document.getElementById('taskQueue').textContent = '-';
-  document.getElementById('taskTitle').textContent = '-';
+  taskStatusEl.textContent = '-';
+  taskPhaseEl.textContent = '-';
+  taskTitleEl.textContent = '-';
+  taskIdMetaEl.textContent = '-';
 }
 
 function normalizeMessage(raw, fallback = '处理失败') {
   const text = String(raw || '').trim();
   if (!text) return fallback;
-  if (text === '查询失败') {
-    return '状态服务没有返回有效结果。任务可能刚提交成功，但进度接口暂时没接上。';
-  }
-  if (text.includes('Failed to fetch')) {
-    return '网络连接失败，暂时连不上接口。';
-  }
-  if (text.includes('AbortError')) {
-    return '请求超时，接口响应太慢。';
-  }
+  if (text === '查询失败') return '状态服务暂时没有返回有效结果。';
+  if (text.includes('Failed to fetch')) return '网络连接失败，暂时连不上接口。';
+  if (text.includes('AbortError')) return '请求超时，接口响应太慢。';
   return text;
 }
 
@@ -515,39 +631,87 @@ async function readJsonSafely(res) {
   return { error: text };
 }
 
+function getDisplayPhase(status, phase) {
+  const normalizedPhase = String(phase || '').toLowerCase();
+  const normalizedStatus = String(status || '').toLowerCase();
+  if (normalizedStatus === 'completed') return 'completed';
+  if (normalizedStatus === 'error') return normalizedPhase || 'error';
+  if (['parsing'].includes(normalizedPhase)) return 'parsing';
+  if (['downloading'].includes(normalizedPhase)) return 'downloading';
+  if (['preprocessing', 'submitting', 'queued', 'transcribing'].includes(normalizedPhase)) return normalizedPhase;
+  if (normalizedStatus === 'pending') return 'pending';
+  if (normalizedStatus === 'processing') return normalizedPhase || 'processing';
+  return normalizedPhase || normalizedStatus || 'pending';
+}
+
+function getProgressState(status, phase) {
+  const displayPhase = getDisplayPhase(status, phase);
+  return STEP_CONFIG[displayPhase] || STEP_CONFIG.pending;
+}
+
+function updateProgressUI(status, phase) {
+  const displayPhase = getDisplayPhase(status, phase);
+  const state = getProgressState(status, phase);
+  const activeIndex = displayPhase === 'completed' ? STEP_ORDER.length - 1 :
+    displayPhase === 'downloading' ? 1 :
+    ['preprocessing', 'submitting', 'queued', 'transcribing'].includes(displayPhase) ? 2 : 0;
+
+  progressPhaseLabel.textContent = state.label;
+  progressPercent.textContent = `${state.percent}%`;
+  progressFill.style.width = `${state.percent}%`;
+
+  STEP_ORDER.forEach((step, index) => {
+    const el = stepEls[step];
+    el.classList.remove('active', 'done');
+    if (index < activeIndex) el.classList.add('done');
+    if (index === activeIndex) el.classList.add(displayPhase === 'completed' ? 'done' : 'active');
+    if (displayPhase === 'completed' && index <= activeIndex) el.classList.add('done');
+  });
+}
+
 function updateMeta(data) {
   const status = data.status || '-';
   const phase = data.phase || status || '-';
-  document.getElementById('taskStatus').textContent = STATUS_LABELS[status] || status;
-  document.getElementById('taskPhase').textContent = `${PHASE_LABELS[phase] || phase}${phase ? ` (${phase})` : ''}`;
-  document.getElementById('taskQueue').textContent = data.queue_position ?? 0;
-  document.getElementById('taskTitle').textContent = data.video_title || data.filename || '-';
+  taskStatusEl.textContent = STATUS_LABELS[status] || status;
+  taskPhaseEl.textContent = `${PHASE_LABELS[phase] || phase}${phase ? ` (${phase})` : ''}`;
+  taskTitleEl.textContent = data.video_title || data.filename || '-';
+  taskIdMetaEl.textContent = data.task_id || currentTaskId || '-';
 }
 
-function buildProgressLines(data) {
-  const lines = [];
-  if (data.task_id || currentTaskId) lines.push(`任务 ID：${data.task_id || currentTaskId}`);
-  if (data.source_url) lines.push(`原始链接：${data.source_url}`);
-  if (data.resolved_url) lines.push(`解析后链接：${data.resolved_url}`);
-  if (data.video_title) lines.push(`视频标题：${data.video_title}`);
-  if ((data.queue_position ?? 0) > 0) lines.push(`队列位置：${data.queue_position}`);
-  return lines.join('\n');
+function buildProgressCopy(data) {
+  const phase = getDisplayPhase(data.status, data.phase);
+  const queueText = (data.queue_position ?? 0) > 0 ? `当前前面还有 ${data.queue_position} 个任务。` : '';
+  const titleText = data.video_title ? `视频标题：${data.video_title}` : '';
+
+  if (data.status === 'completed') {
+    return titleText || '文案已经准备好。';
+  }
+  if (data.status === 'error') {
+    return titleText || '任务已结束。';
+  }
+  if (phase === 'parsing') return '正在识别并清洗链接。';
+  if (phase === 'downloading') return '正在获取视频内容，请稍候。';
+  if (['preprocessing', 'submitting'].includes(phase)) return '正在整理素材并准备转写。';
+  if (phase === 'queued') return queueText || '任务已进入队列，马上开始。';
+  if (phase === 'transcribing') return '正在转写文案，完成后会自动显示结果。';
+  return '任务已经创建，正在推进中。';
 }
 
 function renderTask(data) {
   const status = data.status || 'pending';
-  const phase = data.phase || status || 'queued';
+  const phase = data.phase || status || 'pending';
   const phaseLabel = PHASE_LABELS[phase] || phase;
   const statusLabel = STATUS_LABELS[status] || status;
 
   updateMeta(data);
+  updateProgressUI(status, phase);
   setProgressVisible(true);
-  progressTitle.textContent = status === 'completed' ? '已完成' : status === 'error' ? '处理失败' : '正在处理';
+  progressTitle.textContent = status === 'completed' ? '已完成' : status === 'error' ? '处理失败' : '处理中';
   phaseBadge.textContent = phaseLabel;
+  progressText.textContent = buildProgressCopy(data);
 
   if (status === 'completed') {
     setError('');
-    progressText.textContent = buildProgressLines(data) || '处理完成';
     setResult(data.result || '已完成，但当前没有返回正文内容。', '已完成', '现在可以直接复制结果。');
     return;
   }
@@ -555,21 +719,19 @@ function renderTask(data) {
   if (status === 'error') {
     const errorMessage = normalizeMessage(data.error, '处理失败');
     setError(errorMessage);
-    progressText.textContent = buildProgressLines(data) || '任务已结束';
     setResult(errorMessage, '失败', '可以换一个链接重试，或稍后再试。');
     return;
   }
 
   setError('');
-  progressText.textContent = buildProgressLines(data) || '任务已创建，正在推进中…';
-  setResult(`正在${phaseLabel}，结果完成后会自动出现在这里。`, phaseLabel, '保持页面打开即可。');
+  setResult('处理中，完成后结果会自动显示在这里。', phaseLabel, '保持页面打开即可。');
 }
 
 function shouldTreatAsTransientStatusFailure(errorMessage) {
   const normalized = normalizeMessage(errorMessage, '状态查询失败');
   const elapsed = Date.now() - taskStartedAt;
   if (elapsed > EARLY_STATUS_GRACE_MS) return false;
-  return /状态服务没有返回有效结果|网络连接失败|请求超时|404|502|503|504|查询失败|not found/i.test(normalized);
+  return /状态服务暂时没有返回有效结果|网络连接失败|请求超时|404|502|503|504|查询失败|not found/i.test(normalized);
 }
 
 async function pollTask(taskId) {
@@ -594,11 +756,10 @@ async function pollTask(taskId) {
       setProgressVisible(true);
       progressTitle.textContent = '正在接入状态';
       phaseBadge.textContent = '连接中';
-      progressText.textContent = [
-        `任务 ID：${taskId}`,
-        '任务已经提交成功，正在等待状态服务返回进度。',
-        `第 ${transientStatusErrors} 次重试中…`
-      ].join('\n');
+      progressPhaseLabel.textContent = '正在连接进度服务';
+      progressPercent.textContent = '12%';
+      progressFill.style.width = '12%';
+      progressText.textContent = `任务已经提交成功，正在等待进度返回（第 ${transientStatusErrors} 次重试）。`;
       setError('');
       setResult('任务已提交，正在连接进度服务，请稍候。', '连接中', '如果接口稍慢，页面会自动重试。');
       pollTimer = setTimeout(() => pollTask(taskId), POLL_INTERVAL_MS + transientStatusErrors * 800);
@@ -608,7 +769,10 @@ async function pollTask(taskId) {
     setProgressVisible(true);
     progressTitle.textContent = '状态暂不可追踪';
     phaseBadge.textContent = '需稍后重试';
-    progressText.textContent = `任务 ID：${taskId}\n提交已经发出，但页面暂时拿不到后续状态。`;
+    progressPhaseLabel.textContent = '任务已提交';
+    progressPercent.textContent = '20%';
+    progressFill.style.width = '20%';
+    progressText.textContent = `任务 ID：${taskId}。提交已经发出，但页面暂时拿不到后续状态。`;
     setError(`${friendly}\n\n如果你是刚提交就看到这个提示，通常不是链接有问题，而是状态服务没及时同步出来。可稍后重试，或把任务 ID 发给管理员排查。`);
     setResult(`任务已提交，但当前无法继续追踪进度。\n任务 ID：${taskId}`, '状态异常', '建议稍后再试；如果持续出现，请排查后端状态同步。');
   }
@@ -631,10 +795,13 @@ async function startSubmit() {
   setProgressVisible(true);
   progressTitle.textContent = '正在提交';
   phaseBadge.textContent = '准备中';
-  progressText.textContent = '正在把链接交给后端…';
+  progressPhaseLabel.textContent = '正在提交链接';
+  progressPercent.textContent = '8%';
+  progressFill.style.width = '8%';
+  progressText.textContent = '正在把链接交给后端...';
   setResult('任务准备中，稍等一下。', '提交中', '提交成功后会自动进入进度追踪。');
   submitBtn.disabled = true;
-  submitBtn.textContent = '提交中…';
+  submitBtn.textContent = '提交中...';
 
   try {
     const res = await fetch(`${API_BASE}/api/transcribe/douyin`, {
@@ -661,6 +828,9 @@ async function startSubmit() {
     const friendly = normalizeMessage(error.message, '启动失败');
     progressTitle.textContent = '无法开始';
     phaseBadge.textContent = '失败';
+    progressPhaseLabel.textContent = '启动失败';
+    progressPercent.textContent = '100%';
+    progressFill.style.width = '100%';
     progressText.textContent = '这次请求没有成功进入处理流程。';
     setError(friendly);
     setResult(friendly, '启动失败', '请检查链接是否完整，或稍后再试。');
@@ -698,7 +868,11 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   resetMeta();
   setProgressVisible(false);
   setError('');
-  setResult('', '等待输入', '支持复制结果；失败时会尽量给出人话提示。');
+  setResult('', '等待输入', '完成后可直接复制文案。');
+  progressPhaseLabel.textContent = '正在准备任务';
+  progressPercent.textContent = '0%';
+  progressFill.style.width = '0%';
+  Object.values(stepEls).forEach((el) => el.classList.remove('active', 'done'));
   douyinUrl.focus();
 });
 </script>
