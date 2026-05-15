@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抖音链接提取 | SODA567</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0a; --surface: #141414; --gold: #ffd700;
+  --text: #e8e8e8; --muted: #666; --border: #222;
+  --danger: #ff6b6b; --ok: #5ad060;
+}
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 200; min-height: 100vh; }
+nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px 48px; border-bottom: 1px solid var(--border);
+}
+.nav-back {
+  padding: 10px 20px; border-radius: 6px; text-decoration: none;
+  font-size: 0.85rem; font-weight: 300; letter-spacing: 1px;
+  transition: all 0.3s; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2); color: var(--text);
+}
+.nav-back:hover { border-color: var(--gold); color: var(--gold); }
+.container { max-width: 860px; margin: 0 auto; padding: 80px 48px; }
+.page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 200; letter-spacing: -2px; margin-bottom: 16px; }
+.page-desc { color: var(--muted); font-size: .95rem; margin-bottom: 32px; line-height: 1.8; }
+.status-bar {
+  display:flex; align-items:center; gap:8px; padding:10px 16px; margin-bottom:24px;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:0.85rem;
+}
+.status-dot { width:10px; height:10px; border-radius:50%; background:#666; transition:all .3s; }
+.status-dot.online { background: var(--ok); box-shadow: 0 0 6px rgba(90,208,96,0.5); }
+.status-dot.offline { background: var(--danger); box-shadow: 0 0 6px rgba(255,107,107,0.45); }
+.status-text { color: var(--muted); }
+.status-text.online { color: var(--ok); }
+.status-text.offline { color: var(--danger); }
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+.form-grid {
+  display:grid; grid-template-columns:minmax(0,1fr) 150px 130px auto; gap:12px; align-items:end;
+}
+label { display:block; color:#9b9b9b; font-size:12px; margin-bottom:6px; }
+input, select, button, textarea {
+  font-family: 'DM Sans', sans-serif;
+}
+input, select {
+  width:100%; padding:14px 14px; background:#111; border:1px solid #262626; border-radius:8px;
+  color:var(--text); font-size:14px;
+}
+input:focus, select:focus {
+  outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(255,215,0,0.08);
+}
+.btn {
+  padding:14px 22px; border-radius:8px; border:none; cursor:pointer;
+  background: var(--gold); color:#111; font-size:14px; font-weight:300; transition:all .25s;
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,215,0,0.25); }
+.btn:disabled { opacity:.6; cursor:not-allowed; }
+.hint { margin-top:14px; color:#8b8b93; font-size:12px; line-height:1.7; }
+.processing {
+  display:none; margin-top:18px; padding:16px; background:#101014; border:1px solid #23232a; border-radius:10px;
+}
+.processing.active { display:block; }
+.processing-title { font-size:14px; color:var(--gold); margin-bottom:8px; }
+.processing-text { color:#c8c8cf; font-size:13px; line-height:1.8; white-space:pre-wrap; }
+.error {
+  display:none; margin-top:18px; padding:16px; background:#2a1114; border:1px solid #5a1d24; border-radius:10px;
+  color:#ff9aa4; font-size:13px; line-height:1.8; white-space:pre-wrap;
+}
+.error.active { display:block; }
+.result-wrap { margin-top:18px; }
+.result-title { font-size:15px; margin-bottom:10px; }
+.result-box {
+  min-height:180px; background:#0d0d12; border:1px solid #212129; border-radius:10px; padding:16px;
+  white-space:pre-wrap; line-height:1.8; font-size:14px;
+}
+.result-placeholder { color:#75757d; }
+.meta-grid {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:16px;
+}
+.meta-item {
+  background:#111; border:1px solid #23232a; border-radius:10px; padding:12px 14px;
+}
+.meta-k { color:#888; font-size:12px; margin-bottom:6px; }
+.meta-v { color:#f1f1f1; font-size:13px; line-height:1.6; word-break:break-word; }
+.actions { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+.btn-secondary {
+  background:transparent; color:var(--text); border:1px solid var(--border);
+}
+.btn-secondary:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); box-shadow:none; }
+@media (max-width: 768px) {
+  nav { padding-left:24px; padding-right:24px; }
+  .container { padding:60px 24px; }
+  .panel { padding:20px; }
+  .form-grid { grid-template-columns:1fr; }
+  .meta-grid { grid-template-columns:1fr 1fr; }
+  .actions { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="../index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;line-height:1;">
+    <img src="../images/logo-icon.png" style="height:52px;width:auto;border-radius:4px;">
+    <div style="display:flex;flex-direction:column;justify-content:center;">
+      <span style="font-weight:700;font-family:'DM Sans',sans-serif;letter-spacing:-0.5px;color:#fff;font-size:1.2em;">soda</span>
+      <span style="font-weight:200;font-family:'DM Sans',sans-serif;letter-spacing:3.5px;font-size:0.65em;opacity:0.8;color:#fff;margin-top:2px;">MEDIA</span>
+    </div>
+  </a>
+  <a href="index.html" class="nav-back">返回工具页</a>
+</nav>
+
+<div class="container">
+  <h1 class="page-title">抖音链接提取</h1>
+  <p class="page-desc">粘贴抖音分享链接，直接走现有转写后端任务流，返回文案结果。当前页面为伍老师个人测试入口，优先保证最小可用与结果反馈完整。</p>
+
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">检测后端服务中...</span>
+  </div>
+
+  <div class="panel">
+    <div class="form-grid">
+      <div>
+        <label for="douyinUrl">抖音链接</label>
+        <input id="douyinUrl" type="url" placeholder="例如：https://v.douyin.com/xxxx/ 或分享口令里的链接">
+      </div>
+      <div>
+        <label for="modeSelect">处理模式</label>
+        <select id="modeSelect">
+          <option value="balanced" selected>平衡</option>
+          <option value="fast">快速</option>
+          <option value="accurate">高精度</option>
+        </select>
+      </div>
+      <div>
+        <label for="langSelect">语言</label>
+        <select id="langSelect">
+          <option value="zh" selected>中文</option>
+          <option value="en">English</option>
+          <option value="auto">自动识别</option>
+        </select>
+      </div>
+      <button class="btn" id="submitBtn">立即提取</button>
+    </div>
+
+    <div class="hint">处理阶段可能依次显示：解析链接 / 下载素材 / 音频预处理 / 转写中 / 已完成 / 失败。若后端暂时不可用，页面会直接显示明确报错。</div>
+
+    <div class="processing" id="processingBox">
+      <div class="processing-title" id="processingTitle">处理中</div>
+      <div class="processing-text" id="processingText">等待提交任务...</div>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-k">任务状态</div><div class="meta-v" id="taskStatus">-</div></div>
+      <div class="meta-item"><div class="meta-k">当前阶段</div><div class="meta-v" id="taskPhase">-</div></div>
+      <div class="meta-item"><div class="meta-k">队列位置</div><div class="meta-v" id="taskQueue">-</div></div>
+      <div class="meta-item"><div class="meta-k">视频标题</div><div class="meta-v" id="taskTitle">-</div></div>
+    </div>
+
+    <div class="result-wrap">
+      <div class="result-title">文案结果</div>
+      <div class="result-box" id="resultBox"><span class="result-placeholder">结果会显示在这里；若接口未接通或任务失败，也会在这里和上方错误区给出明确提示。</span></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" id="copyBtn" type="button">复制结果</button>
+      <button class="btn btn-secondary" id="resetBtn" type="button">清空重试</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://api.soda567.dpdns.org';
+const PHASE_LABELS = {
+  parsing: '解析链接',
+  downloading: '下载素材',
+  preprocessing: '音频预处理',
+  transcribing: '转写中',
+  queued: '排队中',
+  completed: '已完成',
+  error: '失败'
+};
+const STATUS_LABELS = {
+  pending: '等待中',
+  processing: '处理中',
+  completed: '已完成',
+  error: '失败'
+};
+let pollTimer = null;
+let currentTaskId = '';
+
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const processingBox = document.getElementById('processingBox');
+const processingTitle = document.getElementById('processingTitle');
+const processingText = document.getElementById('processingText');
+const errorBox = document.getElementById('errorBox');
+const resultBox = document.getElementById('resultBox');
+const submitBtn = document.getElementById('submitBtn');
+const douyinUrl = document.getElementById('douyinUrl');
+
+function setServiceStatus(ok, text) {
+  statusDot.className = 'status-dot ' + (ok ? 'online' : 'offline');
+  statusText.className = 'status-text ' + (ok ? 'online' : 'offline');
+  statusText.textContent = text;
+}
+
+async function checkServiceStatus() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(API_BASE + '/api/health', { method: 'GET', mode: 'cors', signal: controller.signal });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      setServiceStatus(true, '后端服务正常运行');
+      return true;
+    }
+  } catch (e) {
+    console.error('health check failed', e);
+  }
+  setServiceStatus(false, '后端服务不可用，当前只能做页面交互测试');
+  return false;
+}
+checkServiceStatus();
+setInterval(checkServiceStatus, 30000);
+
+function stopPolling() {
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function setProcessing(active, title, text) {
+  processingBox.classList.toggle('active', !!active);
+  if (title) processingTitle.textContent = title;
+  if (typeof text === 'string') processingText.textContent = text;
+}
+
+function setError(message) {
+  if (!message) {
+    errorBox.classList.remove('active');
+    errorBox.textContent = '';
+    return;
+  }
+  errorBox.classList.add('active');
+  errorBox.textContent = message;
+}
+
+function resetMeta() {
+  document.getElementById('taskStatus').textContent = '-';
+  document.getElementById('taskPhase').textContent = '-';
+  document.getElementById('taskQueue').textContent = '-';
+  document.getElementById('taskTitle').textContent = '-';
+}
+
+function setResult(text, placeholder) {
+  if (!text) {
+    resultBox.innerHTML = '<span class="result-placeholder">' + (placeholder || '结果会显示在这里。') + '</span>';
+    return;
+  }
+  resultBox.textContent = text;
+}
+
+function renderTask(data) {
+  if (!data) return;
+  const phase = data.phase || data.status || 'queued';
+  const phaseLabel = PHASE_LABELS[phase] || phase;
+  const statusLabel = STATUS_LABELS[data.status] || data.status || '-';
+  document.getElementById('taskStatus').textContent = statusLabel;
+  document.getElementById('taskPhase').textContent = phaseLabel + (phase ? ` (${phase})` : '');
+  document.getElementById('taskQueue').textContent = data.queue_position ?? 0;
+  document.getElementById('taskTitle').textContent = data.video_title || data.filename || '-';
+
+  if (data.status === 'completed') {
+    setProcessing(false);
+    setError('');
+    setResult(data.result || '转写完成，但结果为空。');
+    return;
+  }
+
+  if (data.status === 'error') {
+    setProcessing(false);
+    const err = data.error || '任务失败';
+    setError(err);
+    setResult(err, '任务失败');
+    return;
+  }
+
+  const lines = [
+    `任务ID：${data.task_id || currentTaskId || '-'}`,
+    `当前阶段：${phaseLabel}`,
+    `原始链接：${data.source_url || '-'}`
+  ];
+  if (data.resolved_url) lines.push(`解析后链接：${data.resolved_url}`);
+  if (data.video_title) lines.push(`视频标题：${data.video_title}`);
+  setProcessing(true, '处理中', lines.join('\n'));
+  setResult(`正在执行：${phaseLabel}\n请保持页面打开，结果完成后会自动显示在这里。`);
+}
+
+async function pollTask(taskId) {
+  stopPolling();
+  currentTaskId = taskId;
+  try {
+    const res = await fetch(API_BASE + '/api/status/' + encodeURIComponent(taskId), { mode: 'cors' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || ('状态查询失败：HTTP ' + res.status));
+    renderTask({ ...data, task_id: data.task_id || taskId });
+    if (data.status === 'completed' || data.status === 'error') return;
+    pollTimer = setTimeout(() => pollTask(taskId), 2500);
+  } catch (e) {
+    setProcessing(false);
+    setError('状态查询失败：' + e.message);
+    setResult('状态查询失败：' + e.message);
+  }
+}
+
+async function startSubmit() {
+  const url = douyinUrl.value.trim();
+  const mode = document.getElementById('modeSelect').value;
+  const language = document.getElementById('langSelect').value;
+
+  if (!url) {
+    setError('请先输入抖音链接');
+    douyinUrl.focus();
+    return;
+  }
+
+  stopPolling();
+  currentTaskId = '';
+  resetMeta();
+  setError('');
+  setResult('', '结果会显示在这里；若接口未接通或任务失败，也会在这里和上方错误区给出明确提示。');
+  setProcessing(true, '提交中', '正在把链接提交给后端，请稍候...');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '提交中...';
+
+  try {
+    const res = await fetch(API_BASE + '/api/transcribe/douyin', {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, mode, language })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || ('请求失败：HTTP ' + res.status));
+    if (!data.task_id) {
+      throw new Error('接口已返回，但缺少 task_id，暂时无法继续追踪结果');
+    }
+    renderTask(data);
+    await pollTask(data.task_id);
+  } catch (e) {
+    setProcessing(false);
+    setError('启动失败：' + e.message);
+    setResult('启动失败：' + e.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '立即提取';
+  }
+}
+
+submitBtn.addEventListener('click', startSubmit);
+douyinUrl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') startSubmit();
+});
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const text = resultBox.textContent.trim();
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    processingBox.classList.add('active');
+    processingTitle.textContent = '已复制';
+    processingText.textContent = '当前结果已复制到剪贴板。';
+  } catch (e) {
+    setError('复制失败：' + e.message);
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  stopPolling();
+  douyinUrl.value = '';
+  resetMeta();
+  setError('');
+  setProcessing(false);
+  setResult('', '结果会显示在这里；若接口未接通或任务失败，也会在这里和上方错误区给出明确提示。');
+});
+</script>
+</body>
+</html>
