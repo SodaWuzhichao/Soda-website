@@ -1028,10 +1028,10 @@ async function startConversion() {
 
 async function cancelCurrentTask() {
   if (!activeTaskId) return;
+  resetTaskState(); // always reset local state even if cancel API fails
   try {
     await requestJson(`${getBackendBase()}/api/music/cancel/${activeTaskId}`, { method: 'POST' });
-  } catch (_) { /* ignore */ }
-  resetTaskState();
+  } catch (_) { /* cancel API may not exist or fail — local state is already reset */ }
 }
 function clearQueue() {
   if (activeTaskId && activeTask && ['queued', 'processing', 'uploaded'].includes(activeTask.state)) {
