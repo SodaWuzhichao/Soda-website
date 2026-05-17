@@ -114,6 +114,14 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .douyin-status-meta { color:#bcbcc5; font-size:13px; line-height:1.7; }
 .douyin-status-phase { color:#f0c040; font-size:13px; }
 .douyin-result { margin-top:12px; background:#0d0d12; border:1px solid #212129; border-radius:8px; padding:12px; min-height:120px; white-space:pre-wrap; color:#f1f1f1; font-size:13px; line-height:1.7; }
+.transcribe-checks { display:grid; gap:10px; }
+.transcribe-check-group { background:#111; border:1px solid #23232a; border-radius:10px; padding:12px; }
+.transcribe-check-group-title { color:#f0c040; font-size:13px; margin-bottom:8px; }
+.transcribe-check-row { display:grid; grid-template-columns:120px 72px minmax(0,1fr); gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,0.05); color:#d8d8d8; font-size:13px; line-height:1.5; }
+.transcribe-check-row:first-of-type { border-top:none; }
+.transcribe-check-row .ok { color:#5ad060; }
+.transcribe-check-row .warn { color:#f0c040; }
+.transcribe-check-row .error { color:#f08b8b; }
 
 /* 移动端适配 */
 @media (max-width: 768px) {
@@ -277,7 +285,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       <div class="page-header">
         <div>
           <h2>转写服务</h2>
-          <div class="page-subtitle">把状态查看、扫描和一键修复从作品管理中独立出来。先看状态，再决定是否执行修复。</div>
+          <div class="page-subtitle">先做只读体检：扫描转写链路、依赖、R2/CORS 与最近错误，日常维护先定位问题。</div>
         </div>
       </div>
 
@@ -285,7 +293,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div class="transcribe-status-header">
           <div>
             <div class="transcribe-status-title">服务状态</div>
-            <div class="transcribe-status-desc">检查本地后端、转写引擎与公网访问链路。</div>
+            <div class="transcribe-status-desc">检查本地后端、转写引擎、公网访问、ffmpeg/ffprobe、临时目录、yt-dlp 与 R2/CORS。</div>
           </div>
         </div>
         <div class="transcribe-status-grid">
@@ -295,16 +303,28 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <div class="transcribe-status-item neutral" id="transcribeConclusionCard"><div class="k">结论</div><div class="v" id="transcribeConclusionText">等待扫描结果</div></div>
         </div>
         <div class="transcribe-status-summary" id="transcribeSummary">点击“扫描”查看当前状态。</div>
-        <div class="info-note">说明：本页优先复用现有 scan / repair 接口，不新增额外运维复杂度。</div>
+        <div class="info-note">说明：本面板第一版只做扫描和日志查看，不执行重启、删除、升级等高风险动作。</div>
       </div>
 
       <div class="transcribe-actions-card">
-        <div class="transcribe-actions-title">操作区</div>
-        <div class="transcribe-actions-desc">先扫描，再决定是否一键修复。修复会尝试重启相关服务，并在完成后再次扫描。</div>
+        <div class="transcribe-actions-title">维护操作</div>
+        <div class="transcribe-actions-desc">第一版只做安全的只读检查：扫描当前链路状态，或拉取最近错误日志。</div>
         <div class="transcribe-actions-row">
-          <button class="bs" id="transcribeScanBtn" onclick="scanTranscribeService()">扫描</button>
-          <button class="bp" id="transcribeRepairBtn" onclick="repairTranscribeService()">一键修复</button>
+          <button class="bs" id="transcribeScanBtn" onclick="scanTranscribeService()">一键扫描</button>
+          <button class="bs" id="transcribeLogsBtn" onclick="loadTranscribeLogs()">最近错误日志</button>
         </div>
+      </div>
+
+      <div class="douyin-test-card">
+        <div class="transcribe-actions-title">扫描明细</div>
+        <div class="transcribe-actions-desc">按模块展示检查项，红色是故障，黄色是配置提醒。</div>
+        <div class="transcribe-checks" id="transcribeChecks">尚未扫描。</div>
+      </div>
+
+      <div class="douyin-test-card">
+        <div class="transcribe-actions-title">最近错误日志</div>
+        <div class="transcribe-actions-desc">只显示和转写、R2、抖音、Whisper 相关的最近日志。</div>
+        <div class="douyin-result" id="transcribeLogs">点击“最近错误日志”查看。</div>
       </div>
 
       <div class="douyin-test-card">
@@ -658,6 +678,33 @@ async function cleanupMusicStorage() {
   }
 }
 
+function renderTranscribeChecks(checks) {
+  const box = document.getElementById('transcribeChecks');
+  if (!box) return;
+  if (!checks || !checks.length) {
+    box.textContent = '暂无扫描明细。';
+    return;
+  }
+  const groups = {};
+  checks.forEach(item => {
+    const group = item.group || '其他';
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(item);
+  });
+  const statusLabel = { ok: '正常', warn: '提醒', warning: '提醒', error: '异常' };
+  box.innerHTML = Object.entries(groups).map(([group, items]) => `
+    <div class="transcribe-check-group">
+      <div class="transcribe-check-group-title">${escapeHtml(group)}</div>
+      ${items.map(item => {
+        const st = item.status || 'warn';
+        const detail = item.detail ? JSON.stringify(item.detail, null, 2) : '';
+        const message = [item.message || '', detail && detail.length < 500 ? detail : ''].filter(Boolean).join('\n');
+        return `<div class="transcribe-check-row"><div>${escapeHtml(item.name || '-')}</div><div class="${st}">${escapeHtml(statusLabel[st] || st)}</div><div>${escapeHtml(message || '-')}</div></div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
 function renderTranscribeServiceResult(data, mode) {
   if (!data) return;
   const statusText = s => s === 'ok' ? '正常' : '异常';
@@ -679,33 +726,26 @@ function renderTranscribeServiceResult(data, mode) {
   const conclusionText = document.getElementById('transcribeConclusionText');
   if (conclusionCard && conclusionText) {
     conclusionCard.classList.remove('ok', 'err', 'neutral');
-    const overallOk = data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok';
-    conclusionCard.classList.add(overallOk ? 'ok' : 'err');
+    const overallOk = data.status === 'ok' || (data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok' && !data.checks?.some(x => x.status === 'error'));
+    conclusionCard.classList.add(overallOk ? 'ok' : (data.status === 'warning' ? 'neutral' : 'err'));
     conclusionText.textContent = data.conclusion || (overallOk ? '服务可用' : '需要处理');
   }
 
   const summaryEl = document.getElementById('transcribeSummary');
   if (summaryEl) {
-    if (mode === 'repair' && data.before && data.after) {
-      summaryEl.textContent = [
-        '修复前：' + (data.before.summary || '—'),
-        '修复后：' + (data.after.summary || '—'),
-        '结论：' + (data.conclusion || '—')
-      ].join('\n');
-    } else {
-      summaryEl.textContent = [
-        (data.summary || '扫描完成'),
-        '结论：' + (data.conclusion || '—')
-      ].join('\n');
-    }
+    summaryEl.textContent = [
+      (data.summary || '扫描完成'),
+      '结论：' + (data.conclusion || '—')
+    ].join('\n');
   }
+  renderTranscribeChecks(data.checks || []);
 }
 
 async function scanTranscribeService() {
   const btn = document.getElementById('transcribeScanBtn');
   if (btn) { btn.disabled = true; btn.textContent = '扫描中...'; }
   try {
-    const res = await api('GET', '/api/transcribe/admin/scan');
+    const res = await api('GET', '/api/admin/transcribe/scan');
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     transcribeScannedOnce = true;
@@ -714,7 +754,29 @@ async function scanTranscribeService() {
   } catch (e) {
     toast('扫描失败: ' + e.message, 'err');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '扫描'; }
+    if (btn) { btn.disabled = false; btn.textContent = '一键扫描'; }
+  }
+}
+
+async function loadTranscribeLogs() {
+  const btn = document.getElementById('transcribeLogsBtn');
+  const box = document.getElementById('transcribeLogs');
+  if (btn) { btn.disabled = true; btn.textContent = '读取中...'; }
+  if (box) box.textContent = '正在读取最近错误日志...';
+  try {
+    const res = await api('GET', '/api/admin/transcribe/logs?limit=50');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    const logs = data.logs || [];
+    if (box) {
+      box.textContent = logs.length ? logs.map(row => `${row.path}\n${row.line}`).join('\n\n') : '最近没有转写相关错误日志。';
+    }
+    toast('错误日志已加载', 'ok');
+  } catch (e) {
+    if (box) box.textContent = '读取失败：' + e.message;
+    toast('读取日志失败：' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '最近错误日志'; }
   }
 }
 
