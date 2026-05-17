@@ -882,6 +882,7 @@ function renderQueue() {
   if (!queueList) return;
   if (!queuedFiles.length) {
     queueList.innerHTML = '<div class="queue-empty">队列为空</div>';
+    updateProgressUI();
     return;
   }
   queueList.innerHTML = queuedFiles.map((item, i) => {
@@ -907,6 +908,7 @@ function clearQueue() {
   queuedFiles = [];
   resetTaskState();
   renderQueue();
+  updateProgressUI();
   setStatus('队列已清空。');
 }
 
