@@ -811,13 +811,33 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function requestJsonWithRetry(url, options = {}, { retries = 5, retryLabel = '请求' } = {}) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await requestJson(url, options);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries) break;
+      const delay = Math.min(12000, 1000 * (attempt + 1));
+      setStatus(`${retryLabel}失败，${delay / 1000} 秒后自动重试（${attempt + 1}/${retries}）：${error.message}`);
+      await sleep(delay);
+    }
+  }
+  throw lastError;
+}
+
 function createUploadId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID().replace(/-/g, '');
   return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
 }
 
 async function uploadFilesChunked(backendBase) {
-  const chunkSize = 512 * 1024;
+  const chunkSize = 256 * 1024;
   const uploadedFiles = [];
   const totalBytes = queuedFiles.reduce((sum, item) => sum + item.file.size, 0);
   let sentBytes = 0;
@@ -838,10 +858,10 @@ async function uploadFilesChunked(backendBase) {
       formData.append('total_chunks', String(totalChunks));
       formData.append('chunk', chunk, `${file.name}.part${index}`);
 
-      await requestJson(`${backendBase}/api/music/upload-chunk`, {
+      await requestJsonWithRetry(`${backendBase}/api/music/upload-chunk`, {
         method: 'POST',
         body: formData,
-      });
+      }, { retries: 8, retryLabel: `分片 ${index + 1}/${totalChunks}` });
 
       sentBytes += chunk.size;
       const percent = totalBytes ? Math.round((sentBytes / totalBytes) * 100) : 0;
@@ -856,11 +876,11 @@ async function uploadFilesChunked(backendBase) {
     });
   }
 
-  return requestJson(`${backendBase}/api/music/complete-chunked-upload`, {
+  return requestJsonWithRetry(`${backendBase}/api/music/complete-chunked-upload`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ files: uploadedFiles }),
-  });
+  }, { retries: 5, retryLabel: '合并分片' });
 }
 
 async function uploadFiles() {
