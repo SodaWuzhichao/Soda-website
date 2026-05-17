@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音乐格式转换 | SODA567</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-soft: #101010;
+  --gold: #ffd700;
+  --text: #e8e8e8;
+  --muted: #777;
+  --muted-2: #5e5e5e;
+  --border: #262626;
+  --ok: #5ad060;
+  --warn: #f0c46a;
+  --info: #7ec8ff;
+  --danger: #ff6666;
+}
+html { color-scheme: dark; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  min-height: 100vh;
+}
+a { color: inherit; }
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 48px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  line-height: 1;
+}
+.logo-wrap img {
+  height: 52px;
+  width: auto;
+  border-radius: 4px;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.logo-text strong {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff;
+  font-size: 1.2em;
+}
+.logo-text span {
+  font-weight: 200;
+  letter-spacing: 3.5px;
+  font-size: 0.65em;
+  opacity: 0.8;
+  color: #fff;
+  margin-top: 2px;
+}
+.nav-back {
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 1px;
+  transition: all .3s;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text);
+}
+.nav-back:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 80px 48px;
+}
+.page-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 200;
+  letter-spacing: -2px;
+  margin-bottom: 12px;
+}
+.page-desc {
+  color: var(--muted);
+  font-size: .95rem;
+  margin-bottom: 40px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.stack { display: grid; gap: 18px; }
+.upload-area {
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 56px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+}
+.upload-area:hover { border-color: var(--gold); }
+.upload-area.dragover { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+.upload-icon { font-size: 3rem; margin-bottom: 14px; }
+.upload-text { font-size: 1.1rem; margin-bottom: 8px; }
+.upload-hint { font-size: .85rem; color: var(--muted); }
+.upload-subhint { margin-top: 14px; font-size: .78rem; color: var(--muted-2); }
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.select, .dev-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+}
+.select:focus, .dev-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.btn-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 14px 22px;
+  border-radius: 6px;
+  font-weight: 300;
+  font-size: 0.9rem;
+  transition: all .3s;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.5px;
+  background: transparent;
+  color: var(--text);
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:disabled, .select:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary {
+  background: var(--gold);
+  color: #111;
+  border-color: var(--gold);
+}
+.btn-primary:hover { box-shadow: 0 8px 20px rgba(255,215,0,0.3); }
+.btn-secondary:hover { border-color: rgba(255,255,255,0.4); }
+.btn-ghost { color: var(--muted); }
+.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.24); }
+.progress-card { display: grid; gap: 14px; }
+.phase-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.phase-step {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--muted-2);
+  transition: border-color .25s ease, color .25s ease, background .25s ease;
+}
+.phase-step.is-active {
+  border-color: rgba(255,215,0,0.42);
+  background: rgba(255,215,0,0.08);
+  color: var(--text);
+}
+.phase-step.is-done {
+  border-color: rgba(90,208,96,0.34);
+  color: var(--ok);
+}
+.phase-step-label {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.phase-step-meta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: currentColor;
+  opacity: 0.78;
+}
+.progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.progress-title {
+  font-size: 1rem;
+  font-weight: 300;
+}
+.progress-text {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.progress-container { width: 100%; }
+.progress-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: #222;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold), #ffed4a);
+  transition: width .3s;
+  border-radius: 999px;
+}
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+.progress-phase { color: var(--muted); }
+.progress-pct { color: var(--gold); font-weight: 400; }
+.status-line {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+.phase-tip {
+  margin-top: -2px;
+  color: var(--text);
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+.phase-tip strong {
+  color: var(--gold);
+  font-weight: 400;
+}
+.status-line.error { color: var(--danger); }
+.status-line.success { color: var(--ok); }
+.file-list {
+  display: grid;
+  gap: 10px;
+}
+.file-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+.file-name {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-meta {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+.status-pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-pill.idle, .status-pill.uploaded { color: var(--info); }
+.status-pill.queued, .status-pill.processing { color: var(--warn); }
+.status-pill.completed, .status-pill.partial_success { color: var(--ok); }
+.status-pill.failed { color: var(--danger); }
+.download-link {
+  text-decoration: none;
+  font-size: 0.78rem;
+  color: var(--gold);
+  border: 1px solid rgba(255,215,0,0.18);
+  background: rgba(255,215,0,0.06);
+  padding: 7px 10px;
+  border-radius: 999px;
+}
+.empty-state {
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.86rem;
+  background: var(--surface-soft);
+}
+.subtle-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.subtle-row span:last-child { color: var(--text); text-align: right; }
+.hidden { display: none !important; }
+summary.dev-toggle {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.82rem;
+  user-select: none;
+}
+summary.dev-toggle:hover { color: var(--text); }
+.dev-content {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.dev-help {
+  margin-top: 8px;
+  color: var(--muted-2);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+footer {
+  padding: 0 24px 34px;
+  text-align: center;
+  color: var(--muted-2);
+  font-size: 0.75rem;
+}
+@media (max-width: 768px) {
+  nav { padding: 24px; }
+  .container { padding: 60px 24px; }
+  .upload-area { padding: 42px 20px; }
+  .controls-grid { grid-template-columns: 1fr; }
+  .btn-group { flex-direction: column; }
+  .btn { width: 100%; text-align: center; }
+  .file-item { grid-template-columns: 1fr; }
+  .file-actions { justify-content: flex-start; }
+  .phase-steps { grid-template-columns: 1fr; }
+  .subtle-row { flex-direction: column; gap: 4px; }
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="logo-wrap">
+    <img src="../images/logo-icon.png" alt="SODA logo">
+    <div class="logo-text">
+      <strong>soda</strong>
+      <span>MEDIA</span>
+    </div>
+  </a>
+  <a href="index.html" class="nav-back">返回工具页</a>
+</nav>
+
+<div class="container">
+  <h1 class="page-title">音乐格式转换</h1>
+  <p class="page-desc">上传音频文件，选择输出格式后直接开始转换。</p>
+
+  <div class="stack">
+    <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="上传音频文件">
+      <div class="upload-icon">♫</div>
+      <div class="upload-text">点击或拖拽文件到这里</div>
+      <div class="upload-hint">支持多文件上传：MP3、WAV、M4A、FLAC、AAC、OGG、OPUS、NCM、KGM</div>
+      <div class="upload-subhint">上传后保留真实队列、轮询与下载能力，界面只展示主流程。</div>
+      <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.ncm,.kgm,.kgg,audio/*" multiple hidden>
+    </div>
+
+    <div class="card">
+      <div class="controls-grid">
+        <div class="field">
+          <label for="outputFormat">输出格式</label>
+          <select class="select" id="outputFormat">
+            <option value="mp3" selected>MP3</option>
+            <option value="wav">WAV</option>
+            <option value="m4a">M4A</option>
+            <option value="flac">FLAC</option>
+          </select>
+        </div>
+
+        <div class="field" id="bitrateField">
+          <label for="mp3Bitrate">输出码率</label>
+          <select class="select" id="mp3Bitrate">
+            <option value="128">128 kbps</option>
+            <option value="192">192 kbps</option>
+            <option value="320" selected>320 kbps</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-group" style="margin-top: 18px;">
+        <button class="btn btn-secondary" id="uploadBtn" type="button">提交上传</button>
+        <button class="btn btn-primary" id="startBtn" type="button">开始转换</button>
+        <button class="btn btn-secondary" id="downloadZipBtn" type="button">下载 ZIP</button>
+        <button class="btn btn-ghost" id="clearBtn" type="button">清空</button>
+      </div>
+    </div>
+
+    <div class="card progress-card">
+      <div class="progress-top">
+        <div class="progress-title">处理进度</div>
+        <div class="progress-text" id="queueCount">当前 0 个文件</div>
+      </div>
+
+      <div class="phase-steps" id="phaseSteps">
+        <div class="phase-step is-active" data-phase-step="waiting">
+          <div class="phase-step-label">1. 等待文件</div>
+          <div class="phase-step-meta">添加文件</div>
+        </div>
+        <div class="phase-step" data-phase-step="uploading">
+          <div class="phase-step-label">2. 上传中</div>
+          <div class="phase-step-meta">提交到后端</div>
+        </div>
+        <div class="phase-step" data-phase-step="ready">
+          <div class="phase-step-label">3. 待开始</div>
+          <div class="phase-step-meta">等待点击转换</div>
+        </div>
+        <div class="phase-step" data-phase-step="converting">
+          <div class="phase-step-label">4. 转换中</div>
+          <div class="phase-step-meta">轮询处理进度</div>
+        </div>
+        <div class="phase-step" data-phase-step="completed">
+          <div class="phase-step-label">5. 已完成</div>
+          <div class="phase-step-meta">下载结果</div>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-label">
+          <span class="progress-phase" id="progressPhase">等待添加文件</span>
+          <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+      </div>
+
+      <div class="phase-tip" id="phaseTip">添加音频文件后，先提交上传，再开始转换。</div>
+      <div class="status-line" id="statusLine">等待添加文件。</div>
+
+      <details class="dev-box">
+        <summary class="dev-toggle">查看任务详情与开发选项</summary>
+        <div class="dev-content">
+          <div class="stack" style="gap: 10px; margin-bottom: 14px;">
+            <div class="subtle-row"><span>任务状态</span><span id="summaryState">未上传</span></div>
+            <div class="subtle-row"><span>任务 ID</span><span id="summaryTaskId">-</span></div>
+            <div class="subtle-row"><span>完成情况</span><span id="summaryProgress">0 / 0</span></div>
+          </div>
+          <div class="field">
+            <label for="backendBase">后端地址</label>
+            <input class="dev-input" id="backendBase" type="text" value="" placeholder="留空自动使用当前网站；本地测试可填 http://127.0.0.1:5062">
+            <div class="dev-help">留空时使用公网 API：api.soda567.dpdns.org；仅在切换本地/测试环境时填写。</div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="file-list" id="queueList">
+        <div class="empty-state">还没有文件。添加后会在这里显示状态和下载入口。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 SODA567</footer>
+
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const queueList = document.getElementById('queueList');
+const queueCount = document.getElementById('queueCount');
+const statusLine = document.getElementById('statusLine');
+const backendBaseInput = document.getElementById('backendBase');
+const outputFormat = document.getElementById('outputFormat');
+const mp3Bitrate = document.getElementById('mp3Bitrate');
+const uploadBtn = document.getElementById('uploadBtn');
+const startBtn = document.getElementById('startBtn');
+const clearBtn = document.getElementById('clearBtn');
+const downloadZipBtn = document.getElementById('downloadZipBtn');
+const summaryState = document.getElementById('summaryState');
+const summaryTaskId = document.getElementById('summaryTaskId');
+const summaryProgress = document.getElementById('summaryProgress');
+const progressBar = document.getElementById('progressBar');
+const progressPct = document.getElementById('progressPct');
+const progressPhase = document.getElementById('progressPhase');
+const phaseTip = document.getElementById('phaseTip');
+const phaseSteps = Array.from(document.querySelectorAll('[data-phase-step]'));
+const bitrateField = document.getElementById('bitrateField');
+
+const allowedExtensions = ['mp3', 'wav', 'm4a', 'flac', 'aac', 'ogg', 'opus', 'ncm', 'kgm', 'kgg'];
+const phaseOrder = ['waiting', 'uploading', 'ready', 'converting', 'completed'];
+let queuedFiles = [];
+let activeTaskId = null;
+let activeTask = null;
+let pollTimer = null;
+let uploadCommitted = false;
+let uiPhase = 'waiting';
+
+function getBackendBase() {
+  const explicitBase = (backendBaseInput.value || '').trim().replace(/\/$/, '');
+  return explicitBase || 'https://api.soda567.dpdns.org';
+}
+
+function formatBytes(bytes) {
+  if (!bytes && bytes !== 0) return '未知大小';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function getExtension(name) {
+  const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+  return match ? match[1] : '';
+}
+
+function setStatus(message, type = 'default') {
+  statusLine.textContent = message;
+  statusLine.classList.remove('error', 'success');
+  if (type === 'error') statusLine.classList.add('error');
+  if (type === 'success') statusLine.classList.add('success');
+}
+
+function formatTaskState(state) {
+  const map = {
+    idle: '待上传',
+    uploaded: '已上传',
+    queued: '排队中',
+    processing: '转换中',
+    completed: '已完成',
+    partial_success: '部分成功',
+    failed: '失败'
+  };
+  return map[state] || state || '未上传';
+}
+
+function getUiPhase() {
+  if (!queuedFiles.length) return 'waiting';
+  if (uiPhase === 'uploading') return 'uploading';
+  if (!uploadCommitted || !activeTaskId) return 'waiting';
+  const state = activeTask?.state;
+  if (!state || state === 'uploaded') return 'ready';
+  if (['queued', 'processing'].includes(state)) return 'converting';
+  if (['completed', 'partial_success', 'failed'].includes(state)) return 'completed';
+  return 'ready';
+}
+
+function getPhaseCopy(phase) {
+  const completedCount = queuedFiles.filter(file => file.status === 'completed').length;
+  const totalCount = queuedFiles.length;
+  const progress = activeTask?.progress || {};
+  const successCount = progress.completed || completedCount;
+  const total = progress.total || totalCount;
+
+  const map = {
+    waiting: {
+      label: totalCount ? '等待文件' : '等待添加文件',
+      tip: totalCount ? '文件已加入队列，请先点击“提交上传”。' : '先添加音频文件，建立本次转换队列。'
+    },
+    uploading: {
+      label: '上传中',
+      tip: '正在把文件提交到后端，请稍等。'
+    },
+    ready: {
+      label: '上传完成待开始',
+      tip: '上传完成，请点击“开始转换”继续，当前并不是卡住。'
+    },
+    converting: {
+      label: '转换中',
+      tip: `正在转换文件，请等待处理完成（${successCount}/${total} 已成功）。`
+    },
+    completed: {
+      label: activeTask?.state === 'failed' ? '处理结束（有失败）' : '完成',
+      tip: activeTask?.download_zip_url ? '转换结束，可直接下载单个文件或 ZIP 包。' : '转换结束，可下载处理结果。'
+    }
+  };
+
+  return map[phase] || map.waiting;
+}
+
+function setPhaseSteps(phase) {
+  const activeIndex = phaseOrder.indexOf(phase);
+  phaseSteps.forEach((step) => {
+    const stepPhase = step.dataset.phaseStep;
+    const stepIndex = phaseOrder.indexOf(stepPhase);
+    step.classList.toggle('is-active', stepPhase === phase);
+    step.classList.toggle('is-done', activeIndex > stepIndex);
+  });
+}
+
+function getOverallProgress() {
+  const phase = getUiPhase();
+  if (phase === 'waiting') return queuedFiles.length ? 8 : 0;
+  if (phase === 'uploading') return 22;
+  if (phase === 'ready') return 45;
+  if (phase === 'completed') return 100;
+
+  const progress = activeTask?.progress || {};
+  const total = progress.total || queuedFiles.length || 1;
+  const completed = progress.completed || 0;
+  const failed = progress.failed || 0;
+  const handled = completed + failed;
+  return Math.max(56, Math.min(94, 56 + handled / total * 38));
+}
+
+function updateProgressUI() {
+  const phase = getUiPhase();
+  const pct = getOverallProgress();
+  const phaseCopy = getPhaseCopy(phase);
+
+  progressBar.style.width = pct + '%';
+  progressPct.textContent = Math.round(pct) + '%';
+  progressPhase.textContent = phaseCopy.label;
+  phaseTip.innerHTML = phase === 'ready'
+    ? '上传完成，<strong>请点击“开始转换”继续</strong>，当前并不是卡住。'
+    : phaseCopy.tip;
+
+  setPhaseSteps(phase);
+}
+
+function syncQueueWithTask(task) {
+  if (!task || !Array.isArray(task.files)) return;
+  const fileMap = new Map(task.files.map(file => [file.source_name, file]));
+  queuedFiles = queuedFiles.map(file => {
+    const remote = fileMap.get(file.name);
+    if (!remote) return file;
+    return {
+      ...file,
+      server: remote,
+      status: remote.status,
+      error: remote.error || null,
+      downloadUrl: remote.download_url || null,
+      outputName: remote.output_name || null,
+    };
+  });
+}
+
+function renderSummary() {
+  if (!activeTask) {
+    summaryState.textContent = uploadCommitted ? '已上传' : '未上传';
+    summaryTaskId.textContent = activeTaskId || '-';
+    summaryProgress.textContent = `${queuedFiles.filter(file => file.status === 'completed').length} / ${queuedFiles.length}`;
+    updateProgressUI();
+    return;
+  }
+  const progress = activeTask.progress || {};
+  summaryState.textContent = formatTaskState(activeTask.state);
+  summaryTaskId.textContent = activeTask.task_id || '-';
+  summaryProgress.textContent = `${progress.completed || 0} 成功 / ${progress.failed || 0} 失败 / ${progress.total || 0} 总数`;
+  updateProgressUI();
+}
+
+function renderQueue() {
+  queueCount.textContent = `当前 ${queuedFiles.length} 个文件`;
+
+  if (!queuedFiles.length) {
+    queueList.innerHTML = '<div class="empty-state">还没有文件。添加后会在这里显示状态和下载入口。</div>';
+    renderSummary();
+    return;
+  }
+
+  queueList.innerHTML = queuedFiles.map((file) => {
+    const status = file.status || (uploadCommitted ? 'uploaded' : 'idle');
+    const detailParts = [formatBytes(file.size)];
+    if (file.outputName) detailParts.push(`输出 ${file.outputName}`);
+    else detailParts.push(`目标 ${outputFormat.value.toUpperCase()}${outputFormat.value === 'mp3' ? ` · ${mp3Bitrate.value} kbps` : ''}`);
+    if (file.error) detailParts.push(`错误：${file.error}`);
+
+    const downloadHtml = file.downloadUrl
+      ? `<a class="download-link" href="${getBackendBase()}${file.downloadUrl}" target="_blank" rel="noopener">下载</a>`
+      : '';
+
+    return `
+      <div class="file-item">
+        <div>
+          <div class="file-name">${file.name}</div>
+          <div class="file-meta">${detailParts.join(' · ')}</div>
+        </div>
+        <div class="file-actions">
+          <div class="status-pill ${status}">${file.error ? '失败' : formatTaskState(status)}</div>
+          ${downloadHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  renderSummary();
+}
+
+function validateFiles(fileList) {
+  const files = Array.from(fileList || []);
+  return files.filter(file => {
+    const ext = getExtension(file.name);
+    return file.type.startsWith('audio/') || allowedExtensions.includes(ext);
+  });
+}
+
+function addFiles(fileList) {
+  if (uploadCommitted || activeTaskId) {
+    setStatus('当前任务已上传，如需重新选择文件，请先清空。', 'error');
+    return;
+  }
+  const files = validateFiles(fileList);
+  if (!files.length) {
+    setStatus('未检测到可用音频文件，请重新选择。', 'error');
+    return;
+  }
+
+  const existingKeys = new Set(queuedFiles.map(file => `${file.name}_${file.size}_${file.lastModified}`));
+  const newFiles = files.filter(file => {
+    const key = `${file.name}_${file.size}_${file.lastModified}`;
+    return !existingKeys.has(key);
+  }).map(file => ({
+    file,
+    name: file.name,
+    size: file.size,
+    lastModified: file.lastModified,
+    status: 'idle',
+    error: null,
+    downloadUrl: null,
+    outputName: null,
+  }));
+
+  if (!newFiles.length) {
+    setStatus('这些文件已经在队列里了。');
+    return;
+  }
+
+  queuedFiles = [...queuedFiles, ...newFiles];
+  uiPhase = 'waiting';
+  renderQueue();
+  setStatus(`已加入 ${newFiles.length} 个文件，请先提交上传。`);
+}
+
+function resetTaskState() {
+  activeTaskId = null;
+  activeTask = null;
+  uploadCommitted = false;
+  uiPhase = 'waiting';
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, options);
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (_) {
+    data = null;
+  }
+  if (!response.ok) {
+    const message = data?.message || `请求失败（${response.status}）`;
+    throw new Error(message);
+  }
+  return data;
+}
+
+async function uploadFiles() {
+  if (!queuedFiles.length) {
+    setStatus('请先添加至少一个音频文件。', 'error');
+    return;
+  }
+  if (uploadCommitted || activeTaskId) {
+    setStatus('当前队列已经上传，无需重复提交。', 'error');
+    return;
+  }
+
+  const backendBase = getBackendBase();
+  if (!backendBase) {
+    setStatus('请先填写后端地址。', 'error');
+    return;
+  }
+
+  try {
+    uploadBtn.disabled = true;
+    startBtn.disabled = true;
+    uiPhase = 'uploading';
+    updateProgressUI();
+    setStatus('正在上传文件到后端…');
+
+    const formData = new FormData();
+    queuedFiles.forEach(item => formData.append('files', item.file));
+
+    const data = await requestJson(`${backendBase}/api/music/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    activeTask = data.task;
+    activeTaskId = data.task?.task_id || null;
+    uploadCommitted = true;
+    uiPhase = 'ready';
+    syncQueueWithTask(activeTask);
+    renderQueue();
+    setStatus(`上传完成：${data.upload?.accepted_count || queuedFiles.length} 个文件已进入任务。请点击“开始转换”继续。`, 'success');
+  } catch (error) {
+    uiPhase = 'waiting';
+    setStatus(`上传失败：${error.message}`, 'error');
+  } finally {
+    uploadBtn.disabled = false;
+    startBtn.disabled = false;
+    updateProgressUI();
+  }
+}
+
+function syncMp3BitrateState() {
+  const isMp3 = outputFormat.value === 'mp3';
+  mp3Bitrate.disabled = !isMp3;
+  bitrateField.classList.toggle('hidden', !isMp3);
+}
+
+function shouldContinuePolling(task) {
+  return task && ['queued', 'processing'].includes(task.state);
+}
+
+async function fetchTaskStatus({ silent = false } = {}) {
+  if (!activeTaskId) return;
+  const backendBase = getBackendBase();
+  try {
+    const data = await requestJson(`${backendBase}/api/music/status/${activeTaskId}`);
+    activeTask = data.task;
+    uiPhase = ['queued', 'processing'].includes(activeTask.state)
+      ? 'converting'
+      : ['completed', 'partial_success', 'failed'].includes(activeTask.state)
+        ? 'completed'
+        : activeTask.state === 'uploaded'
+          ? 'ready'
+          : getUiPhase();
+    syncQueueWithTask(activeTask);
+    renderQueue();
+
+    if (!silent) {
+      const progress = activeTask.progress || {};
+      setStatus(
+        `${formatTaskState(activeTask.state)}：${activeTask.message || ''}（${progress.completed || 0}/${progress.total || 0} 成功）`,
+        activeTask.state === 'failed' ? 'error' : activeTask.state === 'completed' ? 'success' : 'default'
+      );
+    }
+
+    if (shouldContinuePolling(activeTask)) {
+      pollTimer = setTimeout(() => fetchTaskStatus({ silent: true }), 1500);
+    } else {
+      pollTimer = null;
+    }
+  } catch (error) {
+    setStatus(`状态查询失败：${error.message}`, 'error');
+    pollTimer = null;
+  }
+}
+
+async function startConversion() {
+  if (!queuedFiles.length) {
+    setStatus('请先添加至少一个音频文件。', 'error');
+    return;
+  }
+  if (!uploadCommitted || !activeTaskId) {
+    setStatus('请先提交上传，拿到任务后再开始转换。', 'error');
+    return;
+  }
+  if (activeTask && ['queued', 'processing', 'completed', 'partial_success', 'failed'].includes(activeTask.state) && activeTask.state !== 'uploaded') {
+    if (['queued', 'processing'].includes(activeTask.state)) {
+      setStatus('当前任务正在处理中，请稍后。', 'error');
+      return;
+    }
+    if (['completed', 'partial_success', 'failed'].includes(activeTask.state)) {
+      setStatus('当前任务已经执行过转换。如需重新转换，请清空后重新上传。', 'error');
+      return;
+    }
+  }
+
+  const backendBase = getBackendBase();
+  try {
+    startBtn.disabled = true;
+    uploadBtn.disabled = true;
+    uiPhase = 'converting';
+    updateProgressUI();
+    setStatus('已提交转换请求，等待后端开始处理…');
+
+    const payload = {
+      task_id: activeTaskId,
+      output_format: outputFormat.value,
+      mp3_bitrate: mp3Bitrate.value,
+    };
+
+    const data = await requestJson(`${backendBase}/api/music/convert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    activeTask = data.task;
+    uiPhase = ['completed', 'partial_success', 'failed'].includes(data.task?.state) ? 'completed' : 'converting';
+    syncQueueWithTask(activeTask);
+    renderQueue();
+    if (pollTimer) clearTimeout(pollTimer);
+    fetchTaskStatus();
+  } catch (error) {
+    setStatus(`启动转换失败：${error.message}`, 'error');
+  } finally {
+    startBtn.disabled = false;
+    uploadBtn.disabled = false;
+    updateProgressUI();
+  }
+}
+
+function clearQueue() {
+  queuedFiles = [];
+  uiPhase = 'waiting';
+  fileInput.value = '';
+  resetTaskState();
+  renderQueue();
+  setStatus('队列已清空。');
+}
+
+function downloadZip() {
+  if (!activeTask || !activeTask.download_zip_url) {
+    setStatus('当前任务还没有可下载的 ZIP 包。', 'error');
+    return;
+  }
+  window.open(`${getBackendBase()}${activeTask.download_zip_url}`, '_blank', 'noopener');
+  setStatus('已打开 ZIP 下载。', 'success');
+}
+
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    fileInput.click();
+  }
+});
+fileInput.addEventListener('change', (event) => addFiles(event.target.files));
+
+['dragenter', 'dragover'].forEach(eventName => {
+  uploadArea.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+});
+['dragleave', 'drop'].forEach(eventName => {
+  uploadArea.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    uploadArea.classList.remove('dragover');
+  });
+});
+uploadArea.addEventListener('drop', (event) => addFiles(event.dataTransfer.files));
+
+outputFormat.addEventListener('change', () => {
+  syncMp3BitrateState();
+  renderQueue();
+});
+mp3Bitrate.addEventListener('change', renderQueue);
+uploadBtn.addEventListener('click', uploadFiles);
+startBtn.addEventListener('click', startConversion);
+clearBtn.addEventListener('click', clearQueue);
+downloadZipBtn.addEventListener('click', downloadZip);
+
+syncMp3BitrateState();
+renderQueue();
+</script>
+</body>
+</html>
