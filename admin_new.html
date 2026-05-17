@@ -308,44 +308,22 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       </div>
 
       <div class="douyin-test-card">
-        <div class="transcribe-actions-title">抖音链接转文案（内部测试版）</div>
-        <div class="transcribe-actions-desc">仅供后台内部验证。输入抖音分享链接后，服务端会解析短链、下载素材、预处理音频并接入现有转写任务流。</div>
+        <div class="transcribe-actions-title">抖音链接转文案检修</div>
+        <div class="transcribe-actions-desc">用于排查链接解析失败、Cookie 过期、yt-dlp 异常、Whisper 服务异常等问题。不会启动正式转写任务。</div>
         <div class="douyin-form-grid">
-          <div>
-            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">抖音链接</label>
-            <input id="douyinUrlInput" placeholder="例如：https://v.douyin.com/xxxx/" />
+          <div style="grid-column:1/-1;">
+            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">可选：粘贴一个失败的抖音链接</label>
+            <input id="douyinDiagUrlInput" placeholder="例如：https://v.douyin.com/xxxx/；不填则只检查环境" />
           </div>
-          <div>
-            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">模式</label>
-            <select id="douyinModeSelect">
-              <option value="balanced">balanced</option>
-              <option value="fast">fast</option>
-              <option value="accurate">accurate</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">语言</label>
-            <select id="douyinLanguageSelect">
-              <option value="zh">中文</option>
-              <option value="en">English</option>
-              <option value="">自动</option>
-            </select>
-          </div>
-          <button class="bp" id="douyinSubmitBtn" onclick="startDouyinTranscribe()">开始提取文案</button>
+          <button class="bp" id="douyinDiagBtn" onclick="diagnoseDouyinTranscribe()">开始检修</button>
         </div>
-        <div class="douyin-help">状态阶段：parsing / downloading / preprocessing / transcribing / completed / error。不会影响原有本地上传转写入口。</div>
+        <div class="douyin-help">检修项：yt-dlp 版本、Cookie 文件、Whisper 健康状态、短链/分享页访问、yt-dlp 链接解析、最近错误日志。</div>
         <div class="douyin-status-box">
           <div class="douyin-status-top">
-            <div class="douyin-status-meta" id="douyinTaskMeta">尚未开始任务</div>
-            <div class="douyin-status-phase" id="douyinTaskPhase">等待输入</div>
+            <div class="douyin-status-meta" id="douyinDiagMeta">尚未检修</div>
+            <div class="douyin-status-phase" id="douyinDiagOverall">等待</div>
           </div>
-          <div class="transcribe-status-grid" style="margin-bottom:0;">
-            <div class="transcribe-status-item"><div class="k">任务状态</div><div class="v" id="douyinTaskStatus">-</div></div>
-            <div class="transcribe-status-item"><div class="k">当前阶段</div><div class="v" id="douyinTaskPhaseText">-</div></div>
-            <div class="transcribe-status-item"><div class="k">队列位置</div><div class="v" id="douyinTaskQueue">-</div></div>
-            <div class="transcribe-status-item"><div class="k">视频标题</div><div class="v" id="douyinTaskTitle">-</div></div>
-          </div>
-          <div class="douyin-result" id="douyinTaskResult">结果会显示在这里；失败时会展示明确错误。</div>
+          <div class="douyin-result" id="douyinDiagResult">检修结果会显示在这里。</div>
         </div>
       </div>
     </section>
@@ -762,111 +740,50 @@ async function repairTranscribeService() {
 }
 
 
-function resetDouyinTaskView() {
-  const defaults = {
-    douyinTaskMeta: '尚未开始任务',
-    douyinTaskPhase: '等待输入',
-    douyinTaskStatus: '-',
-    douyinTaskPhaseText: '-',
-    douyinTaskQueue: '-',
-    douyinTaskTitle: '-',
-    douyinTaskResult: '结果会显示在这里；失败时会展示明确错误。'
-  };
-  Object.entries(defaults).forEach(([id, value]) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  });
-}
-
-function stopDouyinPolling() {
-  if (douyinTaskPollTimer) {
-    clearTimeout(douyinTaskPollTimer);
-    douyinTaskPollTimer = null;
-  }
-}
-
-function renderDouyinTask(data) {
-  if (!data) return;
-  const phase = data.phase || data.status || 'queued';
-  const phaseLabel = DOUYIN_PHASE_LABELS[phase] || phase;
-  const statusMap = { pending: '等待中', processing: '处理中', completed: '已完成', error: '失败' };
-  const statusLabel = statusMap[data.status] || data.status || '-';
-  const taskMeta = document.getElementById('douyinTaskMeta');
-  const taskPhase = document.getElementById('douyinTaskPhase');
-  const taskStatus = document.getElementById('douyinTaskStatus');
-  const taskPhaseText = document.getElementById('douyinTaskPhaseText');
-  const taskQueue = document.getElementById('douyinTaskQueue');
-  const taskTitle = document.getElementById('douyinTaskTitle');
-  const taskResult = document.getElementById('douyinTaskResult');
-  if (taskMeta) taskMeta.textContent = `任务ID：${data.task_id || '-'}${data.resolved_url ? `｜解析后：${data.resolved_url}` : ''}`;
-  if (taskPhase) taskPhase.textContent = phaseLabel;
-  if (taskStatus) taskStatus.textContent = statusLabel;
-  if (taskPhaseText) taskPhaseText.textContent = `${phaseLabel} (${phase})`;
-  if (taskQueue) taskQueue.textContent = data.queue_position ?? 0;
-  if (taskTitle) taskTitle.textContent = data.video_title || data.filename || '-';
-  if (taskResult) {
-    if (data.status === 'completed') {
-      taskResult.textContent = data.result || '转写完成，但结果为空';
-    } else if (data.status === 'error') {
-      taskResult.textContent = data.error || '任务失败';
-    } else {
-      taskResult.textContent = `正在执行：${phaseLabel}
-链接：${data.source_url || data.resolved_url || '-'}${data.video_title ? `
-标题：${data.video_title}` : ''}`;
+function renderDouyinDiagnose(data) {
+  const meta = document.getElementById('douyinDiagMeta');
+  const overall = document.getElementById('douyinDiagOverall');
+  const result = document.getElementById('douyinDiagResult');
+  if (!result) return;
+  const statusMap = { ok: '正常', warn: '有警告', error: '异常' };
+  if (meta) meta.textContent = data.summary || '诊断完成';
+  if (overall) overall.textContent = statusMap[data.status] || data.status || '-';
+  const icon = { ok: '正常', warn: '警告', error: '异常' };
+  const lines = [];
+  for (const item of (data.checks || [])) {
+    lines.push(`【${icon[item.status] || item.status}】${item.name}: ${item.message || ''}`);
+    if (item.detail) {
+      const detail = JSON.stringify(item.detail, null, 2);
+      lines.push(detail.length > 1200 ? detail.slice(0, 1200) + '...' : detail);
     }
   }
-}
-
-async function pollDouyinTask(taskId) {
-  stopDouyinPolling();
-  douyinCurrentTaskId = taskId;
-  try {
-    const res = await api('GET', `/api/status/${taskId}`);
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    renderDouyinTask(data);
-    if (data.status === 'completed') {
-      toast('抖音链接转写完成', 'ok');
-      return;
-    }
-    if (data.status === 'error') {
-      toast('抖音链接转写失败：' + (data.error || '未知错误'), 'err');
-      return;
-    }
-    douyinTaskPollTimer = setTimeout(() => pollDouyinTask(taskId), 2500);
-  } catch (e) {
-    const taskResult = document.getElementById('douyinTaskResult');
-    if (taskResult) taskResult.textContent = '状态查询失败：' + e.message;
-    toast('状态查询失败：' + e.message, 'err');
+  if (data.recent_errors && data.recent_errors.length) {
+    lines.push('\n最近相关日志：');
+    data.recent_errors.slice(-8).forEach(row => {
+      lines.push(`- ${row.path}: ${row.line}`);
+    });
   }
+  result.textContent = lines.join('\n\n') || '没有返回诊断信息。';
 }
 
-async function startDouyinTranscribe() {
-  const input = document.getElementById('douyinUrlInput');
-  const mode = document.getElementById('douyinModeSelect')?.value || 'balanced';
-  const language = document.getElementById('douyinLanguageSelect')?.value || 'zh';
-  const btn = document.getElementById('douyinSubmitBtn');
+async function diagnoseDouyinTranscribe() {
+  const input = document.getElementById('douyinDiagUrlInput');
+  const btn = document.getElementById('douyinDiagBtn');
+  const result = document.getElementById('douyinDiagResult');
   const url = input?.value?.trim() || '';
-  if (!url) {
-    toast('请先输入抖音链接', 'err');
-    return;
-  }
-  stopDouyinPolling();
-  resetDouyinTaskView();
-  if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '检修中...'; }
+  if (result) result.textContent = '正在检查 yt-dlp、Cookie、Whisper 和链接解析，请稍候...';
   try {
-    const res = await api('POST', '/api/transcribe/douyin', { url, mode, language });
+    const res = await api('POST', '/api/transcribe/admin/douyin-diagnose', { url, run_ytdlp: true });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '请求失败');
-    renderDouyinTask(data);
-    toast('任务已创建，开始处理', 'ok');
-    await pollDouyinTask(data.task_id);
+    renderDouyinDiagnose(data);
+    toast('抖音链路检修完成', data.status === 'error' ? 'err' : 'ok');
   } catch (e) {
-    const taskResult = document.getElementById('douyinTaskResult');
-    if (taskResult) taskResult.textContent = '启动失败：' + e.message;
-    toast('启动失败：' + e.message, 'err');
+    if (result) result.textContent = '检修失败：' + e.message;
+    toast('检修失败：' + e.message, 'err');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '开始提取文案'; }
+    if (btn) { btn.disabled = false; btn.textContent = '开始检修'; }
   }
 }
 
