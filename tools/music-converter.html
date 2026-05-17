@@ -593,7 +593,7 @@ function getBackendBase() {
 }
 
 const STATUS = {
-  success: { icon: '✅', color: '#10b981' },
+  success: { icon: '', color: '#10b981' },
   error:   { icon: '❌', color: '#ef4444' },
   info:    { icon: '💡', color: '#6366f1' },
   warn:    { icon: '⚠️', color: '#f59e0b' },
@@ -601,7 +601,8 @@ const STATUS = {
 
 function setStatus(msg, type = 'info') {
   const { icon, color } = STATUS[type] || STATUS.info;
-  statusLine.innerHTML = `<span style="color:${color}">${icon}</span> ${msg}`;
+  const iconHtml = icon ? `<span style="color:${color}">${icon}</span> ` : '';
+  statusLine.innerHTML = `${iconHtml}${msg}`;
 }
 
 async function fetchWithTimeout(url, options = {}, timeout = 60000) {
@@ -887,14 +888,12 @@ function renderQueue() {
   }
   queueList.innerHTML = queuedFiles.map((item, i) => {
     const { file, status, outputName } = item;
-    const icon = '';
     const size = formatBytes(file.size);
     const name = outputName || file.name;
     const downloadHtml = item.downloadUrl
       ? `<a class="download-link" href="${getBackendBase()}${item.downloadUrl}" target="_blank" rel="noopener">下载</a>`
       : '';
     return `<div class="queue-item">
-      <span class="queue-icon">${icon}</span>
       <span class="queue-name" title="${name}">${name}</span>
       <span class="queue-size">${size}</span>
       ${downloadHtml}
@@ -947,7 +946,7 @@ async function pollUntilDone(taskId) {
         if (state === 'completed') {
           uiPhase = 'completed';
           updateProgressUI();
-          setStatus('✅ 转换完成！点击文件名下载，或点击"下载 ZIP"获取全部文件。', 'success');
+          setStatus('转换完成。可以下载单个文件，也可以下载 ZIP。', 'success');
           return;
         }
         if (['failed', 'cancelled'].includes(state)) {
