@@ -519,11 +519,6 @@ footer {
 <footer>© 2026 SODA567</footer>
 
 <script>
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-const queueList = document.getElementById('queueList');
-const queueCount = document.getElementById('queueCount');
-const statusLine = document.getElementById('statusLine');
 const backendBaseInput = document.getElementById('backendBase');
 const outputFormat = document.getElementById('outputFormat');
 const mp3Bitrate = document.getElementById('mp3Bitrate');
@@ -532,22 +527,24 @@ const batchMode = document.getElementById('batchMode');
 const startBtn = document.getElementById('startBtn');
 const clearBtn = document.getElementById('clearBtn');
 const downloadZipBtn = document.getElementById('downloadZipBtn');
-const summaryState = document.getElementById('summaryState');
-const summaryTaskId = document.getElementById('summaryTaskId');
-const summaryProgress = document.getElementById('summaryProgress');
+const fileInput = document.getElementById('fileInput');
+const uploadArea = document.getElementById('uploadArea');
+const statusLine = document.getElementById('statusLine');
 const progressBar = document.getElementById('progressBar');
 const progressPct = document.getElementById('progressPct');
 const progressPhase = document.getElementById('progressPhase');
 const phaseTip = document.getElementById('phaseTip');
-const phaseSteps = Array.from(document.querySelectorAll('[data-phase-step]'));
+const summaryFiles = document.getElementById('summaryFiles');
+const summaryStatus = document.getElementById('summaryStatus');
+const summaryTaskId = document.getElementById('summaryTaskId');
+const queueList = document.getElementById('queueList');
+const phaseSteps = document.getElementById('phaseSteps');
 const bitrateField = document.getElementById('bitrateField');
 
-const allowedExtensions = ['mp3', 'wav', 'm4a', 'flac', 'aac', 'ogg', 'opus', 'ncm', 'kgm', 'kgg'];
-const phaseOrder = ['waiting', 'uploading', 'ready', 'converting', 'completed'];
 let queuedFiles = [];
 let activeTaskId = null;
 let activeTask = null;
-let pollTimer = null;
+let uploadId = null;
 let uploadCommitted = false;
 let uiPhase = 'waiting';
 
@@ -556,69 +553,38 @@ function getBackendBase() {
   return explicitBase || 'https://api.soda567.dpdns.org';
 }
 
-function formatBytes(bytes) {
-  if (!bytes && bytes !== 0) return '未知大小';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
+const STATUS = {
+  success: { icon: '✅', color: '#10b981' },
+  error:   { icon: '❌', color: '#ef4444' },
+  info:    { icon: '💡', color: '#6366f1' },
+  warn:    { icon: '⚠️', color: '#f59e0b' },
+};
+
+function setStatus(msg, type = 'info') {
+  const { icon, color } = STATUS[type] || STATUS.info;
+  statusLine.innerHTML = `<span style="color:${color}">${icon}</span> ${msg}`;
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = 60000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
   }
-  return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-}
-
-function getExtension(name) {
-  const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
-  return match ? match[1] : '';
-}
-
-function setStatus(message, type = 'default') {
-  statusLine.textContent = message;
-  statusLine.classList.remove('error', 'success');
-  if (type === 'error') statusLine.classList.add('error');
-  if (type === 'success') statusLine.classList.add('success');
-}
-
-function formatTaskState(state) {
-  const map = {
-    idle: '待上传',
-    uploaded: '已上传',
-    queued: '排队中',
-    processing: '转换中',
-    completed: '已完成',
-    partial_success: '部分成功',
-    failed: '失败'
-  };
-  return map[state] || state || '未上传';
-}
-
-function getUiPhase() {
-  if (!queuedFiles.length) return 'waiting';
-  if (uiPhase === 'uploading') return 'uploading';
-  if (!uploadCommitted || !activeTaskId) return 'waiting';
-  const state = activeTask?.state;
-  if (!state || state === 'uploaded') return 'ready';
-  if (['queued', 'processing'].includes(state)) return 'converting';
-  if (['completed', 'partial_success', 'failed'].includes(state)) return 'completed';
-  return 'ready';
 }
 
 function getPhaseCopy(phase) {
-  const completedCount = queuedFiles.filter(file => file.status === 'completed').length;
   const totalCount = queuedFiles.length;
-  const progress = activeTask?.progress || {};
-  const successCount = progress.completed || completedCount;
-  const total = progress.total || totalCount;
-
   const map = {
     waiting: {
       label: totalCount ? '等待文件' : '等待添加文件',
-      tip: totalCount ? '文件已加入队列，请点击“开始转换”。' : '先添加文件，再点击“开始转换”。'
+      tip: totalCount ? '文件已加入队列，请点击"开始转换"。' : '先添加文件，再点击"开始转换"。'
     },
     uploading: {
       label: '上传中',
-      tip: '正在把文件提交到后端，请稍等。'
+      tip: '正在上传到云存储，请保持页面打开。'
     },
     ready: {
       label: '上传完成待开始',
@@ -626,314 +592,57 @@ function getPhaseCopy(phase) {
     },
     converting: {
       label: '转换中',
-      tip: `正在转换文件，请等待处理完成（${successCount}/${total} 已成功）。`
+      tip: '服务器正在处理，请稍候。'
     },
     completed: {
-      label: activeTask?.state === 'failed' ? '处理结束（有失败）' : '完成',
-      tip: activeTask?.download_zip_url ? '转换结束，可直接下载单个文件或 ZIP 包。' : '转换结束，可下载处理结果。'
-    }
+      label: '全部完成',
+      tip: '转换完成，可点击下载。如需转换更多文件，请先清空队列。'
+    },
+    error: {
+      label: '出错',
+      tip: '遇到问题，可点击下方“清空”后重试。'
+    },
   };
-
   return map[phase] || map.waiting;
 }
 
 function setPhaseSteps(phase) {
-  const activeIndex = phaseOrder.indexOf(phase);
-  phaseSteps.forEach((step) => {
-    const stepPhase = step.dataset.phaseStep;
-    const stepIndex = phaseOrder.indexOf(stepPhase);
-    step.classList.toggle('is-active', stepPhase === phase);
-    step.classList.toggle('is-done', activeIndex > stepIndex);
-  });
-}
-
-function getOverallProgress() {
-  const phase = getUiPhase();
-  if (phase === 'waiting') return queuedFiles.length ? 8 : 0;
-  if (phase === 'uploading') return 22;
-  if (phase === 'ready') return 45;
-  if (phase === 'completed') return 100;
-
-  const progress = activeTask?.progress || {};
-  const total = progress.total || queuedFiles.length || 1;
-  const completed = progress.completed || 0;
-  const failed = progress.failed || 0;
-  const handled = completed + failed;
-  return Math.max(56, Math.min(94, 56 + handled / total * 38));
+  if (!phaseSteps) return;
+  const steps = ['上传', '合并', '解密', '转换', '完成'];
+  const stepMap = {
+    waiting: -1,
+    uploading: 0,
+    ready: 0,
+    converting: 1,
+    'transcribing': 1,
+    'transcribed': 2,
+    completed: 3,
+    error: -1,
+  };
+  const active = stepMap[phase] ?? -1;
+  phaseSteps.innerHTML = steps.map((s, i) =>
+    `<span class="step ${i <= active ? 'active' : ''}">${i < active ? '✓' : i === active ? '●' : '○'} ${s}</span>`
+  ).join('');
 }
 
 function updateProgressUI() {
-  const phase = getUiPhase();
-  const pct = getOverallProgress();
-  const phaseCopy = getPhaseCopy(phase);
-
+  if (!progressBar || !progressPct || !progressPhase) return;
+  const phaseCopy = getPhaseCopy(uiPhase);
+  let pct = 0;
+  if (uiPhase === 'waiting') pct = 0;
+  else if (uiPhase === 'uploading') pct = 25;
+  else if (uiPhase === 'ready') pct = 35;
+  else if (uiPhase === 'converting') pct = 65;
+  else if (uiPhase === 'completed') pct = 100;
+  else pct = 0;
   progressBar.style.width = pct + '%';
-  progressPct.textContent = Math.round(pct) + '%';
+  progressPct.textContent = pct + '%';
   progressPhase.textContent = phaseCopy.label;
-  phaseTip.innerHTML = phase === 'ready'
-    ? '上传完成，正在准备转换。'
-    : phaseCopy.tip;
-
-  setPhaseSteps(phase);
-}
-
-function syncQueueWithTask(task) {
-  if (!task || !Array.isArray(task.files)) return;
-  const fileMap = new Map(task.files.map(file => [file.source_name, file]));
-  queuedFiles = queuedFiles.map(file => {
-    const remote = fileMap.get(file.name);
-    if (!remote) return file;
-    return {
-      ...file,
-      server: remote,
-      status: remote.status,
-      error: remote.error || null,
-      downloadUrl: remote.download_url || null,
-      outputName: remote.output_name || null,
-    };
-  });
-}
-
-function renderSummary() {
-  if (!activeTask) {
-    summaryState.textContent = uploadCommitted ? '已上传' : '未上传';
-    summaryTaskId.textContent = activeTaskId || '-';
-    summaryProgress.textContent = `${queuedFiles.filter(file => file.status === 'completed').length} / ${queuedFiles.length}`;
-    updateProgressUI();
-    return;
-  }
-  const progress = activeTask.progress || {};
-  summaryState.textContent = formatTaskState(activeTask.state);
-  summaryTaskId.textContent = activeTask.task_id || '-';
-  summaryProgress.textContent = `${progress.completed || 0} 成功 / ${progress.failed || 0} 失败 / ${progress.total || 0} 总数`;
-  updateProgressUI();
-}
-
-function renderQueue() {
-  queueCount.textContent = `当前 ${queuedFiles.length} 个文件`;
-
-  if (!queuedFiles.length) {
-    queueList.innerHTML = '<div class="empty-state">还没有文件。添加后会在这里显示状态和下载入口。</div>';
-    renderSummary();
-    return;
-  }
-
-  queueList.innerHTML = queuedFiles.map((file) => {
-    const status = file.status || (uploadCommitted ? 'uploaded' : 'idle');
-    const detailParts = [formatBytes(file.size)];
-    if (file.outputName) detailParts.push(`输出 ${file.outputName}`);
-    else detailParts.push(`目标 ${outputFormat.value.toUpperCase()}${outputFormat.value === 'mp3' ? ` · ${mp3Bitrate.value} kbps` : ''}`);
-    if (file.error) detailParts.push(`错误：${file.error}`);
-
-    const downloadHtml = file.downloadUrl
-      ? `<a class="download-link" href="${getBackendBase()}${file.downloadUrl}" target="_blank" rel="noopener">下载</a>`
-      : '';
-
-    return `
-      <div class="file-item">
-        <div>
-          <div class="file-name">${file.name}</div>
-          <div class="file-meta">${detailParts.join(' · ')}</div>
-        </div>
-        <div class="file-actions">
-          <div class="status-pill ${status}">${file.error ? '失败' : formatTaskState(status)}</div>
-          ${downloadHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  renderSummary();
-}
-
-function validateFiles(fileList) {
-  const files = Array.from(fileList || []);
-  return files.filter(file => {
-    const ext = getExtension(file.name);
-    return file.type.startsWith('audio/') || allowedExtensions.includes(ext);
-  });
-}
-
-function addFiles(fileList) {
-  if (uploadCommitted || activeTaskId) {
-    setStatus('当前任务已上传，如需重新选择文件，请先清空。', 'error');
-    return;
-  }
-  const files = validateFiles(fileList);
-  if (!files.length) {
-    setStatus('未检测到可用音频文件，请重新选择。', 'error');
-    return;
-  }
-
-  const existingKeys = new Set(queuedFiles.map(file => `${file.name}_${file.size}_${file.lastModified}`));
-  const newFiles = files.filter(file => {
-    const key = `${file.name}_${file.size}_${file.lastModified}`;
-    return !existingKeys.has(key);
-  }).map(file => ({
-    file,
-    name: file.name,
-    size: file.size,
-    lastModified: file.lastModified,
-    status: 'idle',
-    error: null,
-    downloadUrl: null,
-    outputName: null,
-  }));
-
-  if (!newFiles.length) {
-    setStatus('这些文件已经在队列里了。');
-    return;
-  }
-
-  if (batchMode && batchMode.checked) {
-    queuedFiles = [...queuedFiles, ...newFiles];
-  } else {
-    queuedFiles = newFiles.slice(0, 1);
-  }
-  resetTaskState();
-  uiPhase = 'waiting';
-  renderQueue();
-  setStatus(`已加入 ${newFiles.length} 个文件，请点击“开始转换”。`);
-}
-
-function resetTaskState() {
-  activeTaskId = null;
-  activeTask = null;
-  uploadCommitted = false;
-  uiPhase = 'waiting';
-  if (pollTimer) {
-    clearTimeout(pollTimer);
-    pollTimer = null;
-  }
-}
-
-async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
-  let data = null;
-  try {
-    data = await response.json();
-  } catch (_) {
-    data = null;
-  }
-  if (!response.ok) {
-    const message = data?.message || `请求失败（${response.status}）`;
-    throw new Error(message);
-  }
-  return data;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function requestJsonWithRetry(url, options = {}, { retries = 5, retryLabel = '请求' } = {}) {
-  let lastError = null;
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      return await requestJson(url, options);
-    } catch (error) {
-      lastError = error;
-      if (attempt >= retries) break;
-      const delay = Math.min(12000, 1000 * (attempt + 1));
-      setStatus(`${retryLabel}失败，${delay / 1000} 秒后自动重试（${attempt + 1}/${retries}）：${error.message}`);
-      await sleep(delay);
-    }
-  }
-  throw lastError;
-}
-
-function createUploadId() {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID().replace(/-/g, '');
-  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
-}
-
-async function uploadFilesChunked(backendBase) {
-  const chunkSize = 1024 * 1024;
-  const uploadedFiles = [];
-  const totalBytes = queuedFiles.reduce((sum, item) => sum + item.file.size, 0);
-  let sentBytes = 0;
-
-  for (let fileIndex = 0; fileIndex < queuedFiles.length; fileIndex += 1) {
-    const file = queuedFiles[fileIndex].file;
-    const uploadId = createUploadId();
-    const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
-
-    for (let index = 0; index < totalChunks; index += 1) {
-      const start = index * chunkSize;
-      const end = Math.min(file.size, start + chunkSize);
-      const chunk = file.slice(start, end);
-      const formData = new FormData();
-      formData.append('upload_id', uploadId);
-      formData.append('filename', file.name);
-      formData.append('index', String(index));
-      formData.append('total_chunks', String(totalChunks));
-      formData.append('chunk', chunk, `${file.name}.part${index}`);
-
-      await requestJsonWithRetry(`${backendBase}/api/music/upload-chunk`, {
-        method: 'POST',
-        body: formData,
-      }, { retries: 8, retryLabel: `分片 ${index + 1}/${totalChunks}` });
-
-      sentBytes += chunk.size;
-      const percent = totalBytes ? Math.round((sentBytes / totalBytes) * 100) : 0;
-      setStatus(`正在分片上传：${file.name}（${index + 1}/${totalChunks}，总进度 ${percent}%）`);
-    }
-
-    uploadedFiles.push({
-      upload_id: uploadId,
-      filename: file.name,
-      total_chunks: totalChunks,
-      size: file.size,
-    });
-  }
-
-  return requestJsonWithRetry(`${backendBase}/api/music/complete-chunked-upload`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ files: uploadedFiles }),
-  }, { retries: 5, retryLabel: '合并分片' });
-}
-
-async function uploadFiles() {
-  if (!queuedFiles.length) {
-    setStatus('请先添加至少一个音频文件。', 'error');
-    return;
-  }
-  if (uploadCommitted || activeTaskId) {
-    setStatus('当前队列已经上传，无需重复提交。', 'error');
-    return;
-  }
-
-  const backendBase = getBackendBase();
-  if (!backendBase) {
-    setStatus('请先填写后端地址。', 'error');
-    return;
-  }
-
-  try {
-    uploadBtn.disabled = true;
-    startBtn.disabled = true;
-    uiPhase = 'uploading';
-    updateProgressUI();
-    setStatus('正在分片上传文件到后端…');
-
-    const data = await uploadFilesChunked(backendBase);
-
-    activeTask = data.task;
-    activeTaskId = data.task?.task_id || null;
-    uploadCommitted = true;
-    uiPhase = 'ready';
-    syncQueueWithTask(activeTask);
-    renderQueue();
-    setStatus(`上传完成：${data.upload?.accepted_count || queuedFiles.length} 个文件已进入任务。请点击“开始转换”继续。`, 'success');
-  } catch (error) {
-    uiPhase = 'waiting';
-    setStatus(`上传失败：${error.message}`, 'error');
-  } finally {
-    uploadBtn.disabled = false;
-    startBtn.disabled = false;
-    updateProgressUI();
-  }
+  phaseTip.innerHTML = phaseCopy.tip;
+  setPhaseSteps(uiPhase);
+  if (summaryFiles) summaryFiles.textContent = queuedFiles.length || '-';
+  if (summaryStatus) summaryStatus.textContent = uploadCommitted ? '已上传' : '未上传';
+  if (summaryTaskId) summaryTaskId.textContent = activeTaskId || '-';
 }
 
 function syncMp3BitrateState() {
@@ -943,41 +652,274 @@ function syncMp3BitrateState() {
 }
 
 function shouldContinuePolling(task) {
-  return task && ['queued', 'processing'].includes(task.state);
+  if (!task) return false;
+  const s = task.state;
+  return s === 'queued' || s === 'processing' || s === 'uploaded';
 }
 
-async function fetchTaskStatus({ silent = false } = {}) {
-  if (!activeTaskId) return;
+function fileExtension(filename) {
+  const m = (filename || '').match(/\.([^.]+)$/);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function safeFilename(name) {
+  return (name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 200);
+}
+
+function formatBytes(bytes) {
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(1) + ' GB';
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + ' MB';
+  if (bytes >= 1e3) return (bytes / 1e3).toFixed(0) + ' KB';
+  return bytes + ' B';
+}
+
+function humanTime(ms) {
+  if (ms >= 3600000) return Math.round(ms / 3600000) + 'h';
+  if (ms >= 60000) return Math.round(ms / 60000) + 'min';
+  return Math.round(ms / 1000) + 's';
+}
+
+// ── R2 Direct Upload ────────────────────────────────────────────────────────
+
+function uploadToR2(file, presignedUrl) {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    let lastPct = 0;
+    xhr.open('PUT', presignedUrl, true);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        if (pct !== lastPct) {
+          lastPct = pct;
+          const overallPct = pct; // per-file progress shown
+          document.getElementById('progressBar').style.width = (overallPct * 0.25) + '%';
+          document.getElementById('progressPct').textContent = pct + '%';
+          setStatus(`上传中：${file.name} — ${pct}%`);
+        }
+      }
+    };
+    xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300);
+    xhr.onerror = () => resolve(false);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.send(file);
+  });
+}
+
+async function uploadFiles() {
+  if (!queuedFiles.length) {
+    setStatus('请先添加至少一个音频文件。', 'error');
+    return false;
+  }
+  if (uploadCommitted || activeTaskId) {
+    setStatus('当前队列已经上传，无需重复提交。', 'error');
+    return false;
+  }
+
   const backendBase = getBackendBase();
+  if (!backendBase) {
+    setStatus('请先填写后端地址。', 'error');
+    return false;
+  }
+
   try {
-    const data = await requestJson(`${backendBase}/api/music/status/${activeTaskId}`);
+    uploadBtn.disabled = true;
+    startBtn.disabled = true;
+    uiPhase = 'uploading';
+    updateProgressUI();
+    setStatus('正在获取上传地址…');
+
+    // Get presigned R2 URLs
+    const presignResp = await fetchWithTimeout(
+      backendBase + '/api/music/presigned-upload',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: queuedFiles[0].file.name,
+          count: queuedFiles.length,
+        }),
+      }
+    );
+    if (!presignResp.ok) {
+      throw new Error(await presignResp.text());
+    }
+    const { urls } = await presignResp.json();
+
+    // Upload each file directly to R2
+    const r2Keys = [];
+    for (let fi = 0; fi < queuedFiles.length; fi++) {
+      const { file } = queuedFiles[fi];
+      const { url, key } = urls[fi] || urls[0];
+      r2Keys.push(key);
+      setStatus(`上传中 (${fi + 1}/${queuedFiles.length})：${file.name}`);
+      const ok = await uploadToR2(file, url);
+      if (!ok) {
+        throw new Error('上传到云存储失败，请重试。');
+      }
+      const pct = Math.round(((fi + 1) / queuedFiles.length) * 25);
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressPct').textContent = pct + '%';
+    }
+
+    // Notify backend to pull from R2 and start processing
+    setStatus('正在准备转换…');
+    const completeResp = await fetchWithTimeout(
+      backendBase + '/api/music/r2-complete',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keys: r2Keys,
+          filenames: queuedFiles.map(f => f.file.name),
+        }),
+      }
+    );
+    if (!completeResp.ok) {
+      throw new Error(await completeResp.text());
+    }
+    const data = await completeResp.json();
     activeTask = data.task;
-    uiPhase = ['queued', 'processing'].includes(activeTask.state)
-      ? 'converting'
-      : ['completed', 'partial_success', 'failed'].includes(activeTask.state)
-        ? 'completed'
-        : activeTask.state === 'uploaded'
-          ? 'ready'
-          : getUiPhase();
+    activeTaskId = data.task?.task_id || null;
+    uploadCommitted = true;
+    uiPhase = 'ready';
     syncQueueWithTask(activeTask);
     renderQueue();
+    updateProgressUI();
+    setStatus(`上传完成：${data.upload?.accepted_count || queuedFiles.length} 个文件已进入任务。请点击"开始转换"继续。`, 'success');
+    return true;
+  } catch (err) {
+    uiPhase = 'waiting';
+    setStatus('上传失败：' + err.message, 'error');
+    updateProgressUI();
+    return false;
+  } finally {
+    uploadBtn.disabled = false;
+    startBtn.disabled = false;
+  }
+}
 
-    if (!silent) {
-      const progress = activeTask.progress || {};
-      setStatus(
-        `${formatTaskState(activeTask.state)}：${activeTask.message || ''}（${progress.completed || 0}/${progress.total || 0} 成功）`,
-        activeTask.state === 'failed' ? 'error' : activeTask.state === 'completed' ? 'success' : 'default'
-      );
+function syncQueueWithTask(task) {
+  if (!task || !task.files) return;
+  task.files.forEach((tf, i) => {
+    if (queuedFiles[i]) {
+      queuedFiles[i].status = tf.status || 'idle';
+      queuedFiles[i].outputName = tf.output_name || null;
     }
+  });
+}
 
-    if (shouldContinuePolling(activeTask)) {
-      pollTimer = setTimeout(() => fetchTaskStatus({ silent: true }), 1500);
-    } else {
-      pollTimer = null;
+function resetTaskState() {
+  activeTaskId = null;
+  activeTask = null;
+  uploadId = null;
+  uploadCommitted = false;
+  uiPhase = 'waiting';
+}
+
+function addFiles(fileList) {
+  const newFiles = Array.from(fileList).filter(file => {
+    const ext = fileExtension(file.name);
+    const supported = ['mp3','wav','m4a','flac','aac','ogg','opus','ncm','kgm','kgg'];
+    if (!supported.includes(ext)) {
+      setStatus(`不支持的格式：${file.name}（仅支持音频格式）`, 'error');
+      return false;
     }
-  } catch (error) {
-    setStatus(`状态查询失败：${error.message}`, 'error');
-    pollTimer = null;
+    if (file.size > 200 * 1024 * 1024) {
+      setStatus(`文件过大：${file.name}（最大 200MB）`, 'error');
+      return false;
+    }
+    return true;
+  }).map(file => ({ file, status: 'idle', outputName: null }));
+
+  if (!newFiles.length) return;
+
+  if (batchMode && batchMode.checked) {
+    queuedFiles = [...queuedFiles, ...newFiles];
+  } else {
+    queuedFiles = newFiles.slice(0, 1);
+  }
+  resetTaskState();
+  uiPhase = 'waiting';
+  renderQueue();
+  setStatus(`已加入 ${newFiles.length} 个文件，请点击"开始转换"。`);
+}
+
+function renderQueue() {
+  if (!queueList) return;
+  if (!queuedFiles.length) {
+    queueList.innerHTML = '<div class="queue-empty">队列为空</div>';
+    return;
+  }
+  queueList.innerHTML = queuedFiles.map((item, i) => {
+    const { file, status, outputName } = item;
+    const icon = status === 'completed' ? '✅' : status === 'error' ? '❌' : status === 'uploading' ? '⏳' : '○';
+    const size = formatBytes(file.size);
+    const name = file.name + (outputName ? ` → ${outputName}` : '');
+    return `<div class="queue-item">
+      <span class="queue-icon">${icon}</span>
+      <span class="queue-name" title="${name}">${name}</span>
+      <span class="queue-size">${size}</span>
+    </div>`;
+  }).join('');
+  updateProgressUI();
+}
+
+function clearQueue() {
+  if (activeTaskId && !window.confirm('当前有进行中的任务，确定清空？')) return;
+  queuedFiles = [];
+  resetTaskState();
+  renderQueue();
+  setStatus('队列已清空。');
+}
+
+async function downloadFile(filename, taskId) {
+  const backendBase = getBackendBase();
+  const url = backendBase + '/api/music/download/' + taskId + '/' + encodeURIComponent(filename);
+  window.open(url, '_blank');
+}
+
+async function downloadZip() {
+  if (!activeTaskId) { setStatus('没有可下载的文件。', 'warn'); return; }
+  const backendBase = getBackendBase();
+  setStatus('正在准备下载…');
+  window.open(backendBase + '/api/music/download-zip/' + activeTaskId, '_blank');
+  setStatus('ZIP 下载已开始。', 'success');
+}
+
+async function pollUntilDone(taskId) {
+  let lastState = '';
+  while (true) {
+    await new Promise(r => setTimeout(r, 3000));
+    try {
+      const resp = await fetchWithTimeout(getBackendBase() + '/api/music/status/' + taskId);
+      if (!resp.ok) break;
+      const data = await resp.json();
+      const task = data.task;
+      const state = task?.state || '';
+      if (state !== lastState) {
+        lastState = state;
+        activeTask = task;
+        syncQueueWithTask(task);
+        renderQueue();
+        updateProgressUI();
+        const msg = task?.message || state;
+        setStatus(msg);
+        if (state === 'completed') {
+          uiPhase = 'completed';
+          updateProgressUI();
+          setStatus('✅ 转换完成！点击文件名下载，或点击"下载 ZIP"获取全部文件。', 'success');
+          return;
+        }
+        if (['failed', 'cancelled'].includes(state)) {
+          uiPhase = 'error';
+          updateProgressUI();
+          return;
+        }
+      }
+    } catch (e) {
+      setStatus('轮询出错：' + e.message, 'warn');
+    }
+    if (!shouldContinuePolling(activeTask)) return;
   }
 }
 
@@ -987,123 +929,72 @@ async function startConversion() {
     return;
   }
   if (!uploadCommitted || !activeTaskId) {
-    await uploadFiles();
-    if (!activeTaskId) return;
+    const ok = await uploadFiles();
+    if (!ok || !activeTaskId) return;
   }
-  if (activeTask && ['queued', 'processing', 'completed', 'partial_success', 'failed'].includes(activeTask.state) && activeTask.state !== 'uploaded') {
-    if (['queued', 'processing'].includes(activeTask.state)) {
-      setStatus('当前任务正在处理中，请稍后。', 'error');
+  if (activeTask && ['queued','processing','completed','partial_success','failed'].includes(activeTask.state) && activeTask.state !== 'uploaded') {
+    if (['queued','processing'].includes(activeTask.state)) {
+      setStatus('当前任务正在进行中，请等待完成。', 'warn');
       return;
     }
-    if (['completed', 'partial_success', 'failed'].includes(activeTask.state)) {
-      setStatus('当前任务已经执行过转换。如需重新转换，请清空后重新上传。', 'error');
-      return;
-    }
+    if (!window.confirm('当前任务已完成。重新转换会覆盖之前的结果，确定继续？')) return;
   }
 
+  startBtn.disabled = true;
+  clearBtn.disabled = true;
+  uiPhase = 'converting';
+  updateProgressUI();
   const backendBase = getBackendBase();
+  setStatus('正在提交转换请求…');
+
   try {
-    startBtn.disabled = true;
-    uploadBtn.disabled = true;
-    uiPhase = 'converting';
-    updateProgressUI();
-    setStatus('已提交转换请求，等待后端开始处理…');
-
-    const payload = {
-      task_id: activeTaskId,
-      output_format: outputFormat.value,
-      mp3_bitrate: mp3Bitrate.value,
-    };
-
-    const data = await requestJson(`${backendBase}/api/music/convert`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    activeTask = data.task;
-    uiPhase = ['completed', 'partial_success', 'failed'].includes(data.task?.state) ? 'completed' : 'converting';
+    const resp = await fetchWithTimeout(
+      backendBase + '/api/music/convert',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_id: activeTaskId,
+          output_format: outputFormat.value,
+          mp3_bitrate: mp3Bitrate.value,
+        }),
+      },
+      30000
+    );
+    if (!resp.ok) {
+      const err = await resp.text();
+      uiPhase = 'error';
+      updateProgressUI();
+      setStatus('转换请求失败：' + err, 'error');
+      return;
+    }
+    const data = await resp.json();
+    activeTask = data.task || activeTask;
     syncQueueWithTask(activeTask);
     renderQueue();
-    if (pollTimer) clearTimeout(pollTimer);
-    fetchTaskStatus();
-  } catch (error) {
-    setStatus(`启动转换失败：${error.message}`, 'error');
+    uiPhase = 'converting';
+    updateProgressUI();
+    setStatus('转换已开始…');
+    await pollUntilDone(activeTaskId);
+  } catch (err) {
+    uiPhase = 'error';
+    updateProgressUI();
+    setStatus('转换出错：' + err.message, 'error');
   } finally {
     startBtn.disabled = false;
-    uploadBtn.disabled = false;
-    updateProgressUI();
+    clearBtn.disabled = false;
   }
 }
 
-
-async function cancelCurrentTask() {
-  if (!activeTaskId) return;
-  resetTaskState(); // always reset local state even if cancel API fails
-  try {
-    await requestJson(`${getBackendBase()}/api/music/cancel/${activeTaskId}`, { method: 'POST' });
-  } catch (_) { /* cancel API may not exist or fail — local state is already reset */ }
-}
-function clearQueue() {
-  if (activeTaskId && activeTask && ['queued', 'processing', 'uploaded'].includes(activeTask.state)) {
-    cancelCurrentTask().then(() => {
-      queuedFiles = [];
-      fileInput.value = '';
-      renderQueue();
-      setStatus('队列已清空，任务已取消。');
-    });
-    return;
-  }
-  queuedFiles = [];
-  uiPhase = 'waiting';
+fileInput.addEventListener('change', () => {
+  if (fileInput.files?.length) addFiles(fileInput.files);
   fileInput.value = '';
-  resetTaskState();
-  renderQueue();
-  setStatus('队列已清空。');
-}
-
-function downloadZip() {
-  if (!activeTask || !activeTask.download_zip_url) {
-    setStatus('当前任务还没有可下载的 ZIP 包。', 'error');
-    return;
-  }
-  window.open(`${getBackendBase()}${activeTask.download_zip_url}`, '_blank', 'noopener');
-  setStatus('已打开 ZIP 下载。', 'success');
-}
-
+});
 uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    fileInput.click();
-  }
-});
-fileInput.addEventListener('change', (event) => addFiles(event.target.files));
-
-['dragenter', 'dragover'].forEach(eventName => {
-  uploadArea.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-});
-['dragleave', 'drop'].forEach(eventName => {
-  uploadArea.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    uploadArea.classList.remove('dragover');
-  });
-});
-uploadArea.addEventListener('drop', (event) => addFiles(event.dataTransfer.files));
-
-outputFormat.addEventListener('change', () => {
-  syncMp3BitrateState();
-  renderQueue();
-});
-mp3Bitrate.addEventListener('change', renderQueue);
-uploadBtn.addEventListener('click', uploadFiles);
+uploadArea.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
 startBtn.addEventListener('click', startConversion);
 clearBtn.addEventListener('click', clearQueue);
 downloadZipBtn.addEventListener('click', downloadZip);
-
 syncMp3BitrateState();
 if (batchMode) {
   batchMode.addEventListener('change', () => {
