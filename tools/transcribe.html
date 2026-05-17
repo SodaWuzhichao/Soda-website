@@ -205,7 +205,7 @@ nav {
   <div class="loading" id="loading">
     <div class="loading-spinner"></div>
     <div id="loadingText">正在处理中，请稍候...</div>
-    <div class="loading-detail" id="loadingDetail">大文件会分段上传并在后台继续处理，页面保持打开体验会更稳定。</div>
+    <div class="loading-detail" id="loadingDetail">文件会先上传到云存储，再由后台转写；如果网络异常，系统会自动切换备用通道。</div>
     <div class="progress-container">
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progressBar"></div>
@@ -718,15 +718,10 @@ const TRANSCRIBE_MAX_RETRIES = 3;
 const TRANSCRIBE_STATUS_POLL_MS = 2000;
 
 function getChunkUploadPhase(file, idx, totalParts, attempt, overallLoaded, totalSize) {
-  const isVideo = isVideoFile(file);
-  const isMobile = isIOSLike() || /Android/i.test(navigator.userAgent || '');
   const loadedMB = (overallLoaded / 1024 / 1024).toFixed(1);
   const totalMB = (totalSize / 1024 / 1024).toFixed(1);
-
-  if (isMobile && isVideo) {
-    return `手机视频上传中 ${loadedMB}/${totalMB}MB（第 ${idx + 1}/${totalParts} 段，已为稳定性优化）`;
-  }
-  return `上传中 ${loadedMB}/${totalMB}MB（第 ${idx + 1}/${totalParts} 片，尝试 ${attempt}/${TRANSCRIBE_MAX_RETRIES}）`;
+  const retryText = attempt > 1 ? `，网络重试中 ${attempt}/${TRANSCRIBE_MAX_RETRIES}` : '';
+  return `备用通道上传中 ${loadedMB}/${totalMB}MB${retryText}`;
 }
 
 function getResumeKey(file) {
@@ -911,7 +906,7 @@ async function uploadFileToServer(file, originalName, lang, mode, vadEnabled) {
     return await uploadFileToServerViaR2(file, originalName, lang, mode, vadEnabled);
   } catch (err) {
     console.warn('R2 上传链路失败，回退到原分片上传:', err);
-    setProgress(2, '上传通道切换中...');
+    setProgress(2, '云存储上传暂不可用，正在切换备用通道...');
     return await uploadFileToServerChunked(file, originalName, lang, mode, vadEnabled);
   }
 }
@@ -940,7 +935,7 @@ async function uploadFileToServerChunked(file, originalName, lang, mode, vadEnab
           setProgress(pct, getChunkUploadPhase(file, idx, allParts, attempt, overallLoaded, file.size));
         });
         localStorage.setItem(resumeKey, JSON.stringify({ fileId, nextIndex: i + 1 }));
-        setProgress(((i + 1) / totalParts) * 60, `已上传 ${i + 1}/${totalParts} 片`);
+        setProgress(((i + 1) / totalParts) * 60, getChunkUploadPhase(file, i, totalParts, 1, Math.min(file.size, (i + 1) * TRANSCRIBE_CHUNK_SIZE), file.size));
         lastErr = null;
         break;
       } catch (err) {
@@ -956,7 +951,7 @@ async function uploadFileToServerChunked(file, originalName, lang, mode, vadEnab
     }
   }
 
-  setProgress(65, '上传完成，服务端合并中...');
+  setProgress(65, '备用通道上传完成，正在整理文件...');
   const completeData = await completeChunkUpload(file, fileId, lang, mode, vadEnabled);
   localStorage.removeItem(resumeKey);
   setProgress(72, '后台任务已创建，开始排队...');
