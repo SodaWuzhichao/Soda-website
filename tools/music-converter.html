@@ -324,6 +324,44 @@ nav {
 .status-pill.queued, .status-pill.processing { color: var(--warn); }
 .status-pill.completed, .status-pill.partial_success { color: var(--ok); }
 .status-pill.failed { color: var(--danger); }
+
+.queue-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+.queue-icon { display: none; }
+.queue-name {
+  min-width: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queue-size {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.queue-empty {
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+  background: var(--surface-soft);
+}
+@media (max-width: 560px) {
+  .queue-item { grid-template-columns: minmax(0, 1fr) auto; }
+  .queue-size { display: none; }
+}
+
 .download-link {
   text-decoration: none;
   font-size: 0.78rem;
@@ -332,6 +370,7 @@ nav {
   background: rgba(255,215,0,0.06);
   padding: 7px 10px;
   border-radius: 999px;
+  white-space: nowrap;
 }
 .empty-state {
   padding: 20px;
@@ -847,9 +886,9 @@ function renderQueue() {
   }
   queueList.innerHTML = queuedFiles.map((item, i) => {
     const { file, status, outputName } = item;
-    const icon = status === 'completed' ? '✅' : status === 'error' ? '❌' : status === 'uploading' ? '⏳' : '○';
+    const icon = '';
     const size = formatBytes(file.size);
-    const name = file.name + (outputName ? ` → ${outputName}` : '');
+    const name = outputName || file.name;
     const downloadHtml = item.downloadUrl
       ? `<a class="download-link" href="${getBackendBase()}${item.downloadUrl}" target="_blank" rel="noopener">下载</a>`
       : '';
