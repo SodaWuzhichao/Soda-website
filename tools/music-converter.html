@@ -409,9 +409,9 @@ footer {
     <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="上传音频文件">
       <div class="upload-icon">♫</div>
       <div class="upload-text">点击或拖拽文件到这里</div>
-      <div class="upload-hint">支持多文件上传：MP3、WAV、M4A、FLAC、AAC、OGG、OPUS、NCM、KGM</div>
-      <div class="upload-subhint">上传后保留真实队列、轮询与下载能力，界面只展示主流程。</div>
-      <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.ncm,.kgm,.kgg,audio/*" multiple hidden>
+      <div class="upload-hint">支持 MP3、WAV、M4A、FLAC、AAC、OGG、OPUS、NCM、KGM</div>
+      <div class="upload-subhint">默认单文件转换；需要多个文件时可开启批量模式。</div>
+      <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.ncm,.kgm,.kgg,audio/*" hidden>
     </div>
 
     <div class="card">
@@ -436,8 +436,13 @@ footer {
         </div>
       </div>
 
+      <label class="subtle-row" style="justify-content:flex-start; gap:10px; margin-top:16px; cursor:pointer;">
+        <input id="batchMode" type="checkbox">
+        <span>批量转换</span>
+      </label>
+
       <div class="btn-group" style="margin-top: 18px;">
-        <button class="btn btn-secondary" id="uploadBtn" type="button">提交上传</button>
+        <button class="btn btn-secondary" id="uploadBtn" type="button" style="display:none;">提交上传</button>
         <button class="btn btn-primary" id="startBtn" type="button">开始转换</button>
         <button class="btn btn-secondary" id="downloadZipBtn" type="button">下载 ZIP</button>
         <button class="btn btn-ghost" id="clearBtn" type="button">清空</button>
@@ -483,10 +488,10 @@ footer {
         </div>
       </div>
 
-      <div class="phase-tip" id="phaseTip">添加音频文件后，先提交上传，再开始转换。</div>
+      <div class="phase-tip" id="phaseTip">添加音频文件后，点击“开始转换”即可。</div>
       <div class="status-line" id="statusLine">等待添加文件。</div>
 
-      <details class="dev-box">
+      <details class="dev-box" style="display:none;">
         <summary class="dev-toggle">查看任务详情与开发选项</summary>
         <div class="dev-content">
           <div class="stack" style="gap: 10px; margin-bottom: 14px;">
@@ -523,6 +528,7 @@ const backendBaseInput = document.getElementById('backendBase');
 const outputFormat = document.getElementById('outputFormat');
 const mp3Bitrate = document.getElementById('mp3Bitrate');
 const uploadBtn = document.getElementById('uploadBtn');
+const batchMode = document.getElementById('batchMode');
 const startBtn = document.getElementById('startBtn');
 const clearBtn = document.getElementById('clearBtn');
 const downloadZipBtn = document.getElementById('downloadZipBtn');
@@ -546,7 +552,7 @@ let uploadCommitted = false;
 let uiPhase = 'waiting';
 
 function getBackendBase() {
-  const explicitBase = (backendBaseInput.value || '').trim().replace(/\/$/, '');
+  const explicitBase = backendBaseInput ? (backendBaseInput.value || '').trim().replace(/\/$/, '') : '';
   return explicitBase || 'https://api.soda567.dpdns.org';
 }
 
@@ -608,7 +614,7 @@ function getPhaseCopy(phase) {
   const map = {
     waiting: {
       label: totalCount ? '等待文件' : '等待添加文件',
-      tip: totalCount ? '文件已加入队列，请先点击“提交上传”。' : '先添加音频文件，建立本次转换队列。'
+      tip: totalCount ? '文件已加入队列，请点击“开始转换”。' : '先添加文件，再点击“开始转换”。'
     },
     uploading: {
       label: '上传中',
@@ -616,7 +622,7 @@ function getPhaseCopy(phase) {
     },
     ready: {
       label: '上传完成待开始',
-      tip: '上传完成，请点击“开始转换”继续，当前并不是卡住。'
+      tip: '上传完成，正在准备转换。'
     },
     converting: {
       label: '转换中',
@@ -665,7 +671,7 @@ function updateProgressUI() {
   progressPct.textContent = Math.round(pct) + '%';
   progressPhase.textContent = phaseCopy.label;
   phaseTip.innerHTML = phase === 'ready'
-    ? '上传完成，<strong>请点击“开始转换”继续</strong>，当前并不是卡住。'
+    ? '上传完成，正在准备转换。'
     : phaseCopy.tip;
 
   setPhaseSteps(phase);
@@ -779,10 +785,15 @@ function addFiles(fileList) {
     return;
   }
 
-  queuedFiles = [...queuedFiles, ...newFiles];
+  if (batchMode && batchMode.checked) {
+    queuedFiles = [...queuedFiles, ...newFiles];
+  } else {
+    queuedFiles = newFiles.slice(0, 1);
+  }
+  resetTaskState();
   uiPhase = 'waiting';
   renderQueue();
-  setStatus(`已加入 ${newFiles.length} 个文件，请先提交上传。`);
+  setStatus(`已加入 ${newFiles.length} 个文件，请点击“开始转换”。`);
 }
 
 function resetTaskState() {
@@ -837,7 +848,7 @@ function createUploadId() {
 }
 
 async function uploadFilesChunked(backendBase) {
-  const chunkSize = 256 * 1024;
+  const chunkSize = 1024 * 1024;
   const uploadedFiles = [];
   const totalBytes = queuedFiles.reduce((sum, item) => sum + item.file.size, 0);
   let sentBytes = 0;
@@ -976,8 +987,8 @@ async function startConversion() {
     return;
   }
   if (!uploadCommitted || !activeTaskId) {
-    setStatus('请先提交上传，拿到任务后再开始转换。', 'error');
-    return;
+    await uploadFiles();
+    if (!activeTaskId) return;
   }
   if (activeTask && ['queued', 'processing', 'completed', 'partial_success', 'failed'].includes(activeTask.state) && activeTask.state !== 'uploaded') {
     if (['queued', 'processing'].includes(activeTask.state)) {
@@ -1094,6 +1105,16 @@ clearBtn.addEventListener('click', clearQueue);
 downloadZipBtn.addEventListener('click', downloadZip);
 
 syncMp3BitrateState();
+if (batchMode) {
+  batchMode.addEventListener('change', () => {
+    fileInput.multiple = batchMode.checked;
+    if (!batchMode.checked && queuedFiles.length > 1) {
+      queuedFiles = queuedFiles.slice(0, 1);
+      renderQueue();
+      setStatus('已切换为单文件模式，仅保留第一个文件。');
+    }
+  });
+}
 renderQueue();
 </script>
 </body>
