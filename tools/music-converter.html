@@ -441,15 +441,15 @@ footer {
 </nav>
 
 <div class="container">
-  <h1 class="page-title">音乐格式转换</h1>
-  <p class="page-desc">上传音频文件，选择输出格式后直接开始转换。</p>
+  <h1 class="page-title">音频格式转换</h1>
+  <p class="page-desc">支持多种音频格式，解决剪辑师、短视频创作者和直播团队的素材兼容痛点。</p>
 
   <div class="stack">
     <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="上传音频文件">
       <div class="upload-icon">♫</div>
       <div class="upload-text">点击或拖拽文件到这里</div>
-      <div class="upload-hint">支持 MP3、WAV、M4A、FLAC、AAC、OGG、OPUS、NCM、KGM</div>
-      <div class="upload-subhint">默认单文件转换；需要多个文件时可开启批量模式。</div>
+      <div class="upload-hint">支持多种常见音频格式</div>
+      <div class="upload-subhint">默认单文件转换；需要多个文件时可开启批量模式。仅用于个人合法拥有素材的格式转换。</div>
       <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.ncm,.kgm,.kgg,audio/*" hidden>
     </div>
 
@@ -771,6 +771,8 @@ async function uploadFiles() {
         body: JSON.stringify({
           filename: queuedFiles[0].file.name,
           count: queuedFiles.length,
+          total_size: queuedFiles.reduce((sum, item) => sum + item.file.size, 0),
+          files: queuedFiles.map(item => ({ filename: item.file.name, size: item.file.size })),
         }),
       }
     );
@@ -856,7 +858,7 @@ function addFiles(fileList) {
     const ext = fileExtension(file.name);
     const supported = ['mp3','wav','m4a','flac','aac','ogg','opus','ncm','kgm','kgg'];
     if (!supported.includes(ext)) {
-      setStatus(`不支持的格式：${file.name}（仅支持音频格式）`, 'error');
+      setStatus(`不支持的文件：${file.name}（请上传音频素材）`, 'error');
       return false;
     }
     if (file.size > 200 * 1024 * 1024) {

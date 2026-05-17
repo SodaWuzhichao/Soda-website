@@ -28,11 +28,15 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .admin-layout { display:none; min-height:100vh; }
 .sidebar { width:220px; background:#111; border-right:1px solid #1a1a1f; padding:24px 0; position:fixed; top:0; left:0; height:100vh; }
 .sidebar-logo { padding:0 24px 24px; font-size:15px; font-weight:300; letter-spacing:0.1em; border-bottom:1px solid #1a1a1f; margin-bottom:16px; font-family:'DM Sans', sans-serif; }
-.nav-item { padding:12px 24px; color:#888; cursor:pointer; }
+.nav-item { padding:12px 24px; color:#888; cursor:pointer; border-left:2px solid transparent; transition:all .18s ease; }
 .nav-item:hover { color:#e8e8e8; background:#1a1a1f; }
+.nav-item.active { color:#f2f2f2; background:#1a1a1f; border-left-color:#f0c040; }
 .main-content { margin-left:220px; padding:32px; }
-.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.page-view { display:none; }
+.page-view.active { display:block; }
+.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:16px; flex-wrap:wrap; }
 .page-header h2 { font-size:1.4rem; font-weight:300; font-family:'DM Sans', sans-serif !important; letter-spacing:0.05em; margin:0; }
+.page-subtitle { color:#8a8a92; font-size:13px; line-height:1.6; margin-top:6px; max-width:680px; }
 .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px; margin-bottom:32px; }
 .stat-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:8px; padding:20px; }
 .stat-card .num { font-size:2rem; font-weight:200; letter-spacing:0.03em; color:#f0c040; }
@@ -83,6 +87,33 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 .toast.show { transform:translateY(0); opacity:1; }
 .toast.ok { border-color:#5ad060; }
 .toast.err { border-color:#e05050; }
+.transcribe-page { max-width:960px; }
+.transcribe-status-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:12px; padding:22px; margin-bottom:18px; }
+.transcribe-status-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+.transcribe-status-title { font-size:1rem; font-weight:300; color:#f2f2f2; }
+.transcribe-status-desc { color:#888; font-size:13px; margin-top:4px; }
+.transcribe-status-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.transcribe-status-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:14px; }
+.transcribe-status-item { background:#111; border:1px solid #23232a; border-radius:10px; padding:14px; min-height:92px; }
+.transcribe-status-item .k { color:#888; font-size:12px; margin-bottom:8px; }
+.transcribe-status-item .v { font-size:14px; color:#f3f3f3; line-height:1.5; }
+.transcribe-status-item.ok .v { color:#5ad060; }
+.transcribe-status-item.err .v { color:#f08b8b; }
+.transcribe-status-item.neutral .v { color:#f0c040; }
+.transcribe-status-summary { background:#111; border:1px solid #23232a; border-radius:10px; padding:14px; color:#ddd; font-size:13px; line-height:1.7; white-space:pre-wrap; min-height:84px; }
+.info-note { color:#8b8b93; font-size:12px; line-height:1.7; margin-top:10px; }
+.transcribe-actions-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:12px; padding:22px; }
+.transcribe-actions-title { font-size:1rem; font-weight:300; color:#f2f2f2; margin-bottom:6px; }
+.transcribe-actions-desc { color:#888; font-size:13px; line-height:1.7; margin-bottom:14px; }
+.transcribe-actions-row { display:flex; gap:10px; flex-wrap:wrap; }
+.douyin-test-card { background:#1a1a1f; border:1px solid #2a2a30; border-radius:12px; padding:22px; margin-top:18px; }
+.douyin-form-grid { display:grid; grid-template-columns:minmax(0,1fr) 180px 140px auto; gap:10px; align-items:end; }
+.douyin-help { color:#8b8b93; font-size:12px; line-height:1.7; margin-top:10px; }
+.douyin-status-box { margin-top:16px; background:#111; border:1px solid #23232a; border-radius:10px; padding:14px; }
+.douyin-status-top { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.douyin-status-meta { color:#bcbcc5; font-size:13px; line-height:1.7; }
+.douyin-status-phase { color:#f0c040; font-size:13px; }
+.douyin-result { margin-top:12px; background:#0d0d12; border:1px solid #212129; border-radius:8px; padding:12px; min-height:120px; white-space:pre-wrap; color:#f1f1f1; font-size:13px; line-height:1.7; }
 
 /* 移动端适配 */
 @media (max-width: 768px) {
@@ -91,12 +122,19 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   .sidebar-logo { padding:8px 16px; border-bottom:none; margin-bottom:0; font-size:12px; }
   .sidebar .logo { margin-bottom:0 !important; padding:0 16px !important; }
   .sidebar .logo img { height:40px !important; }
-  .nav-item { padding:10px 16px; position:static !important; width:auto; font-size:12px; }
+  .nav-item { padding:10px 14px; position:static !important; width:auto; font-size:12px; border-left:none; border-bottom:2px solid transparent; }
+  .nav-item.active { border-left:none; border-bottom-color:#f0c040; }
   .nav-item:first-of-type { display:none; }
-  .main-content { margin-left:0; padding:70px 12px 12px; }
+  .main-content { margin-left:0; padding:82px 12px 12px; }
   .page-header { flex-direction:row; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:12px 0; }
   .page-header h2 { font-size:1rem; margin:0; white-space:nowrap; }
-  .page-header > div { display:flex; gap:6px; flex-wrap:wrap; margin-right:80px; }
+  .page-header > div { display:flex; gap:6px; flex-wrap:wrap; }
+  .page-subtitle { font-size:12px; margin-top:4px; }
+  .transcribe-status-card, .transcribe-actions-card { padding:16px; border-radius:10px; }
+  .transcribe-status-grid { grid-template-columns:1fr; }
+  .transcribe-actions-row { flex-direction:column; }
+  .transcribe-actions-row button { width:100%; }
+  .douyin-form-grid { grid-template-columns:1fr; }
   .page-header button { padding:6px 10px; font-size:11px; }
   .page-header .stats { gap:12px; font-size:12px; }
   .works-table { font-size:12px; }
@@ -179,27 +217,33 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
     <span style="font-weight:200;font-family:'DM Sans',sans-serif;letter-spacing:3.5px;font-size:0.65em;opacity:0.8;color:#fff;margin-top:2px;">MEDIA</span>
   </div>
 </a>
-    <div class="nav-item">📁 作品管理</div>
+    <div class="nav-item active" id="navWorks" onclick="switchView('works')">📁 作品管理</div>
+    <div class="nav-item" id="navTranscribe" onclick="switchView('transcribe')">🛠️ 转写服务</div>
+    <div class="nav-item" id="navMusic" onclick="switchView('music')">🎵 音频工具</div>
     <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="padding:8px 12px;color:#888;font-size:12px;background:#1a1a1f;border-radius:6px;">🌐 公网模式</div>
     <div class="nav-item" onclick="logout()">🚪 退出登录</div>
   </div>
   <div class="main-content">
-    <div class="page-header">
-      <h2>作品管理</h2>
-      <div style="display:flex;gap:12px">
-        <button class="bs" onclick="loadWorks()">刷新</button>
-        <button class="bs" id="selectAllBtn" onclick="selectAllToggle()">全选</button>
-        <button class="bp" onclick="openAddPanel()">+ 添加作品</button>
+    <section class="page-view active" id="worksView">
+      <div class="page-header">
+        <div>
+          <h2>作品管理</h2>
+          <div class="page-subtitle">管理作品列表、筛选、批量操作与上传编辑；转写服务已独立到单独入口，避免后台首页信息堆叠。</div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="bs" onclick="loadWorks()">刷新</button>
+          <button class="bs" id="selectAllBtn" onclick="selectAllToggle()">全选</button>
+          <button class="bp" onclick="openAddPanel()">+ 添加作品</button>
+        </div>
       </div>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="num" id="sTotal">-</div><div class="label">总作品</div></div>
-      <div class="stat-card"><div class="num" id="sVideo">-</div><div class="label">视频</div></div>
-      <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
-      <div class="stat-card"><div class="num" id="sLive">-</div><div class="label">直播</div></div>
-      <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
-    </div>
-    <div class="batch-bar" id="batchBar">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num" id="sTotal">-</div><div class="label">总作品</div></div>
+        <div class="stat-card"><div class="num" id="sVideo">-</div><div class="label">视频</div></div>
+        <div class="stat-card"><div class="num" id="sPhoto">-</div><div class="label">照片</div></div>
+        <div class="stat-card"><div class="num" id="sLive">-</div><div class="label">直播</div></div>
+        <div class="stat-card"><div class="num" id="sDraft">-</div><div class="label">草稿</div></div>
+      </div>
+      <div class="batch-bar" id="batchBar">
       <span id="selectedCount" style="color:#888;font-size:13px">已选 0 项</span>
       <button class="bd" onclick="batchTranscode()" style="padding:6px 14px;font-size:12px;margin-right:8px">HLS转码</button>
       <button class="bd" onclick="batchDelete()" style="padding:6px 14px;font-size:13px">批量删除</button>
@@ -223,10 +267,88 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         </select>
         <span id="filterCount" style="color:#888;font-size:12px;margin-left:4px"></span>
       </div>
-    <div class="works-table">
-      <div class="tbl-hdr"><div></div><div></div><div></div><div>标题</div><div>类型</div><div>状态</div><div>年份</div><div>分辨率</div><div>操作</div></div>
-      <div id="worksList"></div>
-    </div>
+      <div class="works-table">
+        <div class="tbl-hdr"><div></div><div></div><div></div><div>标题</div><div>类型</div><div>状态</div><div>年份</div><div>分辨率</div><div>操作</div></div>
+        <div id="worksList"></div>
+      </div>
+    </section>
+
+    <section class="page-view transcribe-page" id="transcribeView">
+      <div class="page-header">
+        <div>
+          <h2>转写服务</h2>
+          <div class="page-subtitle">把状态查看、扫描和一键修复从作品管理中独立出来。先看状态，再决定是否执行修复。</div>
+        </div>
+      </div>
+
+      <div class="transcribe-status-card">
+        <div class="transcribe-status-header">
+          <div>
+            <div class="transcribe-status-title">服务状态</div>
+            <div class="transcribe-status-desc">检查本地后端、转写引擎与公网访问链路。</div>
+          </div>
+        </div>
+        <div class="transcribe-status-grid">
+          <div class="transcribe-status-item" id="transcribeFlaskCard"><div class="k">本地后端</div><div class="v" id="transcribeFlaskText">待扫描</div></div>
+          <div class="transcribe-status-item" id="transcribeWhisperCard"><div class="k">转写引擎</div><div class="v" id="transcribeWhisperText">待扫描</div></div>
+          <div class="transcribe-status-item" id="transcribePublicCard"><div class="k">公网访问</div><div class="v" id="transcribePublicText">待扫描</div></div>
+          <div class="transcribe-status-item neutral" id="transcribeConclusionCard"><div class="k">结论</div><div class="v" id="transcribeConclusionText">等待扫描结果</div></div>
+        </div>
+        <div class="transcribe-status-summary" id="transcribeSummary">点击“扫描”查看当前状态。</div>
+        <div class="info-note">说明：本页优先复用现有 scan / repair 接口，不新增额外运维复杂度。</div>
+      </div>
+
+      <div class="transcribe-actions-card">
+        <div class="transcribe-actions-title">操作区</div>
+        <div class="transcribe-actions-desc">先扫描，再决定是否一键修复。修复会尝试重启相关服务，并在完成后再次扫描。</div>
+        <div class="transcribe-actions-row">
+          <button class="bs" id="transcribeScanBtn" onclick="scanTranscribeService()">扫描</button>
+          <button class="bp" id="transcribeRepairBtn" onclick="repairTranscribeService()">一键修复</button>
+        </div>
+      </div>
+
+      <div class="douyin-test-card">
+        <div class="transcribe-actions-title">抖音链接转文案（内部测试版）</div>
+        <div class="transcribe-actions-desc">仅供后台内部验证。输入抖音分享链接后，服务端会解析短链、下载素材、预处理音频并接入现有转写任务流。</div>
+        <div class="douyin-form-grid">
+          <div>
+            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">抖音链接</label>
+            <input id="douyinUrlInput" placeholder="例如：https://v.douyin.com/xxxx/" />
+          </div>
+          <div>
+            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">模式</label>
+            <select id="douyinModeSelect">
+              <option value="balanced">balanced</option>
+              <option value="fast">fast</option>
+              <option value="accurate">accurate</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">语言</label>
+            <select id="douyinLanguageSelect">
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+              <option value="">自动</option>
+            </select>
+          </div>
+          <button class="bp" id="douyinSubmitBtn" onclick="startDouyinTranscribe()">开始提取文案</button>
+        </div>
+        <div class="douyin-help">状态阶段：parsing / downloading / preprocessing / transcribing / completed / error。不会影响原有本地上传转写入口。</div>
+        <div class="douyin-status-box">
+          <div class="douyin-status-top">
+            <div class="douyin-status-meta" id="douyinTaskMeta">尚未开始任务</div>
+            <div class="douyin-status-phase" id="douyinTaskPhase">等待输入</div>
+          </div>
+          <div class="transcribe-status-grid" style="margin-bottom:0;">
+            <div class="transcribe-status-item"><div class="k">任务状态</div><div class="v" id="douyinTaskStatus">-</div></div>
+            <div class="transcribe-status-item"><div class="k">当前阶段</div><div class="v" id="douyinTaskPhaseText">-</div></div>
+            <div class="transcribe-status-item"><div class="k">队列位置</div><div class="v" id="douyinTaskQueue">-</div></div>
+            <div class="transcribe-status-item"><div class="k">视频标题</div><div class="v" id="douyinTaskTitle">-</div></div>
+          </div>
+          <div class="douyin-result" id="douyinTaskResult">结果会显示在这里；失败时会展示明确错误。</div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 <div class="overlay" id="overlay">
@@ -296,6 +418,62 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+    <section class="page-view transcribe-page" id="musicView">
+      <div class="page-header">
+        <div>
+          <h2>音频转换工具设置</h2>
+          <div class="page-subtitle">管理公网使用额度、白名单 IP 和临时文件清理策略，控制 R2 免费额度风险。</div>
+        </div>
+      </div>
+
+      <div class="transcribe-status-card">
+        <div class="transcribe-status-header">
+          <div>
+            <div class="transcribe-status-title">当前用量</div>
+            <div class="transcribe-status-desc">按后端记录统计，白名单 IP 不计入限流。</div>
+          </div>
+          <div class="transcribe-status-actions">
+            <button class="bs" onclick="loadMusicLimits()">刷新</button>
+            <button class="bp" onclick="cleanupMusicStorage()">立即清理临时文件</button>
+          </div>
+        </div>
+        <div class="transcribe-status-grid">
+          <div class="transcribe-status-item"><div class="k">当前访问 IP</div><div class="v" id="musicCurrentIp">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日全站次数</div><div class="v" id="musicGlobalCount">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日全站流量</div><div class="v" id="musicGlobalBytes">-</div></div>
+          <div class="transcribe-status-item"><div class="k">白名单数量</div><div class="v" id="musicWhitelistCount">-</div></div>
+        </div>
+        <div class="transcribe-status-summary" id="musicSummary">点击“刷新”读取当前设置。</div>
+      </div>
+
+      <div class="transcribe-actions-card">
+        <div class="transcribe-actions-title">白名单 IP</div>
+        <div class="transcribe-actions-desc">每行一个 IP。加入白名单后不受上传次数和容量限制，适合你自己或固定办公网络。</div>
+        <textarea id="musicWhitelistIps" style="width:100%;min-height:110px;background:#111;border:1px solid #2a2a30;border-radius:8px;color:#eee;padding:12px;font-family:monospace;line-height:1.6;box-sizing:border-box;" placeholder="例如：\n1.2.3.4"></textarea>
+        <div class="transcribe-actions-row" style="margin-top:12px;">
+          <button class="bs" onclick="addCurrentMusicIp()">加入当前 IP</button>
+          <button class="bp" onclick="saveMusicLimits()">保存设置</button>
+        </div>
+      </div>
+
+      <div class="douyin-test-card">
+        <div class="transcribe-actions-title">限流与清理策略</div>
+        <div class="transcribe-actions-desc">建议保持保守值：朋友小范围使用足够，陌生人滥用会被限制。</div>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每小时次数</label><input id="limitHourly" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天次数</label><input id="limitDaily" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天容量 GB</label><input id="limitIpGb" type="number" min="1" step="0.5" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天次数</label><input id="limitGlobalCount" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天容量 GB</label><input id="limitGlobalGb" type="number" min="1" step="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">单文件最大 MB</label><input id="limitSingleMb" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">R2 孤儿文件小时</label><input id="limitR2Hours" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">结果保留小时</label><input id="limitOutputHours" type="number" min="1" /></div>
+        </div>
+        <div class="info-note">说明：R2 原始文件在后端拉取成功后会立即删除；这里的 R2 孤儿文件清理用于处理上传中断等异常情况。</div>
+      </div>
+    </section>
+
 <script>
 const API_WAN = 'https://api.soda567.dpdns.org';
 const API_LAN = 'http://192.168.0.129:5001';
@@ -353,6 +531,35 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') login();
 });
 
+let currentView = 'works';
+let transcribeScannedOnce = false;
+let douyinTaskPollTimer = null;
+let douyinCurrentTaskId = '';
+const DOUYIN_PHASE_LABELS = { parsing: '解析链接', downloading: '下载素材', preprocessing: '音频预处理', transcribing: '转写中', queued: '排队中', completed: '已完成', error: '失败' };
+
+function switchView(view) {
+  currentView = ['works', 'transcribe', 'music'].includes(view) ? view : 'works';
+  const worksView = document.getElementById('worksView');
+  const transcribeView = document.getElementById('transcribeView');
+  const musicView = document.getElementById('musicView');
+  const navWorks = document.getElementById('navWorks');
+  const navTranscribe = document.getElementById('navTranscribe');
+  const navMusic = document.getElementById('navMusic');
+
+  if (worksView) worksView.classList.toggle('active', currentView === 'works');
+  if (transcribeView) transcribeView.classList.toggle('active', currentView === 'transcribe');
+  if (musicView) musicView.classList.toggle('active', currentView === 'music');
+  if (navWorks) navWorks.classList.toggle('active', currentView === 'works');
+  if (navTranscribe) navTranscribe.classList.toggle('active', currentView === 'transcribe');
+  if (navMusic) navMusic.classList.toggle('active', currentView === 'music');
+
+  if (currentView === 'music') loadMusicLimits();
+
+  if (currentView === 'transcribe' && !transcribeScannedOnce) {
+    scanTranscribeService();
+  }
+}
+
 function showAdmin() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('adminLayout').style.display = 'flex';
@@ -368,13 +575,299 @@ function showAdmin() {
     const loginMode = document.getElementById('loginApiMode');
     if (loginMode) loginMode.value = API === API_LAN ? 'lan' : 'wan';
   }
+  switchView(currentView);
   loadWorks();
 }
 
 function logout() {
+  currentView = 'works';
+  transcribeScannedOnce = false;
   localStorage.removeItem('soda_token');
   document.getElementById('adminLayout').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
+}
+
+
+function bytesToGb(bytes) { return Math.round((Number(bytes || 0) / 1024 / 1024 / 1024) * 10) / 10; }
+function gbToBytes(gb) { return Math.round(Number(gb || 0) * 1024 * 1024 * 1024); }
+function mbToBytes(mb) { return Math.round(Number(mb || 0) * 1024 * 1024); }
+function fmtBytes(bytes) {
+  const n = Number(bytes || 0);
+  if (n >= 1024*1024*1024) return bytesToGb(n) + ' GB';
+  if (n >= 1024*1024) return Math.round(n/1024/1024) + ' MB';
+  return Math.round(n/1024) + ' KB';
+}
+
+let musicLimitsCache = null;
+
+async function loadMusicLimits() {
+  try {
+    const res = await api('GET', '/api/music/admin/limits');
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    musicLimitsCache = data.config || {};
+    const limits = musicLimitsCache.limits || {};
+    const usage = data.usage || {};
+    const today = new Date().toISOString().slice(0,10);
+    const daily = usage.daily?.[today] || { global: { count: 0, bytes: 0 }, ips: {} };
+    document.getElementById('musicCurrentIp').textContent = data.client_ip || '-';
+    document.getElementById('musicGlobalCount').textContent = (daily.global?.count || 0) + ' / ' + (limits.global_daily_count || '-');
+    document.getElementById('musicGlobalBytes').textContent = fmtBytes(daily.global?.bytes || 0) + ' / ' + bytesToGb(limits.global_daily_bytes || 0) + ' GB';
+    document.getElementById('musicWhitelistCount').textContent = (musicLimitsCache.whitelist_ips || []).length;
+    document.getElementById('musicWhitelistIps').value = (musicLimitsCache.whitelist_ips || []).join('\n');
+    document.getElementById('limitHourly').value = limits.per_ip_hourly_count || 10;
+    document.getElementById('limitDaily').value = limits.per_ip_daily_count || 30;
+    document.getElementById('limitIpGb').value = bytesToGb(limits.per_ip_daily_bytes || 0);
+    document.getElementById('limitGlobalCount').value = limits.global_daily_count || 1000;
+    document.getElementById('limitGlobalGb').value = bytesToGb(limits.global_daily_bytes || 0);
+    document.getElementById('limitSingleMb').value = Math.round((limits.max_single_file_size || 0) / 1024 / 1024);
+    document.getElementById('limitR2Hours').value = limits.r2_orphan_hours || 2;
+    document.getElementById('limitOutputHours').value = limits.local_output_hours || 24;
+    document.getElementById('musicSummary').textContent = '设置已加载。建议：公开前保持限流开启，R2 孤儿文件 2 小时清理，结果文件 24 小时内清理。';
+    toast('音频工具设置已加载', 'ok');
+  } catch (e) {
+    toast('加载音频工具设置失败: ' + e.message, 'err');
+  }
+}
+
+function addCurrentMusicIp() {
+  const ip = (document.getElementById('musicCurrentIp').textContent || '').trim();
+  if (!ip || ip === '-') return toast('当前 IP 未读取到', 'err');
+  const box = document.getElementById('musicWhitelistIps');
+  const ips = new Set(box.value.split(/\n+/).map(s => s.trim()).filter(Boolean));
+  ips.add(ip);
+  box.value = Array.from(ips).join('\n');
+  toast('已加入当前 IP，记得保存设置', 'ok');
+}
+
+async function saveMusicLimits() {
+  try {
+    const whitelist = document.getElementById('musicWhitelistIps').value.split(/\n+/).map(s => s.trim()).filter(Boolean);
+    const limits = {
+      per_ip_hourly_count: Number(document.getElementById('limitHourly').value || 10),
+      per_ip_daily_count: Number(document.getElementById('limitDaily').value || 30),
+      per_ip_daily_bytes: gbToBytes(document.getElementById('limitIpGb').value || 3),
+      global_daily_count: Number(document.getElementById('limitGlobalCount').value || 1000),
+      global_daily_bytes: gbToBytes(document.getElementById('limitGlobalGb').value || 30),
+      max_single_file_size: mbToBytes(document.getElementById('limitSingleMb').value || 200),
+      r2_orphan_hours: Number(document.getElementById('limitR2Hours').value || 2),
+      local_output_hours: Number(document.getElementById('limitOutputHours').value || 24),
+    };
+    const res = await api('POST', '/api/music/admin/limits', { whitelist_ips: whitelist, limits });
+    if (!res.ok) throw new Error(await res.text());
+    toast('音频工具设置已保存', 'ok');
+    await loadMusicLimits();
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'err');
+  }
+}
+
+async function cleanupMusicStorage() {
+  if (!confirm('确认立即清理音频转换临时文件？')) return;
+  try {
+    const res = await api('POST', '/api/music/admin/cleanup', {});
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const c = data.cleanup || {};
+    document.getElementById('musicSummary').textContent = `清理完成：R2 ${c.r2_deleted || 0} 个，本地 ${c.local_deleted || 0} 项，任务 ${c.tasks_deleted || 0} 个。` + (c.errors?.length ? '\n错误：' + c.errors.join('\n') : '');
+    toast('清理完成', 'ok');
+  } catch (e) {
+    toast('清理失败: ' + e.message, 'err');
+  }
+}
+
+function renderTranscribeServiceResult(data, mode) {
+  if (!data) return;
+  const statusText = s => s === 'ok' ? '正常' : '异常';
+  const applyCard = (cardId, textId, value, detail) => {
+    const card = document.getElementById(cardId);
+    const text = document.getElementById(textId);
+    if (!card || !text) return;
+    card.classList.remove('ok', 'err', 'neutral');
+    card.classList.add(value === 'ok' ? 'ok' : 'err');
+    const extra = detail && detail.http_status ? ` · HTTP ${detail.http_status}` : '';
+    text.textContent = statusText(value) + extra;
+  };
+
+  applyCard('transcribeFlaskCard', 'transcribeFlaskText', data.flask_local, data.detail?.flask_local);
+  applyCard('transcribeWhisperCard', 'transcribeWhisperText', data.whisper_local, data.detail?.whisper_local);
+  applyCard('transcribePublicCard', 'transcribePublicText', data.public_api, data.detail?.public_api);
+
+  const conclusionCard = document.getElementById('transcribeConclusionCard');
+  const conclusionText = document.getElementById('transcribeConclusionText');
+  if (conclusionCard && conclusionText) {
+    conclusionCard.classList.remove('ok', 'err', 'neutral');
+    const overallOk = data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok';
+    conclusionCard.classList.add(overallOk ? 'ok' : 'err');
+    conclusionText.textContent = data.conclusion || (overallOk ? '服务可用' : '需要处理');
+  }
+
+  const summaryEl = document.getElementById('transcribeSummary');
+  if (summaryEl) {
+    if (mode === 'repair' && data.before && data.after) {
+      summaryEl.textContent = [
+        '修复前：' + (data.before.summary || '—'),
+        '修复后：' + (data.after.summary || '—'),
+        '结论：' + (data.conclusion || '—')
+      ].join('\n');
+    } else {
+      summaryEl.textContent = [
+        (data.summary || '扫描完成'),
+        '结论：' + (data.conclusion || '—')
+      ].join('\n');
+    }
+  }
+}
+
+async function scanTranscribeService() {
+  const btn = document.getElementById('transcribeScanBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '扫描中...'; }
+  try {
+    const res = await api('GET', '/api/transcribe/admin/scan');
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    transcribeScannedOnce = true;
+    renderTranscribeServiceResult(data, 'scan');
+    toast(data.summary || '扫描完成', data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok' ? 'ok' : 'err');
+  } catch (e) {
+    toast('扫描失败: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '扫描'; }
+  }
+}
+
+async function repairTranscribeService() {
+  if (!confirm('确认尝试修复转写服务？')) return;
+  const btn = document.getElementById('transcribeRepairBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '修复中...'; }
+  try {
+    const res = await api('POST', '/api/transcribe/admin/repair', {});
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    renderTranscribeServiceResult(data.after || data, 'repair');
+    const summaryEl = document.getElementById('transcribeSummary');
+    if (summaryEl) {
+      summaryEl.textContent = [
+        '修复前：' + (data.before?.summary || '—'),
+        '修复后：' + (data.after?.summary || '—'),
+        '结论：' + (data.conclusion || '—')
+      ].join('\n');
+    }
+    toast(data.conclusion || '修复完成', data.after?.flask_local === 'ok' && data.after?.whisper_local === 'ok' ? 'ok' : 'err');
+  } catch (e) {
+    toast('修复失败: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '一键修复'; }
+  }
+}
+
+
+function resetDouyinTaskView() {
+  const defaults = {
+    douyinTaskMeta: '尚未开始任务',
+    douyinTaskPhase: '等待输入',
+    douyinTaskStatus: '-',
+    douyinTaskPhaseText: '-',
+    douyinTaskQueue: '-',
+    douyinTaskTitle: '-',
+    douyinTaskResult: '结果会显示在这里；失败时会展示明确错误。'
+  };
+  Object.entries(defaults).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
+}
+
+function stopDouyinPolling() {
+  if (douyinTaskPollTimer) {
+    clearTimeout(douyinTaskPollTimer);
+    douyinTaskPollTimer = null;
+  }
+}
+
+function renderDouyinTask(data) {
+  if (!data) return;
+  const phase = data.phase || data.status || 'queued';
+  const phaseLabel = DOUYIN_PHASE_LABELS[phase] || phase;
+  const statusMap = { pending: '等待中', processing: '处理中', completed: '已完成', error: '失败' };
+  const statusLabel = statusMap[data.status] || data.status || '-';
+  const taskMeta = document.getElementById('douyinTaskMeta');
+  const taskPhase = document.getElementById('douyinTaskPhase');
+  const taskStatus = document.getElementById('douyinTaskStatus');
+  const taskPhaseText = document.getElementById('douyinTaskPhaseText');
+  const taskQueue = document.getElementById('douyinTaskQueue');
+  const taskTitle = document.getElementById('douyinTaskTitle');
+  const taskResult = document.getElementById('douyinTaskResult');
+  if (taskMeta) taskMeta.textContent = `任务ID：${data.task_id || '-'}${data.resolved_url ? `｜解析后：${data.resolved_url}` : ''}`;
+  if (taskPhase) taskPhase.textContent = phaseLabel;
+  if (taskStatus) taskStatus.textContent = statusLabel;
+  if (taskPhaseText) taskPhaseText.textContent = `${phaseLabel} (${phase})`;
+  if (taskQueue) taskQueue.textContent = data.queue_position ?? 0;
+  if (taskTitle) taskTitle.textContent = data.video_title || data.filename || '-';
+  if (taskResult) {
+    if (data.status === 'completed') {
+      taskResult.textContent = data.result || '转写完成，但结果为空';
+    } else if (data.status === 'error') {
+      taskResult.textContent = data.error || '任务失败';
+    } else {
+      taskResult.textContent = `正在执行：${phaseLabel}
+链接：${data.source_url || data.resolved_url || '-'}${data.video_title ? `
+标题：${data.video_title}` : ''}`;
+    }
+  }
+}
+
+async function pollDouyinTask(taskId) {
+  stopDouyinPolling();
+  douyinCurrentTaskId = taskId;
+  try {
+    const res = await api('GET', `/api/status/${taskId}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    renderDouyinTask(data);
+    if (data.status === 'completed') {
+      toast('抖音链接转写完成', 'ok');
+      return;
+    }
+    if (data.status === 'error') {
+      toast('抖音链接转写失败：' + (data.error || '未知错误'), 'err');
+      return;
+    }
+    douyinTaskPollTimer = setTimeout(() => pollDouyinTask(taskId), 2500);
+  } catch (e) {
+    const taskResult = document.getElementById('douyinTaskResult');
+    if (taskResult) taskResult.textContent = '状态查询失败：' + e.message;
+    toast('状态查询失败：' + e.message, 'err');
+  }
+}
+
+async function startDouyinTranscribe() {
+  const input = document.getElementById('douyinUrlInput');
+  const mode = document.getElementById('douyinModeSelect')?.value || 'balanced';
+  const language = document.getElementById('douyinLanguageSelect')?.value || 'zh';
+  const btn = document.getElementById('douyinSubmitBtn');
+  const url = input?.value?.trim() || '';
+  if (!url) {
+    toast('请先输入抖音链接', 'err');
+    return;
+  }
+  stopDouyinPolling();
+  resetDouyinTaskView();
+  if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+  try {
+    const res = await api('POST', '/api/transcribe/douyin', { url, mode, language });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    renderDouyinTask(data);
+    toast('任务已创建，开始处理', 'ok');
+    await pollDouyinTask(data.task_id);
+  } catch (e) {
+    const taskResult = document.getElementById('douyinTaskResult');
+    if (taskResult) taskResult.textContent = '启动失败：' + e.message;
+    toast('启动失败：' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '开始提取文案'; }
+  }
 }
 
 async function loadWorks() {
@@ -561,7 +1054,8 @@ function openEdit(id) {
   document.getElementById('editResolution').value = (w.width && w.height) ? w.width + '×' + w.height : '未记录';
   document.getElementById('uploadMode').value = w.filename ? 'file' : 'url';
   document.getElementById('coverSection').style.display = 'block';
-  const srcUrl = w.source_url || (w.filename ? API.replace(/\/api$/, '') + '/media/videos/' + w.filename : '');
+  const mediaBase = w.type === 'photo' ? '/media/photos/' : '/media/videos/';
+  const srcUrl = w.source_url || (w.filename ? API.replace(/\/api$/, '') + mediaBase + w.filename : '');
   const isVideo = w.type === 'video' && srcUrl;
   document.getElementById('framePickerWrap').style.display = isVideo ? 'block' : 'none';
   if (isVideo) {
@@ -971,8 +1465,10 @@ function updateBatchBar() {
   const allBoxes = document.querySelectorAll('.row-checkbox[data-id]');
   bar.classList.toggle('show', ids.length > 0);
   count.textContent = '已选 '+ids.length+' 项';
-  allCb.indeterminate = ids.length > 0 && ids.length < allBoxes.length;
-  allCb.checked = allBoxes.length > 0 && ids.length === allBoxes.length;
+  if (allCb) {
+    allCb.indeterminate = ids.length > 0 && ids.length < allBoxes.length;
+    allCb.checked = allBoxes.length > 0 && ids.length === allBoxes.length;
+  }
 }
 
 function toggleSelectAll(checked) {
@@ -1027,7 +1523,8 @@ async function batchDelete() {
   }
   toast(ok+'个已删除'+(fail?'，'+fail+'个失败':''), fail?'err':'ok');
   document.getElementById('batchBar').classList.remove('show');
-  document.getElementById('selectAll').checked = false;
+  const selectAll = document.getElementById('selectAll');
+  if (selectAll) selectAll.checked = false;
   loadWorks();
 }
 
