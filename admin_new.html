@@ -357,7 +357,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 
       <div class="transcribe-actions-card">
         <div class="transcribe-actions-title">白名单 IP</div>
-        <div class="transcribe-actions-desc">每行一个 IP。加入白名单后不受上传次数和容量限制，适合你自己或固定办公网络。</div>
+        <div class="transcribe-actions-desc">每行一个 IP。当前没有注册用户体系，白名单先按 IP 生效；加入后不受上传次数和容量限制，适合你自己或固定办公网络。</div>
         <textarea id="musicWhitelistIps" style="width:100%;min-height:110px;background:#111;border:1px solid #2a2a30;border-radius:8px;color:#eee;padding:12px;font-family:monospace;line-height:1.6;box-sizing:border-box;" placeholder="例如：\n1.2.3.4"></textarea>
         <div class="transcribe-actions-row" style="margin-top:12px;">
           <button class="bs" onclick="addCurrentMusicIp()">加入当前 IP</button>
@@ -379,6 +379,10 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">结果保留小时</label><input id="limitOutputHours" type="number" min="1" /></div>
         </div>
         <div class="info-note">说明：R2 原始文件在后端拉取成功后会立即删除；这里的 R2 孤儿文件清理用于处理上传中断等异常情况。</div>
+        <div class="transcribe-actions-row" style="margin-top:14px;">
+          <button class="bp" onclick="saveMusicLimits()">应用限流与清理设置</button>
+          <button class="bs" onclick="loadMusicLimits()">恢复当前已保存设置</button>
+        </div>
       </div>
     </section>
 
