@@ -817,7 +817,7 @@ function createUploadId() {
 }
 
 async function uploadFilesChunked(backendBase) {
-  const chunkSize = 4 * 1024 * 1024;
+  const chunkSize = 512 * 1024;
   const uploadedFiles = [];
   const totalBytes = queuedFiles.reduce((sum, item) => sum + item.file.size, 0);
   let sentBytes = 0;
