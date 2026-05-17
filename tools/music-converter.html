@@ -1025,7 +1025,24 @@ async function startConversion() {
   }
 }
 
+
+async function cancelCurrentTask() {
+  if (!activeTaskId) return;
+  try {
+    await requestJson(`${getBackendBase()}/api/music/cancel/${activeTaskId}`, { method: 'POST' });
+  } catch (_) { /* ignore */ }
+  resetTaskState();
+}
 function clearQueue() {
+  if (activeTaskId && activeTask && ['queued', 'processing', 'uploaded'].includes(activeTask.state)) {
+    cancelCurrentTask().then(() => {
+      queuedFiles = [];
+      fileInput.value = '';
+      renderQueue();
+      setStatus('队列已清空，任务已取消。');
+    });
+    return;
+  }
   queuedFiles = [];
   uiPhase = 'waiting';
   fileInput.value = '';
