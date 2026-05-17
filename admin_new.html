@@ -266,6 +266,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
     <div class="nav-item active" id="navWorks" onclick="switchView('works')">📁 作品管理</div>
     <div class="nav-item" id="navTranscribe" onclick="switchView('transcribe')">🛠️ 转写服务</div>
     <div class="nav-item" id="navMusic" onclick="switchView('music')">🎵 音频工具</div>
+    <div class="nav-item" id="navResourceRisk" onclick="switchView('resourceRisk')">🛡️ 资源风控</div>
     <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="padding:8px 12px;color:#888;font-size:12px;background:#1a1a1f;border-radius:6px;">🌐 公网模式</div>
     <div class="nav-item" id="logoutBtn" onclick="logout()">🚪 退出登录</div>
   </div>
@@ -444,6 +445,59 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
       </div>
     </section>
 
+    <section class="page-view transcribe-page tool-admin-page" id="resourceRiskView">
+      <div class="page-header">
+        <div>
+          <h2>资源风控</h2>
+          <div class="page-subtitle">统一管理上传、R2、视音频转文案和音频工具的限流策略；后端强校验，前端仅用于配置。</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="bs" onclick="loadResourceRisk()">刷新</button>
+          <button class="bp" onclick="saveResourceRisk()">保存策略</button>
+          <button class="bs" onclick="cleanupRiskTemp()">清理旧临时文件</button>
+        </div>
+      </div>
+
+      <div class="transcribe-status-card tool-admin-card">
+        <div class="transcribe-status-header"><div><div class="transcribe-status-title">全局默认限制</div><div class="transcribe-status-desc">控制所有资源型入口的总开关、容量和并发。</div></div></div>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">启用限流</label><select id="riskRateEnabled"><option value="true">启用</option><option value="false">关闭</option></select></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">上传服务</label><select id="riskUploadEnabled"><option value="true">启用</option><option value="false">关闭</option></select></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">白名单模式</label><select id="riskWhitelistMode"><option value="false">关闭</option><option value="true">开启</option></select></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">默认单文件最大 MB</label><input id="riskDefaultMaxMb" type="number" min="1"></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每小时请求</label><input id="riskPerHour" type="number" min="1"></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每日上传 MB</label><input id="riskIpDailyMb" type="number" min="1"></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每日上传 MB</label><input id="riskGlobalDailyMb" type="number" min="1"></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站并发任务</label><input id="riskGlobalConcurrent" type="number" min="1"></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 默认并发</label><input id="riskIpConcurrent" type="number" min="1"></div>
+        </div>
+      </div>
+
+      <div class="douyin-test-card tool-admin-card">
+        <div class="transcribe-actions-title">工具级覆盖</div>
+        <div class="transcribe-actions-desc">预置 transcribe / audio_tools / r2_upload，可单独调整启用状态、容量、次数和单 IP 并发。</div>
+        <div id="riskToolsBox" class="transcribe-checks"></div>
+      </div>
+
+      <div class="douyin-test-card tool-admin-card">
+        <div class="transcribe-actions-title">IP 规则</div>
+        <div class="douyin-form-grid" style="grid-template-columns:1fr 1fr;">
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">黑名单 IP（每行一个）</label><textarea id="riskBlacklist" style="min-height:120px;font-family:monospace;"></textarea></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">白名单 IP（每行一个）</label><textarea id="riskWhitelist" style="min-height:120px;font-family:monospace;"></textarea></div>
+        </div>
+        <div class="fg" style="margin-top:12px;"><label>特殊额度 JSON（按 IP 配置，可覆盖工具限制）</label><textarea id="riskSpecialJson" style="min-height:150px;font-family:monospace;" placeholder='{"1.2.3.4":{"transcribe":{"per_ip_daily_count":10,"per_ip_daily_mb":2048}}}'></textarea></div>
+      </div>
+
+      <div class="transcribe-status-card tool-admin-card">
+        <div class="transcribe-status-grid">
+          <div class="transcribe-status-item"><div class="k">当前 IP</div><div class="v" id="riskCurrentIp">-</div></div>
+          <div class="transcribe-status-item"><div class="k">当前全站并发</div><div class="v" id="riskActiveGlobal">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日日志/用量</div><div class="v" id="riskUsageSummary">-</div></div>
+        </div>
+        <div class="transcribe-status-summary" id="riskLogs">点击刷新读取风控日志。</div>
+      </div>
+    </section>
+
   </div>
 </div>
 <div class="overlay" id="overlay">
@@ -572,28 +626,34 @@ document.addEventListener('keydown', e => {
 });
 
 let currentView = 'works';
+let resourceRiskCache = null;
 let transcribeScannedOnce = false;
 let douyinTaskPollTimer = null;
 let douyinCurrentTaskId = '';
 const DOUYIN_PHASE_LABELS = { parsing: '解析链接', downloading: '下载素材', preprocessing: '音频预处理', transcribing: '转写中', queued: '排队中', completed: '已完成', error: '失败' };
 
 function switchView(view) {
-  currentView = ['works', 'transcribe', 'music'].includes(view) ? view : 'works';
+  currentView = ['works', 'transcribe', 'music', 'resourceRisk'].includes(view) ? view : 'works';
   const worksView = document.getElementById('worksView');
   const transcribeView = document.getElementById('transcribeView');
   const musicView = document.getElementById('musicView');
+  const resourceRiskView = document.getElementById('resourceRiskView');
   const navWorks = document.getElementById('navWorks');
   const navTranscribe = document.getElementById('navTranscribe');
   const navMusic = document.getElementById('navMusic');
+  const navResourceRisk = document.getElementById('navResourceRisk');
 
   if (worksView) worksView.classList.toggle('active', currentView === 'works');
   if (transcribeView) transcribeView.classList.toggle('active', currentView === 'transcribe');
   if (musicView) musicView.classList.toggle('active', currentView === 'music');
+  if (resourceRiskView) resourceRiskView.classList.toggle('active', currentView === 'resourceRisk');
   if (navWorks) navWorks.classList.toggle('active', currentView === 'works');
   if (navTranscribe) navTranscribe.classList.toggle('active', currentView === 'transcribe');
   if (navMusic) navMusic.classList.toggle('active', currentView === 'music');
+  if (navResourceRisk) navResourceRisk.classList.toggle('active', currentView === 'resourceRisk');
 
   if (currentView === 'music') loadMusicLimits();
+  if (currentView === 'resourceRisk') loadResourceRisk();
 
   if (currentView === 'transcribe' && !transcribeScannedOnce) {
     scanTranscribeService();
@@ -711,6 +771,135 @@ async function cleanupMusicStorage() {
     const c = data.cleanup || {};
     document.getElementById('musicSummary').textContent = `清理完成：R2 ${c.r2_deleted || 0} 个，本地 ${c.local_deleted || 0} 项，任务 ${c.tasks_deleted || 0} 个。` + (c.errors?.length ? '\n错误：' + c.errors.join('\n') : '');
     toast('清理完成', 'ok');
+  } catch (e) {
+    toast('清理失败: ' + e.message, 'err');
+  }
+}
+
+
+function boolVal(id) { return document.getElementById(id).value === 'true'; }
+function setBoolVal(id, v) { document.getElementById(id).value = v ? 'true' : 'false'; }
+function linesToList(id) { return document.getElementById(id).value.split(/\n+/).map(s => s.trim()).filter(Boolean); }
+function listToLines(v) { return (v || []).join('\n'); }
+const RISK_TOOLS = ['transcribe', 'audio_tools', 'r2_upload'];
+const RISK_TOOL_LABELS = { transcribe: '视音频转文案', audio_tools: '音频工具', r2_upload: 'R2上传' };
+
+function renderRiskTools(tools) {
+  const box = document.getElementById('riskToolsBox');
+  if (!box) return;
+  box.innerHTML = RISK_TOOLS.map(key => {
+    const t = (tools || {})[key] || {};
+    return `<div class="transcribe-check-group">
+      <div class="transcribe-check-group-title">${RISK_TOOL_LABELS[key]} <span style="color:#777;font-size:12px;">${key}</span></div>
+      <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+        <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">启用</label><select id="risk_${key}_enabled"><option value="true">启用</option><option value="false">关闭</option></select></div>
+        <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">单文件 MB</label><input id="risk_${key}_max" type="number" min="1"></div>
+        <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每日次数</label><input id="risk_${key}_count" type="number" min="1"></div>
+        <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每日 MB</label><input id="risk_${key}_mb" type="number" min="1"></div>
+        <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 并发</label><input id="risk_${key}_conc" type="number" min="1"></div>
+      </div>
+    </div>`;
+  }).join('');
+  RISK_TOOLS.forEach(key => {
+    const t = (tools || {})[key] || {};
+    setBoolVal(`risk_${key}_enabled`, t.enabled !== false);
+    document.getElementById(`risk_${key}_max`).value = t.max_file_mb || 300;
+    document.getElementById(`risk_${key}_count`).value = t.per_ip_daily_count || 10;
+    document.getElementById(`risk_${key}_mb`).value = t.per_ip_daily_mb || 1024;
+    document.getElementById(`risk_${key}_conc`).value = t.concurrent_per_ip || 1;
+  });
+}
+
+async function loadResourceRisk() {
+  try {
+    const res = await api('GET', '/api/admin/resource-risk');
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    resourceRiskCache = data.config || {};
+    const g = resourceRiskCache.global || {};
+    setBoolVal('riskRateEnabled', g.rate_limit_enabled !== false);
+    setBoolVal('riskUploadEnabled', g.upload_service_enabled !== false);
+    setBoolVal('riskWhitelistMode', !!g.whitelist_mode_enabled);
+    document.getElementById('riskDefaultMaxMb').value = g.default_max_file_mb || 300;
+    document.getElementById('riskPerHour').value = g.per_ip_hourly_requests || 20;
+    document.getElementById('riskIpDailyMb').value = g.per_ip_daily_upload_mb || 1024;
+    document.getElementById('riskGlobalDailyMb').value = g.global_daily_upload_mb || 10240;
+    document.getElementById('riskGlobalConcurrent').value = g.global_concurrent_tasks || 2;
+    document.getElementById('riskIpConcurrent').value = g.per_ip_concurrent_tasks || 1;
+    renderRiskTools(resourceRiskCache.tools || {});
+    const rules = resourceRiskCache.ip_rules || {};
+    document.getElementById('riskBlacklist').value = listToLines(rules.blacklist_ips || []);
+    document.getElementById('riskWhitelist').value = listToLines(rules.whitelist_ips || []);
+    document.getElementById('riskSpecialJson').value = JSON.stringify(rules.special_limits || {}, null, 2);
+    document.getElementById('riskCurrentIp').textContent = data.client_ip || '-';
+    document.getElementById('riskActiveGlobal').textContent = (data.active && data.active.global) || 0;
+    const today = new Date().toISOString().slice(0,10);
+    const daily = data.usage?.daily?.[today] || { global: { bytes: 0 }, tools: {} };
+    document.getElementById('riskUsageSummary').textContent = fmtBytes(daily.global?.bytes || 0);
+    const logs = data.logs || [];
+    document.getElementById('riskLogs').textContent = logs.length ? logs.slice(-30).reverse().map(x => `${x.time || ''} ${x.allowed ? '允许' : '拒绝'} ${x.ip || '-'} ${x.tool || '-'} ${x.action || '-'} ${fmtBytes(x.file_size || 0)} ${x.reason || ''}`).join('\n') : '暂无风控日志';
+    toast('资源风控策略已加载', 'ok');
+  } catch (e) {
+    toast('加载资源风控失败: ' + e.message, 'err');
+  }
+}
+
+function collectResourceRiskConfig() {
+  let special = {};
+  const raw = document.getElementById('riskSpecialJson').value.trim();
+  if (raw) special = JSON.parse(raw);
+  const tools = {};
+  RISK_TOOLS.forEach(key => {
+    tools[key] = {
+      label: RISK_TOOL_LABELS[key],
+      enabled: document.getElementById(`risk_${key}_enabled`).value === 'true',
+      max_file_mb: Number(document.getElementById(`risk_${key}_max`).value || 0),
+      per_ip_daily_count: Number(document.getElementById(`risk_${key}_count`).value || 0),
+      per_ip_daily_mb: Number(document.getElementById(`risk_${key}_mb`).value || 0),
+      concurrent_per_ip: Number(document.getElementById(`risk_${key}_conc`).value || 0),
+    };
+  });
+  return {
+    global: {
+      rate_limit_enabled: boolVal('riskRateEnabled'),
+      upload_service_enabled: boolVal('riskUploadEnabled'),
+      whitelist_mode_enabled: boolVal('riskWhitelistMode'),
+      default_max_file_mb: Number(document.getElementById('riskDefaultMaxMb').value || 300),
+      per_ip_hourly_requests: Number(document.getElementById('riskPerHour').value || 20),
+      per_ip_daily_upload_mb: Number(document.getElementById('riskIpDailyMb').value || 1024),
+      global_daily_upload_mb: Number(document.getElementById('riskGlobalDailyMb').value || 10240),
+      global_concurrent_tasks: Number(document.getElementById('riskGlobalConcurrent').value || 2),
+      per_ip_concurrent_tasks: Number(document.getElementById('riskIpConcurrent').value || 1),
+    },
+    tools,
+    ip_rules: {
+      blacklist_ips: linesToList('riskBlacklist'),
+      whitelist_ips: linesToList('riskWhitelist'),
+      special_limits: special,
+    },
+  };
+}
+
+async function saveResourceRisk() {
+  try {
+    const config = collectResourceRiskConfig();
+    const res = await api('POST', '/api/admin/resource-risk', { config });
+    if (!res.ok) throw new Error(await res.text());
+    toast('资源风控策略已保存', 'ok');
+    await loadResourceRisk();
+  } catch (e) {
+    toast('保存资源风控失败: ' + e.message, 'err');
+  }
+}
+
+async function cleanupRiskTemp() {
+  if (!confirm('只会清理 media/temp 与转写临时目录中超过 24 小时的临时文件，不会删除作品库正式文件。继续？')) return;
+  try {
+    const res = await api('POST', '/api/admin/resource-risk/cleanup-temp', { hours: 24 });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    toast(`已清理 ${data.deleted || 0} 个旧临时项`, 'ok');
+    await loadResourceRisk();
   } catch (e) {
     toast('清理失败: ' + e.message, 'err');
   }
