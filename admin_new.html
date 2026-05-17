@@ -349,6 +349,61 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         </div>
       </div>
     </section>
+    <section class="page-view transcribe-page" id="musicView">
+      <div class="page-header">
+        <div>
+          <h2>音频转换工具设置</h2>
+          <div class="page-subtitle">管理公网使用额度、白名单 IP 和临时文件清理策略，控制 R2 免费额度风险。</div>
+        </div>
+      </div>
+
+      <div class="transcribe-status-card">
+        <div class="transcribe-status-header">
+          <div>
+            <div class="transcribe-status-title">当前用量</div>
+            <div class="transcribe-status-desc">按后端记录统计，白名单 IP 不计入限流。</div>
+          </div>
+          <div class="transcribe-status-actions">
+            <button class="bs" onclick="loadMusicLimits()">刷新</button>
+            <button class="bp" onclick="cleanupMusicStorage()">立即清理临时文件</button>
+          </div>
+        </div>
+        <div class="transcribe-status-grid">
+          <div class="transcribe-status-item"><div class="k">当前访问 IP</div><div class="v" id="musicCurrentIp">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日全站次数</div><div class="v" id="musicGlobalCount">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日全站流量</div><div class="v" id="musicGlobalBytes">-</div></div>
+          <div class="transcribe-status-item"><div class="k">白名单数量</div><div class="v" id="musicWhitelistCount">-</div></div>
+        </div>
+        <div class="transcribe-status-summary" id="musicSummary">点击“刷新”读取当前设置。</div>
+      </div>
+
+      <div class="transcribe-actions-card">
+        <div class="transcribe-actions-title">白名单 IP</div>
+        <div class="transcribe-actions-desc">每行一个 IP。加入白名单后不受上传次数和容量限制，适合你自己或固定办公网络。</div>
+        <textarea id="musicWhitelistIps" style="width:100%;min-height:110px;background:#111;border:1px solid #2a2a30;border-radius:8px;color:#eee;padding:12px;font-family:monospace;line-height:1.6;box-sizing:border-box;" placeholder="例如：\n1.2.3.4"></textarea>
+        <div class="transcribe-actions-row" style="margin-top:12px;">
+          <button class="bs" onclick="addCurrentMusicIp()">加入当前 IP</button>
+          <button class="bp" onclick="saveMusicLimits()">保存设置</button>
+        </div>
+      </div>
+
+      <div class="douyin-test-card">
+        <div class="transcribe-actions-title">限流与清理策略</div>
+        <div class="transcribe-actions-desc">建议保持保守值：朋友小范围使用足够，陌生人滥用会被限制。</div>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每小时次数</label><input id="limitHourly" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天次数</label><input id="limitDaily" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天容量 GB</label><input id="limitIpGb" type="number" min="1" step="0.5" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天次数</label><input id="limitGlobalCount" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天容量 GB</label><input id="limitGlobalGb" type="number" min="1" step="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">单文件最大 MB</label><input id="limitSingleMb" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">R2 孤儿文件小时</label><input id="limitR2Hours" type="number" min="1" /></div>
+          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">结果保留小时</label><input id="limitOutputHours" type="number" min="1" /></div>
+        </div>
+        <div class="info-note">说明：R2 原始文件在后端拉取成功后会立即删除；这里的 R2 孤儿文件清理用于处理上传中断等异常情况。</div>
+      </div>
+    </section>
+
   </div>
 </div>
 <div class="overlay" id="overlay">
@@ -418,61 +473,6 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   </div>
 </div>
 <div class="toast" id="toast"></div>
-
-    <section class="page-view transcribe-page" id="musicView">
-      <div class="page-header">
-        <div>
-          <h2>音频转换工具设置</h2>
-          <div class="page-subtitle">管理公网使用额度、白名单 IP 和临时文件清理策略，控制 R2 免费额度风险。</div>
-        </div>
-      </div>
-
-      <div class="transcribe-status-card">
-        <div class="transcribe-status-header">
-          <div>
-            <div class="transcribe-status-title">当前用量</div>
-            <div class="transcribe-status-desc">按后端记录统计，白名单 IP 不计入限流。</div>
-          </div>
-          <div class="transcribe-status-actions">
-            <button class="bs" onclick="loadMusicLimits()">刷新</button>
-            <button class="bp" onclick="cleanupMusicStorage()">立即清理临时文件</button>
-          </div>
-        </div>
-        <div class="transcribe-status-grid">
-          <div class="transcribe-status-item"><div class="k">当前访问 IP</div><div class="v" id="musicCurrentIp">-</div></div>
-          <div class="transcribe-status-item"><div class="k">今日全站次数</div><div class="v" id="musicGlobalCount">-</div></div>
-          <div class="transcribe-status-item"><div class="k">今日全站流量</div><div class="v" id="musicGlobalBytes">-</div></div>
-          <div class="transcribe-status-item"><div class="k">白名单数量</div><div class="v" id="musicWhitelistCount">-</div></div>
-        </div>
-        <div class="transcribe-status-summary" id="musicSummary">点击“刷新”读取当前设置。</div>
-      </div>
-
-      <div class="transcribe-actions-card">
-        <div class="transcribe-actions-title">白名单 IP</div>
-        <div class="transcribe-actions-desc">每行一个 IP。加入白名单后不受上传次数和容量限制，适合你自己或固定办公网络。</div>
-        <textarea id="musicWhitelistIps" style="width:100%;min-height:110px;background:#111;border:1px solid #2a2a30;border-radius:8px;color:#eee;padding:12px;font-family:monospace;line-height:1.6;box-sizing:border-box;" placeholder="例如：\n1.2.3.4"></textarea>
-        <div class="transcribe-actions-row" style="margin-top:12px;">
-          <button class="bs" onclick="addCurrentMusicIp()">加入当前 IP</button>
-          <button class="bp" onclick="saveMusicLimits()">保存设置</button>
-        </div>
-      </div>
-
-      <div class="douyin-test-card">
-        <div class="transcribe-actions-title">限流与清理策略</div>
-        <div class="transcribe-actions-desc">建议保持保守值：朋友小范围使用足够，陌生人滥用会被限制。</div>
-        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每小时次数</label><input id="limitHourly" type="number" min="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天次数</label><input id="limitDaily" type="number" min="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">每 IP 每天容量 GB</label><input id="limitIpGb" type="number" min="1" step="0.5" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天次数</label><input id="limitGlobalCount" type="number" min="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">全站每天容量 GB</label><input id="limitGlobalGb" type="number" min="1" step="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">单文件最大 MB</label><input id="limitSingleMb" type="number" min="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">R2 孤儿文件小时</label><input id="limitR2Hours" type="number" min="1" /></div>
-          <div><label style="display:block;color:#888;font-size:12px;margin-bottom:6px;">结果保留小时</label><input id="limitOutputHours" type="number" min="1" /></div>
-        </div>
-        <div class="info-note">说明：R2 原始文件在后端拉取成功后会立即删除；这里的 R2 孤儿文件清理用于处理上传中断等异常情况。</div>
-      </div>
-    </section>
 
 <script>
 const API_WAN = 'https://api.soda567.dpdns.org';
