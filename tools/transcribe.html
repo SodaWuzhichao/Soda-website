@@ -36,6 +36,7 @@ nav {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; margin-bottom: 32px; font-size: 0.85rem;
+  min-width: 0;
 }
 .status-dot {
   width: 10px; height: 10px; border-radius: 50%;
@@ -43,7 +44,7 @@ nav {
 }
 .status-dot.online { background: #5ad060; box-shadow: 0 0 6px rgba(90,208,96,0.5); }
 .status-dot.offline { background: #e05050; box-shadow: 0 0 6px rgba(224,80,80,0.5); }
-.status-text { color: var(--muted); }
+.status-text { color: var(--muted); min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 .status-text.online { color: #5ad060; }
 .status-text.offline { color: #e05050; }
 
@@ -80,6 +81,7 @@ nav {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 24px; line-height: 1.8;
   min-height: 200px; white-space: pre-wrap;
+  overflow-wrap: anywhere; word-break: break-word;
 }
 
 /* 按钮组（参考主页风格） */
@@ -122,6 +124,7 @@ nav {
 .loading-detail {
   margin-top: 10px; color: var(--muted); font-size: 0.88rem; line-height: 1.7;
   max-width: 520px; margin-left: auto; margin-right: auto;
+  min-width: 0; overflow-wrap: anywhere; word-break: break-word;
 }
 .mobile-video-tip {
   display: none; margin-top: 16px; padding: 12px 14px; text-align: left;
@@ -146,16 +149,33 @@ nav {
   margin-top: 8px; font-size: 0.85rem;
 }
 .progress-pct { color: var(--gold); font-weight: 400; font-size: 1.1rem; }
-.progress-phase { color: var(--muted); }
+.progress-phase { color: var(--muted); min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 
-.error { display: none; background: #441111; border: 1px solid #661111; border-radius: 8px; padding: 16px; margin-top: 24px; color: #ff6666; line-height: 1.6; }
+.error {
+  display: none;
+  width: 100%;
+  min-width: 0;
+  background: #441111;
+  border: 1px solid #661111;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+  color: #ff6666;
+  line-height: 1.6;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  writing-mode: horizontal-tb;
+}
 
 @media (max-width: 768px) {
   nav { padding-left: 24px; padding-right: 24px; }
-  .container { padding: 60px 24px; }
+  .container { padding: 60px 24px; min-width: 0; }
   .upload-area { padding: 40px 20px; }
   .btn-group { flex-direction: column; }
   .btn { width: 100%; text-align: center; }
+  .error, .result-text, .loading-detail, .progress-phase, .status-text { max-width: 100%; }
   .lang-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 </style>
@@ -374,7 +394,7 @@ function setProgress(pct, phase) {
 function showError(msg) {
   loading.style.display = 'none';
   errorDiv.style.display = 'block';
-  errorDiv.innerHTML = String(msg).replace(/\n/g, '<br>');
+  errorDiv.textContent = String(msg);
   uploadArea.style.display = 'block';
 }
 
