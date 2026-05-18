@@ -439,6 +439,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <button class="bs" onclick="setGovernanceTab('templates')">策略模板</button>
         <button class="bs" onclick="setGovernanceTab('policies')">工具策略</button>
         <button class="bs" onclick="setGovernanceTab('subjects')">IP 策略</button>
+        <button class="bs" onclick="setGovernanceTab('accessTokens')">Access Token</button>
         <button class="bs" onclick="setGovernanceTab('logs')">日志审计</button>
         <button class="bs" onclick="setGovernanceTab('cleanup')">清理/生命周期</button>
         <button class="bs" onclick="setGovernanceTab('emergency')">紧急保护模式</button>
@@ -489,6 +490,24 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div class="fg" style="margin-top:12px;"><label>特殊额度 JSON（按 IP 配置，可覆盖工具限制）</label><textarea id="riskSpecialJson" style="min-height:150px;font-family:monospace;" placeholder='{"1.2.3.4":{"transcribe":{"per_ip_daily_count":10}}}'></textarea></div>
       </div>
       <div class="transcribe-status-card tool-admin-card governance-tab" data-tab="logs"><div class="transcribe-status-summary" id="riskLogs">点击刷新读取治理日志。</div></div>
+      <div class="douyin-test-card tool-admin-card governance-tab" data-tab="accessTokens">
+        <div class="transcribe-actions-title">Access Token 访问码</div>
+        <div class="transcribe-actions-desc">用于视频去字幕等高成本工具的访问控制。明文 token 只在创建后显示一次，列表仅显示预览。</div>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+          <div><label>名称</label><input id="atName" placeholder="例如：伍老师去字幕"></div>
+          <div><label>允许工具（逗号分隔）</label><input id="atAllowedTools" placeholder="video_subtitle_remover,transcribe"></div>
+          <div><label>每日次数</label><input id="atDailyCount" type="number" min="0" value="3"></div>
+          <div><label>每日容量 MB</label><input id="atDailyMb" type="number" min="0" value="2048"></div>
+          <div><label>单文件 MB</label><input id="atMaxFileMb" type="number" min="0" value="500"></div>
+          <div><label>并发</label><input id="atMaxConcurrent" type="number" min="0" value="1"></div>
+          <div><label>允许 AI 模式</label><select id="atAllowAi"><option value="true">允许</option><option value="false">不允许</option></select></div>
+          <div><label>过期时间</label><input id="atExpiresAt" placeholder="2026-06-01T00:00:00+08:00"></div>
+        </div>
+        <div class="fg" style="margin-top:12px"><label>备注</label><textarea id="atNotes" rows="2" placeholder="用途说明"></textarea></div>
+        <div class="transcribe-actions-row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="bp" onclick="createAccessToken()">创建访问码</button><button class="bs" onclick="loadAccessTokens()">刷新列表</button></div>
+        <div class="info-note" id="atCreatedBox" style="display:none;margin-top:12px;white-space:pre-wrap"></div>
+        <div id="accessTokensBox" class="transcribe-checks" style="margin-top:12px">点击刷新读取访问码列表。</div>
+      </div>
       <div class="douyin-test-card tool-admin-card governance-tab" data-tab="cleanup">
         <div class="transcribe-actions-title">清理/生命周期</div>
         <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));"><div><label>R2 孤儿小时</label><input id="lifeR2Hours" type="number" min="1"></div><div><label>本地临时小时</label><input id="lifeTempHours" type="number" min="1"></div><div><label>输出保留小时</label><input id="lifeOutputHours" type="number" min="1"></div><div><label>日志保留天</label><input id="lifeLogDays" type="number" min="1"></div></div>
@@ -744,7 +763,7 @@ function boolVal(id) { return document.getElementById(id).value === 'true'; }
 function setBoolVal(id, v) { const el=document.getElementById(id); if(el) el.value = v ? 'true' : 'false'; }
 function linesToList(id) { return document.getElementById(id).value.split(/\n+/).map(s => s.trim()).filter(Boolean); }
 function listToLines(v) { return (v || []).join('\n'); }
-function setGovernanceTab(tab) { governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); }
+function setGovernanceTab(tab) { const prev = governanceTab; governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); if (tab === 'accessTokens' && prev !== 'accessTokens') loadAccessTokens(); }
 function toolLabel(key) { return toolGovernanceCache?.registry?.[key]?.label || key; }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -796,7 +815,7 @@ function renderR2Overview(r2) {
 
 function renderRiskRegistry(registry) {
   const box = document.getElementById('riskRegistryBox'); if (!box) return;
-  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${esc(meta.label || key)} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(meta)}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${esc(meta.risk_level || '-')}｜资源：${esc((meta.resources || []).join(' + ') || '-')}｜别名：${esc((meta.aliases || []).join(', ') || '-')}</div>${renderCancelCapabilities(meta)}${renderR2Prefixes(meta)}</div>`).join('') || '暂无工具';
+  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => { const access = meta.requires_access_token ? '<span style="color:#ff6b6b;font-weight:700">需要 Access Token</span>' : '<span style="color:#777">不强制访问码</span>'; const cost = meta.high_cost || meta.risk_level === 'high' ? '<span style="color:#f0c040;font-weight:700">高成本</span>' : '<span style="color:#777">普通成本</span>'; return `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${esc(meta.label || key)} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(meta)}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${esc(meta.risk_level || '-')}｜${cost}｜${access}｜资源：${esc((meta.resources || []).join(' + ') || '-')}｜别名：${esc((meta.aliases || []).join(', ') || '-')}</div>${renderCancelCapabilities(meta)}${renderR2Prefixes(meta)}</div>`; }).join('') || '暂无工具';
 }
 function renderRiskTemplates(templates) {
   const box = document.getElementById('riskTemplatesBox'); if (!box) return;
@@ -818,11 +837,41 @@ function renderRiskTools(tools) {
         <div><label>每 IP 每日次数</label><input id="risk_${key}_count" type="number" min="0"></div>
         <div><label>每 IP 每日 MB</label><input id="risk_${key}_mb" type="number" min="0"></div>
         <div><label>每 IP 并发</label><input id="risk_${key}_conc" type="number" min="0"></div>
+        <div><label>需要 Access Token</label><select id="risk_${key}_access"><option value="false">否</option><option value="true">是</option></select></div>
+        <div><label>高成本标记</label><select id="risk_${key}_cost"><option value="false">否</option><option value="true">是</option></select></div>
       </div>
     </div>`;
   }).join('');
-  keys.forEach(key => { const t=(tools||{})[key]||{}; setBoolVal(`risk_${key}_enabled`, t.enabled !== false); document.getElementById(`risk_${key}_max`).value = t.max_file_mb ?? 0; document.getElementById(`risk_${key}_count`).value = t.per_ip_daily_count ?? 0; document.getElementById(`risk_${key}_mb`).value = t.per_ip_daily_mb ?? 0; document.getElementById(`risk_${key}_conc`).value = t.concurrent_per_ip ?? 0; });
+  keys.forEach(key => { const t=(tools||{})[key]||{}; setBoolVal(`risk_${key}_enabled`, t.enabled !== false); document.getElementById(`risk_${key}_max`).value = t.max_file_mb ?? 0; document.getElementById(`risk_${key}_count`).value = t.per_ip_daily_count ?? 0; document.getElementById(`risk_${key}_mb`).value = t.per_ip_daily_mb ?? 0; document.getElementById(`risk_${key}_conc`).value = t.concurrent_per_ip ?? 0; setBoolVal(`risk_${key}_access`, !!t.requires_access_token); setBoolVal(`risk_${key}_cost`, !!t.high_cost);  });
 }
+
+
+async function loadAccessTokens() {
+  const box = document.getElementById('accessTokensBox'); if (!box) return;
+  try {
+    const res = await api('GET', '/api/admin/access-tokens');
+    const data = await res.json(); if (!res.ok) throw new Error(data.error || await res.text());
+    const rows = data.tokens || [];
+    box.innerHTML = rows.map(t => `<div class="transcribe-check-group">
+      <div class="transcribe-check-group-title">${esc(t.name || t.id)} <span style="color:#777;font-size:12px">${esc(t.id)}</span> <span style="float:right;color:${t.enabled ? '#5ad060' : '#ff6b6b'}">${t.enabled ? '启用' : '停用'}</span></div>
+      <div style="color:#aaa;font-size:13px;line-height:1.7;">Token：<code>${esc(t.token_preview || '')}</code>｜工具：${esc((t.allowed_tools || []).join(', ') || '全部')}｜每日：${t.daily_count_limit || 0} 次 / ${fmtBytes(t.daily_bytes_limit || 0)}｜单文件：${t.max_file_mb || 0}MB｜并发：${t.max_concurrent || 0}｜AI：${t.allow_ai_mode ? '允许' : '否'}<br>过期：${esc(t.expires_at || '永不过期')}｜最后使用：${esc(t.last_used_at || '-')}｜IP：${esc(t.last_used_ip || '-')}<br>备注：${esc(t.notes || '')}</div>
+      <div class="transcribe-actions-row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="bs" onclick="patchAccessToken('${esc(t.id)}', ${t.enabled ? 'false' : 'true'})">${t.enabled ? '禁用' : '启用'}</button><button class="bd" onclick="deleteAccessToken('${esc(t.id)}')">软删除</button></div>
+    </div>`).join('') || '暂无 Access Token';
+  } catch (e) { box.textContent = '加载访问码失败：' + e.message; }
+}
+async function createAccessToken() {
+  try {
+    const body = { name: document.getElementById('atName').value.trim() || '未命名访问码', allowed_tools: document.getElementById('atAllowedTools').value.split(',').map(s=>s.trim()).filter(Boolean), daily_count_limit: Number(document.getElementById('atDailyCount').value || 0), daily_bytes_limit: mbToBytes(Number(document.getElementById('atDailyMb').value || 0)), max_file_mb: Number(document.getElementById('atMaxFileMb').value || 0), max_concurrent: Number(document.getElementById('atMaxConcurrent').value || 1), allow_ai_mode: document.getElementById('atAllowAi').value === 'true', expires_at: document.getElementById('atExpiresAt').value.trim(), notes: document.getElementById('atNotes').value.trim() };
+    const res = await api('POST', '/api/admin/access-tokens/create', body); const data = await res.json(); if (!res.ok) throw new Error(data.error || await res.text());
+    const box = document.getElementById('atCreatedBox'); box.style.display = ''; box.textContent = '请立即复制保存，明文 token 只显示这一次：\n' + (data.access_token || data.token?.access_token || '');
+    toast('Access Token 已创建，请复制保存', 'ok'); await loadAccessTokens();
+  } catch (e) { toast('创建访问码失败: ' + e.message, 'err'); }
+}
+async function patchAccessToken(id, enabled) { try { const res = await api('POST', `/api/admin/access-tokens/${id}/patch`, {enabled: enabled === 'true'}); if(!res.ok) throw new Error(await res.text()); toast('访问码已更新','ok'); await loadAccessTokens(); } catch(e){ toast('更新访问码失败: '+e.message,'err'); } }
+async function deleteAccessToken(id) { if(!confirm('确认软删除此访问码？')) return; try { const res = await api('POST', `/api/admin/access-tokens/${id}/delete`, {}); if(!res.ok) throw new Error(await res.text()); toast('访问码已软删除','ok'); await loadAccessTokens(); } catch(e){ toast('删除访问码失败: '+e.message,'err'); } }
+function getSodaAccessToken() { return localStorage.getItem('soda_access_token') || ''; }
+function setSodaAccessToken(v) { localStorage.setItem('soda_access_token', String(v || '').trim()); }
+function withSodaAccessToken(headers = {}) { const t = getSodaAccessToken(); if (t) headers['X-Soda-Access-Token'] = t; return headers; }
 
 async function loadToolGovernance() {
   try {
@@ -845,7 +894,7 @@ const loadResourceRisk = loadToolGovernance;
 
 function collectToolGovernanceConfig() {
   let special = {}; const raw = document.getElementById('riskSpecialJson').value.trim(); if (raw) special = JSON.parse(raw);
-  const tools = {}; Object.keys(toolGovernanceCache?.registry || {}).forEach(key => { tools[key] = { label: toolLabel(key), template: document.getElementById(`risk_${key}_template`)?.value || '', enabled: document.getElementById(`risk_${key}_enabled`)?.value === 'true', max_file_mb: Number(document.getElementById(`risk_${key}_max`)?.value || 0), per_ip_daily_count: Number(document.getElementById(`risk_${key}_count`)?.value || 0), per_ip_daily_mb: Number(document.getElementById(`risk_${key}_mb`)?.value || 0), concurrent_per_ip: Number(document.getElementById(`risk_${key}_conc`)?.value || 0) }; });
+  const tools = {}; Object.keys(toolGovernanceCache?.registry || {}).forEach(key => { tools[key] = { label: toolLabel(key), template: document.getElementById(`risk_${key}_template`)?.value || '', enabled: document.getElementById(`risk_${key}_enabled`)?.value === 'true', max_file_mb: Number(document.getElementById(`risk_${key}_max`)?.value || 0), per_ip_daily_count: Number(document.getElementById(`risk_${key}_count`)?.value || 0), per_ip_daily_mb: Number(document.getElementById(`risk_${key}_mb`)?.value || 0), concurrent_per_ip: Number(document.getElementById(`risk_${key}_conc`)?.value || 0), requires_access_token: document.getElementById(`risk_${key}_access`)?.value === 'true', high_cost: document.getElementById(`risk_${key}_cost`)?.value === 'true' };  });
   return { global: { rate_limit_enabled: boolVal('riskRateEnabled'), upload_service_enabled: boolVal('riskUploadEnabled'), whitelist_mode_enabled: boolVal('riskWhitelistMode'), emergency_protection_enabled: boolVal('riskEmergency'), default_max_file_mb: Number(document.getElementById('riskDefaultMaxMb').value || 300), per_ip_hourly_requests: Number(document.getElementById('riskPerHour').value || 60), per_ip_daily_upload_mb: Number(document.getElementById('riskIpDailyMb').value || 1024), global_daily_upload_mb: Number(document.getElementById('riskGlobalDailyMb').value || 10240), global_concurrent_tasks: Number(document.getElementById('riskGlobalConcurrent').value || 2), per_ip_concurrent_tasks: Number(document.getElementById('riskIpConcurrent').value || 1), lifecycle: { r2_orphan_hours: Number(document.getElementById('lifeR2Hours').value || 2), local_temp_hours: Number(document.getElementById('lifeTempHours').value || 24), output_hours: Number(document.getElementById('lifeOutputHours').value || 24), log_retention_days: Number(document.getElementById('lifeLogDays').value || 30) } }, tools, ip_rules: { blacklist_ips: linesToList('riskBlacklist'), whitelist_ips: linesToList('riskWhitelist'), special_limits: special } };
 }
 async function saveToolGovernance() {
