@@ -483,6 +483,7 @@ footer {
       <div class="btn-group" style="margin-top: 18px;">
         <button class="btn btn-secondary" id="uploadBtn" type="button" style="display:none;">提交上传</button>
         <button class="btn btn-primary" id="startBtn" type="button">开始转换</button>
+        <button class="btn btn-ghost" id="cancelBtn" type="button" style="display:none; color:#ef4444; border-color:rgba(239,68,68,.35);">取消</button>
         <button class="btn btn-secondary" id="downloadZipBtn" type="button">下载 ZIP</button>
         <button class="btn btn-ghost" id="clearBtn" type="button">清空</button>
       </div>
@@ -566,6 +567,7 @@ const batchMode = document.getElementById('batchMode');
 const startBtn = document.getElementById('startBtn');
 const clearBtn = document.getElementById('clearBtn');
 const downloadZipBtn = document.getElementById('downloadZipBtn');
+const cancelBtn = document.getElementById('cancelBtn');
 const fileInput = document.getElementById('fileInput');
 const uploadArea = document.getElementById('uploadArea');
 const statusLine = document.getElementById('statusLine');
@@ -586,6 +588,11 @@ let activeTask = null;
 let uploadId = null;
 let uploadCommitted = false;
 let uiPhase = 'waiting';
+let uploadAbortRequested = false;
+let activeUploadXhr = null;
+let activeR2Keys = [];
+let activeCancelToken = '';
+let pollCancelled = false;
 
 function getBackendBase() {
   const explicitBase = backendBaseInput ? (backendBaseInput.value || '').trim().replace(/\/$/, '') : '';
@@ -608,8 +615,9 @@ function setStatus(msg, type = 'info') {
 async function fetchWithTimeout(url, options = {}, timeout = 60000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
+  const signal = options.signal || controller.signal;
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await fetch(url, { ...options, signal });
   } finally {
     clearTimeout(id);
   }
@@ -642,6 +650,10 @@ function getPhaseCopy(phase) {
       label: '出错',
       tip: '遇到问题，可点击下方“清空”后重试。'
     },
+    cancelled: {
+      label: '已取消',
+      tip: '处理已取消，临时文件会尽力清理。'
+    },
   };
   return map[phase] || map.waiting;
 }
@@ -654,6 +666,7 @@ function setPhaseSteps(phase) {
     ready: '正在准备转换',
     converting: '正在转换',
     completed: '转换完成',
+    cancelled: '已取消',
     error: '处理失败',
   };
   phaseSteps.innerHTML = `<span class="step active">${labels[phase] || labels.waiting}</span>`;
@@ -668,6 +681,7 @@ function updateProgressUI() {
   else if (uiPhase === 'ready') pct = 35;
   else if (uiPhase === 'converting') pct = 65;
   else if (uiPhase === 'completed') pct = 100;
+  else if (uiPhase === 'cancelled') pct = 100;
   else pct = 0;
   progressBar.style.width = pct + '%';
   progressPct.textContent = pct + '%';
@@ -677,7 +691,18 @@ function updateProgressUI() {
   if (summaryFiles) summaryFiles.textContent = queuedFiles.length || '-';
   if (summaryStatus) summaryStatus.textContent = uploadCommitted ? '已上传' : '未上传';
   if (summaryTaskId) summaryTaskId.textContent = activeTaskId || '-';
+  if (cancelBtn) cancelBtn.style.display = (uiPhase === 'uploading' || uiPhase === 'converting') ? '' : 'none';
 }
+
+function setCancelledUI(message = '已取消处理。') {
+  pollCancelled = true;
+  uiPhase = 'cancelled';
+  queuedFiles.forEach(item => { if (!['completed','failed'].includes(item.status)) item.status = 'cancelled'; });
+  renderQueue();
+  updateProgressUI();
+  setStatus(message, 'warn');
+}
+
 
 function syncMp3BitrateState() {
   const isMp3 = outputFormat.value === 'mp3';
@@ -718,6 +743,7 @@ function humanTime(ms) {
 function uploadToR2(file, presignedUrl) {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
+    activeUploadXhr = xhr;
     let lastPct = 0;
     xhr.open('PUT', presignedUrl, true);
     xhr.upload.onprogress = (e) => {
@@ -732,8 +758,9 @@ function uploadToR2(file, presignedUrl) {
         }
       }
     };
-    xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300);
-    xhr.onerror = () => resolve(false);
+    xhr.onload = () => { activeUploadXhr = null; resolve(xhr.status >= 200 && xhr.status < 300); };
+    xhr.onerror = () => { activeUploadXhr = null; resolve(false); };
+    xhr.onabort = () => { activeUploadXhr = null; resolve(false); };
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.send(file);
   });
@@ -756,6 +783,10 @@ async function uploadFiles() {
   }
 
   try {
+    uploadAbortRequested = false;
+    activeR2Keys = [];
+    activeCancelToken = '';
+    pollCancelled = false;
     uploadBtn.disabled = true;
     startBtn.disabled = true;
     uiPhase = 'uploading';
@@ -787,8 +818,11 @@ async function uploadFiles() {
       const { file } = queuedFiles[fi];
       const { url, key } = urls[fi] || urls[0];
       r2Keys.push(key);
+      activeR2Keys = r2Keys.slice();
+      if (uploadAbortRequested) throw new Error('用户已取消上传');
       setStatus(`上传中 (${fi + 1}/${queuedFiles.length})：${file.name}`);
       const ok = await uploadToR2(file, url);
+      if (uploadAbortRequested) throw new Error('用户已取消上传');
       if (!ok) {
         throw new Error('上传到云存储失败，请重试。');
       }
@@ -798,6 +832,7 @@ async function uploadFiles() {
     }
 
     // Notify backend to pull from R2 and start processing
+    if (uploadAbortRequested) throw new Error('用户已取消上传');
     setStatus('正在准备转换…');
     const completeResp = await fetchWithTimeout(
       backendBase + '/api/music/r2-complete',
@@ -816,6 +851,8 @@ async function uploadFiles() {
     const data = await completeResp.json();
     activeTask = data.task;
     activeTaskId = data.task?.task_id || null;
+    activeCancelToken = data.task?.cancel_token || '';
+    activeR2Keys = [];
     uploadCommitted = true;
     uiPhase = 'ready';
     syncQueueWithTask(activeTask);
@@ -824,14 +861,52 @@ async function uploadFiles() {
     setStatus(`上传完成：${data.upload?.accepted_count || queuedFiles.length} 个文件已进入任务。请点击"开始转换"继续。`, 'success');
     return true;
   } catch (err) {
-    uiPhase = 'waiting';
-    setStatus('上传失败：' + err.message, 'error');
-    updateProgressUI();
+    if (uploadAbortRequested) {
+      await cancelCurrentTask('upload', false);
+      setCancelledUI('已取消上传，临时对象会尽力清理。');
+    } else {
+      uiPhase = 'waiting';
+      setStatus('上传失败：' + err.message, 'error');
+      updateProgressUI();
+    }
     return false;
   } finally {
     uploadBtn.disabled = false;
     startBtn.disabled = false;
   }
+}
+
+
+async function cancelCurrentTask(stage = uiPhase, notify = true) {
+  if (stage === 'uploading') {
+    uploadAbortRequested = true;
+    if (activeUploadXhr) {
+      try { activeUploadXhr.abort(); } catch (_) {}
+    }
+  }
+  pollCancelled = true;
+  const backendBase = getBackendBase();
+  const payload = { task_id: activeTaskId || '', cancel_token: activeCancelToken || '', r2_keys: activeR2Keys };
+  if (!payload.task_id && !payload.r2_keys.length) {
+    setCancelledUI(stage === 'uploading' ? '上传已取消。' : '处理已取消。');
+    return;
+  }
+  try {
+    const resp = await fetchWithTimeout(backendBase + '/api/music/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }, 15000);
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.task) {
+      activeTask = data.task;
+      syncQueueWithTask(activeTask);
+    }
+  } catch (_) {
+    // 取消优先保证本地停止；服务端清理为 best-effort。
+  }
+  setCancelledUI(stage === 'uploading' ? '已取消上传。' : '已取消转换。');
+  if (notify) setStatus(stage === 'uploading' ? '已取消上传，临时对象会尽力清理。' : '已取消转换，服务器会尽力清理临时文件。', 'warn');
 }
 
 function syncQueueWithTask(task) {
@@ -850,6 +925,9 @@ function resetTaskState() {
   activeTask = null;
   uploadId = null;
   uploadCommitted = false;
+  activeCancelToken = '';
+  activeR2Keys = [];
+  pollCancelled = false;
   uiPhase = 'waiting';
 }
 
@@ -931,6 +1009,7 @@ async function pollUntilDone(taskId) {
   let lastState = '';
   while (true) {
     await new Promise(r => setTimeout(r, 3000));
+    if (pollCancelled) return;
     try {
       const resp = await fetchWithTimeout(getBackendBase() + '/api/music/status/' + taskId);
       if (!resp.ok) break;
@@ -951,7 +1030,11 @@ async function pollUntilDone(taskId) {
           setStatus('转换完成。可以下载单个文件，也可以下载 ZIP。', 'success');
           return;
         }
-        if (['failed', 'cancelled'].includes(state)) {
+        if (state === 'cancelled') {
+          setCancelledUI(task?.message || '转换已取消。');
+          return;
+        }
+        if (state === 'failed') {
           uiPhase = 'error';
           updateProgressUI();
           return;
@@ -960,7 +1043,7 @@ async function pollUntilDone(taskId) {
     } catch (e) {
       setStatus('轮询出错：' + e.message, 'warn');
     }
-    if (!shouldContinuePolling(activeTask)) return;
+    if (pollCancelled || !shouldContinuePolling(activeTask)) return;
   }
 }
 
@@ -1011,6 +1094,7 @@ async function startConversion() {
     }
     const data = await resp.json();
     activeTask = data.task || activeTask;
+    activeCancelToken = activeTask?.cancel_token || activeCancelToken;
     syncQueueWithTask(activeTask);
     renderQueue();
     uiPhase = 'converting';
@@ -1036,6 +1120,7 @@ uploadArea.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key ===
 startBtn.addEventListener('click', startConversion);
 clearBtn.addEventListener('click', clearQueue);
 downloadZipBtn.addEventListener('click', downloadZip);
+if (cancelBtn) cancelBtn.addEventListener('click', () => cancelCurrentTask(uiPhase, true));
 syncMp3BitrateState();
 if (batchMode) {
   batchMode.addEventListener('change', () => {

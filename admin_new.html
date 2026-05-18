@@ -747,6 +747,21 @@ function listToLines(v) { return (v || []).join('\n'); }
 function setGovernanceTab(tab) { governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); }
 function toolLabel(key) { return toolGovernanceCache?.registry?.[key]?.label || key; }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function capabilityValue(v) {
+  if (v === true) return '<span style="color:#5ad060;font-weight:700">支持</span>';
+  if (v === false) return '<span style="color:#ff6b6b;font-weight:700">不支持/待支持</span>';
+  if (v === 'not_applicable') return '<span style="color:#777">不适用</span>';
+  return `<span style="color:#aaa">${esc(v ?? '-')}</span>`;
+}
+function renderCancelCapabilities(meta) {
+  const c = meta?.capabilities || {};
+  if (!Object.keys(c).length) return '<div style="font-size:12px;color:#777;margin-top:6px">未声明取消能力</div>';
+  return `<div style="font-size:12px;color:#aaa;line-height:1.7;border-top:1px solid #333;padding-top:6px;margin-top:6px">
+    <b style="color:#ddd">取消能力</b>｜上传取消：${capabilityValue(c.cancel_upload)}｜任务取消：${capabilityValue(c.cancel_task)}｜软取消：${capabilityValue(c.soft_cancel)}｜取消后清理：${capabilityValue(c.cleanup_on_cancel)}<br>${esc(c.cancel_notes || '')}
+  </div>`;
+}
+
 function r2Badge(meta) {
   if (!meta?.uses_r2) return '<span style="color:#777">不使用 R2</span>';
   const mode = meta.r2_mode || 'none'; const risk = meta.r2_risk_level || 'low';
@@ -781,7 +796,7 @@ function renderR2Overview(r2) {
 
 function renderRiskRegistry(registry) {
   const box = document.getElementById('riskRegistryBox'); if (!box) return;
-  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${esc(meta.label || key)} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(meta)}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${esc(meta.risk_level || '-')}｜资源：${esc((meta.resources || []).join(' + ') || '-')}｜别名：${esc((meta.aliases || []).join(', ') || '-')}</div>${renderR2Prefixes(meta)}</div>`).join('') || '暂无工具';
+  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${esc(meta.label || key)} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(meta)}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${esc(meta.risk_level || '-')}｜资源：${esc((meta.resources || []).join(' + ') || '-')}｜别名：${esc((meta.aliases || []).join(', ') || '-')}</div>${renderCancelCapabilities(meta)}${renderR2Prefixes(meta)}</div>`).join('') || '暂无工具';
 }
 function renderRiskTemplates(templates) {
   const box = document.getElementById('riskTemplatesBox'); if (!box) return;
@@ -794,6 +809,7 @@ function renderRiskTools(tools) {
     const t = (tools || {})[key] || {};
     return `<div class="transcribe-check-group">
       <div class="transcribe-check-group-title">${esc(toolLabel(key))} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(toolGovernanceCache?.registry?.[key])}</span></div>
+      ${renderCancelCapabilities(toolGovernanceCache?.registry?.[key])}
       ${renderR2Prefixes(toolGovernanceCache?.registry?.[key])}
       <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
         <div><label>启用</label><select id="risk_${key}_enabled"><option value="true">启用</option><option value="false">关闭</option></select></div>
