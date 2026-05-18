@@ -841,6 +841,8 @@ async function cleanupR2Storage() {
 }
 async function toggleEmergency(enabled) { try { const res=await api('POST','/api/admin/risk/emergency',{enabled}); if(!res.ok) throw new Error(await res.text()); toast(enabled?'紧急保护已开启':'紧急保护已关闭','ok'); await loadToolGovernance(); setGovernanceTab('emergency'); } catch(e){ toast('紧急保护切换失败: '+e.message,'err'); } }
 
+function escapeHtml(s) { return esc(s); }
+
 function renderTranscribeChecks(checks) {
   const box = document.getElementById('transcribeChecks');
   if (!box) return;
@@ -909,12 +911,17 @@ async function scanTranscribeService() {
   if (btn) { btn.disabled = true; btn.textContent = '扫描中...'; }
   try {
     const res = await api('GET', '/api/admin/transcribe/scan');
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
+    const data = await res.json().catch(async () => ({ status: 'error', error: await res.text() }));
+    if (!res.ok) throw new Error(data.error || data.message || data.summary || '请求失败');
     transcribeScannedOnce = true;
     renderTranscribeServiceResult(data, 'scan');
-    toast(data.summary || '扫描完成', data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok' ? 'ok' : 'err');
+    const isOk = data.status === 'ok' || (data.public_api === 'ok' && data.flask_local === 'ok' && data.whisper_local === 'ok' && !data.checks?.some(x => x.status === 'error'));
+    toast(data.summary || '扫描完成', isOk ? 'ok' : 'err');
   } catch (e) {
+    const box = document.getElementById('transcribeChecks');
+    const summaryEl = document.getElementById('transcribeSummary');
+    if (box) box.textContent = '扫描请求失败：' + e.message;
+    if (summaryEl) summaryEl.textContent = '扫描请求失败：' + e.message;
     toast('扫描失败: ' + e.message, 'err');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '一键扫描'; }
