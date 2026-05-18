@@ -859,9 +859,22 @@ function uploadToR2(file, uploadUrl, contentType, onProgress) {
   });
 }
 
+function pickFirstString(obj, keys) {
+  for (const key of keys) {
+    const value = obj && obj[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function getUploadChannelError(stage, err) {
+  const message = err && err.message ? err.message : String(err || '未知错误');
+  return `${stage}失败：${message}`;
+}
+
 async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnabled) {
   const contentType = file.type || 'application/octet-stream';
-  setProgress(2, '正在准备上传通道...');
+  setProgress(2, '正在准备主上传通道...');
   const presignRes = await fetch(API_BASE + '/api/transcribe/presigned-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -872,9 +885,15 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
     }),
   });
   const presign = await presignRes.json().catch(() => ({}));
-  if (!presignRes.ok) throw new Error(presign.error || '创建上传地址失败');
+  if (!presignRes.ok) throw new Error(presign.error || presign.message || `创建上传地址失败（HTTP ${presignRes.status}）`);
 
-  await uploadToR2(file, presign.upload_url, presign.content_type || contentType, (loaded, total) => {
+  const uploadUrl = pickFirstString(presign, ['upload_url', 'uploadUrl', 'url', 'presigned_url', 'presignedUrl']);
+  const objectKey = pickFirstString(presign, ['object_key', 'objectKey', 'key']);
+  if (!uploadUrl || !objectKey) {
+    throw new Error('创建上传地址响应缺少 upload_url/object_key');
+  }
+
+  await uploadToR2(file, uploadUrl, presign.content_type || presign.contentType || contentType, (loaded, total) => {
     const pct = Math.min(60, (loaded / total) * 60);
     const loadedMB = (loaded / 1024 / 1024).toFixed(1);
     const totalMB = (total / 1024 / 1024).toFixed(1);
@@ -886,10 +905,10 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      object_key: presign.object_key,
+      object_key: objectKey,
       filename: originalName || file.name,
       original_filename: originalName || file.name,
-      content_type: presign.content_type || contentType,
+      content_type: presign.content_type || presign.contentType || contentType,
       language: lang,
       mode,
       vad: vadEnabled,
@@ -902,12 +921,21 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
 }
 
 async function uploadFileToServer(file, originalName, lang, mode, vadEnabled) {
+  let r2Error = null;
   try {
     return await uploadFileToServerViaR2(file, originalName, lang, mode, vadEnabled);
   } catch (err) {
-    console.warn('R2 上传链路失败，回退到原分片上传:', err);
-    setProgress(2, '云存储上传暂不可用，正在切换备用通道...');
+    r2Error = err;
+    const reason = getUploadChannelError('主通道', err);
+    console.warn('主上传通道（R2 直传）失败，回退到备用分片上传:', err);
+    setProgress(2, `${reason}，正在切换备用通道...`);
+  }
+
+  try {
     return await uploadFileToServerChunked(file, originalName, lang, mode, vadEnabled);
+  } catch (chunkErr) {
+    chunkErr.message = `${chunkErr.message || '备用通道失败'}（主通道失败原因：${r2Error?.message || '未知'}）`;
+    throw chunkErr;
   }
 }
 
