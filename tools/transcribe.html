@@ -225,6 +225,7 @@ nav {
   <div class="loading" id="loading">
     <div class="loading-spinner"></div>
     <div id="loadingText">正在处理中，请稍候...</div>
+    <button class="btn btn-secondary" id="cancelBtn" type="button" onclick="cancelTranscribe()" style="display:none;margin:14px auto 0;">取消</button>
     <div class="loading-detail" id="loadingDetail">文件会先上传到云存储，再由后台转写；如果网络异常，系统会自动切换备用通道。</div>
     <div class="progress-container">
       <div class="progress-bar-bg">
@@ -260,6 +261,7 @@ const resultText = document.getElementById('resultText');
 const loadingText = document.getElementById('loadingText');
 const loadingDetail = document.getElementById('loadingDetail');
 const mobileVideoTip = document.getElementById('mobileVideoTip');
+const cancelBtn = document.getElementById('cancelBtn');
 
 const API_BASE = 'https://api.soda567.dpdns.org';
 
@@ -392,6 +394,7 @@ function setProgress(pct, phase) {
 }
 
 function showError(msg) {
+  cancelBtn.style.display = 'none';
   loading.style.display = 'none';
   errorDiv.style.display = 'block';
   errorDiv.textContent = String(msg);
@@ -735,7 +738,99 @@ function writeString(view, offset, string) {
 
 const TRANSCRIBE_CHUNK_SIZE = 512 * 1024;
 const TRANSCRIBE_MAX_RETRIES = 3;
-const TRANSCRIBE_STATUS_POLL_MS = 2000;
+const TRANSCRIBE_STATUS_POLL_MS = 3000;
+const CANCELLED_ERROR_MESSAGE = '用户已取消';
+let transcribeState = {
+  cancelled: false,
+  phase: 'idle',
+  taskId: '',
+  cancelToken: '',
+  objectKey: '',
+  fileId: '',
+  currentXhr: null,
+  r2AbortController: null,
+};
+
+function resetTranscribeState() {
+  if (transcribeState.currentXhr) {
+    try { transcribeState.currentXhr.abort(); } catch (_) {}
+  }
+  if (transcribeState.r2AbortController) {
+    try { transcribeState.r2AbortController.abort(); } catch (_) {}
+  }
+  transcribeState = { cancelled: false, phase: 'idle', taskId: '', cancelToken: '', objectKey: '', fileId: '', currentXhr: null, r2AbortController: null };
+  cancelBtn.style.display = 'none';
+}
+
+function showCancelButton(phase) {
+  transcribeState.phase = phase || transcribeState.phase;
+  cancelBtn.style.display = 'inline-block';
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = '取消';
+}
+
+function isCancelledError(err) {
+  return !!err && (err.name === 'AbortError' || String(err.message || '').includes(CANCELLED_ERROR_MESSAGE));
+}
+
+function ensureNotCancelled() {
+  if (transcribeState.cancelled) throw new Error(CANCELLED_ERROR_MESSAGE);
+}
+
+function getStatusPollDelay(elapsedSec, rateLimitHits = 0) {
+  let base = elapsedSec < 30 ? 3000 : (elapsedSec < 180 ? 8000 : 18000);
+  if (rateLimitHits > 0) base = Math.max(base, Math.min(60000, 15000 * Math.pow(2, rateLimitHits - 1)));
+  return base;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function cancelTranscribe() {
+  if (transcribeState.cancelled) return;
+  transcribeState.cancelled = true;
+  cancelBtn.disabled = true;
+  cancelBtn.textContent = '已取消';
+  if (transcribeState.r2AbortController) { try { transcribeState.r2AbortController.abort(); } catch (_) {} }
+  if (transcribeState.currentXhr) { try { transcribeState.currentXhr.abort(); } catch (_) {} }
+
+  if (transcribeState.taskId && transcribeState.cancelToken) {
+    try {
+      await fetch(API_BASE + '/api/transcribe/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_id: transcribeState.taskId,
+          cancel_token: transcribeState.cancelToken,
+          object_key: transcribeState.objectKey || undefined,
+          file_id: transcribeState.fileId || undefined,
+        }),
+      });
+    } catch (e) {
+      console.warn('取消任务同步到后端失败（已本地停止）:', e);
+    }
+  }
+
+  loadingText.textContent = '已取消';
+  loadingDetail.textContent = '已停止上传/转写，不会继续轮询或切换备用通道。';
+  setProgress(0, '已取消');
+  setTimeout(() => {
+    loading.style.display = 'none';
+    uploadArea.style.display = 'block';
+    cancelBtn.style.display = 'none';
+    fileInput.value = '';
+  }, 500);
+}
+
+function setCurrentXhr(xhr) {
+  transcribeState.currentXhr = xhr;
+  return xhr;
+}
+
+function clearCurrentXhr(xhr) {
+  if (transcribeState.currentXhr === xhr) transcribeState.currentXhr = null;
+}
 
 function getChunkUploadPhase(file, idx, totalParts, attempt, overallLoaded, totalSize) {
   const loadedMB = (overallLoaded / 1024 / 1024).toFixed(1);
@@ -761,6 +856,8 @@ async function handleFile() {
     return;
   }
 
+  resetTranscribeState();
+  showCancelButton('preparing');
   uploadArea.style.display = 'none';
   loading.style.display = 'block';
   errorDiv.style.display = 'none';
@@ -774,6 +871,7 @@ async function handleFile() {
 
   try {
     const uploadFile = await preprocessMedia(file);
+    ensureNotCancelled();
     const lang = document.getElementById('langSelect').value;
     const mode = 'balanced';
     const vadEnabled = false;
@@ -787,7 +885,15 @@ async function handleFile() {
 
   } catch (err) {
     console.error('处理失败:', err);
-    showError('❌ 处理失败：' + err.message);
+    if (isCancelledError(err)) {
+      loadingText.textContent = '已取消';
+      loadingDetail.textContent = '已停止处理。';
+      loading.style.display = 'none';
+      cancelBtn.style.display = 'none';
+      uploadArea.style.display = 'block';
+    } else {
+      showError('❌ 处理失败：' + err.message);
+    }
   }
 }
 
@@ -803,12 +909,14 @@ async function uploadChunkToServer(file, fileId, idx, totalParts, onProgress) {
   formData.append('filename', file.name);
 
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+    ensureNotCancelled();
+    const xhr = setCurrentXhr(new XMLHttpRequest());
     xhr.upload.onprogress = (e) => {
       if (!e.lengthComputable || !onProgress) return;
       onProgress({ loaded: e.loaded, total: e.total, idx, totalParts, start, end });
     };
     xhr.onload = () => {
+      clearCurrentXhr(xhr);
       try {
         const data = JSON.parse(xhr.responseText || '{}');
         if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
@@ -820,8 +928,9 @@ async function uploadChunkToServer(file, fileId, idx, totalParts, onProgress) {
         reject(new Error(`分片 ${idx + 1} 响应解析失败`));
       }
     };
-    xhr.onerror = () => reject(new Error(`分片 ${idx + 1} 网络错误`));
-    xhr.ontimeout = () => reject(new Error(`分片 ${idx + 1} 上传超时`));
+    xhr.onerror = () => { clearCurrentXhr(xhr); reject(new Error(`分片 ${idx + 1} 网络错误`)); };
+    xhr.onabort = () => { clearCurrentXhr(xhr); reject(new Error(CANCELLED_ERROR_MESSAGE)); };
+    xhr.ontimeout = () => { clearCurrentXhr(xhr); reject(new Error(`分片 ${idx + 1} 上传超时`)); };
     xhr.timeout = 600000;
     xhr.open('POST', API_BASE + '/api/transcribe/upload_chunk');
     xhr.send(formData);
@@ -830,11 +939,16 @@ async function uploadChunkToServer(file, fileId, idx, totalParts, onProgress) {
 
 async function completeChunkUpload(file, fileId, lang, mode, vadEnabled) {
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+    ensureNotCancelled();
+    const xhr = setCurrentXhr(new XMLHttpRequest());
     xhr.onload = () => {
+      clearCurrentXhr(xhr);
       try {
         const data = JSON.parse(xhr.responseText || '{}');
         if (xhr.status >= 200 && xhr.status < 300 && data.task_id) {
+          transcribeState.taskId = data.task_id;
+          transcribeState.cancelToken = data.cancel_token || '';
+          showCancelButton('transcribing');
           resolve(data);
         } else {
           reject(new Error(data.error || 'complete 未返回 task_id'));
@@ -843,8 +957,9 @@ async function completeChunkUpload(file, fileId, lang, mode, vadEnabled) {
         reject(new Error('complete 响应解析失败'));
       }
     };
-    xhr.onerror = () => reject(new Error('complete 网络错误'));
-    xhr.ontimeout = () => reject(new Error('complete 超时'));
+    xhr.onerror = () => { clearCurrentXhr(xhr); reject(new Error('complete 网络错误')); };
+    xhr.onabort = () => { clearCurrentXhr(xhr); reject(new Error(CANCELLED_ERROR_MESSAGE)); };
+    xhr.ontimeout = () => { clearCurrentXhr(xhr); reject(new Error('complete 超时')); };
     xhr.timeout = 600000;
     xhr.open('POST', API_BASE + '/api/transcribe/complete');
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -861,17 +976,20 @@ async function completeChunkUpload(file, fileId, lang, mode, vadEnabled) {
 
 function uploadToR2(file, uploadUrl, contentType, onProgress) {
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+    ensureNotCancelled();
+    const xhr = setCurrentXhr(new XMLHttpRequest());
     xhr.upload.onprogress = (e) => {
       if (!e.lengthComputable || !onProgress) return;
       onProgress(e.loaded, e.total);
     };
     xhr.onload = () => {
+      clearCurrentXhr(xhr);
       if (xhr.status >= 200 && xhr.status < 300) resolve(true);
       else reject(new Error('上传到云存储失败，请重试'));
     };
-    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('upload')));
-    xhr.ontimeout = () => reject(new Error('上传超时，请重试'));
+    xhr.onerror = () => { clearCurrentXhr(xhr); reject(new Error(getFriendlyNetworkError('upload'))); };
+    xhr.onabort = () => { clearCurrentXhr(xhr); reject(new Error(CANCELLED_ERROR_MESSAGE)); };
+    xhr.ontimeout = () => { clearCurrentXhr(xhr); reject(new Error('上传超时，请重试')); };
     xhr.timeout = 30 * 60 * 1000;
     xhr.open('PUT', uploadUrl, true);
     xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
@@ -895,6 +1013,8 @@ function getUploadChannelError(stage, err) {
 async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnabled) {
   const contentType = file.type || 'application/octet-stream';
   setProgress(2, '正在准备主上传通道...');
+  showCancelButton('uploading');
+  transcribeState.r2AbortController = new AbortController();
   const presignRes = await fetch(API_BASE + '/api/transcribe/presigned-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -903,12 +1023,14 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
       size: file.size,
       content_type: contentType,
     }),
+    signal: transcribeState.r2AbortController.signal,
   });
   const presign = await presignRes.json().catch(() => ({}));
   if (!presignRes.ok) throw new Error(presign.error || presign.message || `创建上传地址失败（HTTP ${presignRes.status}）`);
 
   const uploadUrl = pickFirstString(presign, ['upload_url', 'uploadUrl', 'url', 'presigned_url', 'presignedUrl']);
   const objectKey = pickFirstString(presign, ['object_key', 'objectKey', 'key']);
+  transcribeState.objectKey = objectKey;
   if (!uploadUrl || !objectKey) {
     throw new Error('创建上传地址响应缺少 upload_url/object_key');
   }
@@ -921,6 +1043,7 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
   });
 
   setProgress(65, '上传完成，正在创建转写任务...');
+  ensureNotCancelled();
   const completeRes = await fetch(API_BASE + '/api/transcribe/r2-complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -933,9 +1056,13 @@ async function uploadFileToServerViaR2(file, originalName, lang, mode, vadEnable
       mode,
       vad: vadEnabled,
     }),
+    signal: transcribeState.r2AbortController.signal,
   });
   const complete = await completeRes.json().catch(() => ({}));
   if (!completeRes.ok || !complete.task_id) throw new Error(complete.error || '创建转写任务失败');
+  transcribeState.taskId = complete.task_id;
+  transcribeState.cancelToken = complete.cancel_token || '';
+  showCancelButton('transcribing');
   setProgress(72, '后台任务已创建，开始排队...');
   return await pollUntilDone(complete.task_id, file);
 }
@@ -945,6 +1072,7 @@ async function uploadFileToServer(file, originalName, lang, mode, vadEnabled) {
   try {
     return await uploadFileToServerViaR2(file, originalName, lang, mode, vadEnabled);
   } catch (err) {
+    if (isCancelledError(err) || transcribeState.taskId) throw err;
     r2Error = err;
     const reason = getUploadChannelError('主通道', err);
     console.warn('主上传通道（R2 直传）失败，回退到备用分片上传:', err);
@@ -968,11 +1096,14 @@ async function uploadFileToServerChunked(file, originalName, lang, mode, vadEnab
     resume = JSON.parse(localStorage.getItem(resumeKey) || 'null');
   } catch (_) {}
 
+  showCancelButton('uploading');
   const fileId = resume?.fileId || (`web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+  transcribeState.fileId = fileId;
   let nextIndex = Number.isInteger(resume?.nextIndex) ? resume.nextIndex : 0;
   console.log('开始分片上传:', API_BASE, '文件:', originalName, '大小:', fileSizeMB + 'MB', '语言:', lang, '模式:', mode, 'VAD:', vadEnabled, '分片数:', totalParts);
 
   for (let i = nextIndex; i < totalParts; i++) {
+    ensureNotCancelled();
     let lastErr = null;
     for (let attempt = 1; attempt <= TRANSCRIBE_MAX_RETRIES; attempt++) {
       try {
@@ -990,7 +1121,8 @@ async function uploadFileToServerChunked(file, originalName, lang, mode, vadEnab
         lastErr = err;
         console.warn(`分片 ${i + 1}/${totalParts} 第 ${attempt}/${TRANSCRIBE_MAX_RETRIES} 次失败`, err);
         if (attempt < TRANSCRIBE_MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, attempt * 1500));
+          await sleep(attempt * 1500);
+          ensureNotCancelled();
         }
       }
     }
@@ -1018,48 +1150,48 @@ function estimateProcessingProgress(elapsedSec, currentPct) {
 }
 
 async function fetchTaskStatus(taskId) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.onload = () => {
-      try {
-        const data = JSON.parse(xhr.responseText || '{}');
-        if ((xhr.status >= 200 && xhr.status < 300) || data.status === 'error') {
-          resolve(data);
-        } else {
-          reject(new Error(data.error || '状态查询失败'));
-        }
-      } catch (e) {
-        reject(new Error('状态响应解析失败'));
-      }
-    };
-    xhr.onerror = () => reject(new Error(getFriendlyNetworkError('poll')));
-    xhr.ontimeout = () => reject(new Error('状态查询超时'));
-    xhr.timeout = 30000;
-    xhr.open('GET', API_BASE + '/api/status/' + encodeURIComponent(taskId));
-    xhr.send();
-  });
+  ensureNotCancelled();
+  const res = await fetch(API_BASE + '/api/status/' + encodeURIComponent(taskId), { method: 'GET', mode: 'cors' });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 429) {
+    const err = new Error(data.error || '状态查询过于频繁，任务仍在处理中');
+    err.status = 429;
+    throw err;
+  }
+  if ((res.status >= 200 && res.status < 300) || data.status === 'error' || data.status === 'cancelled') {
+    return data;
+  }
+  throw new Error(data.error || '状态查询失败');
 }
 
 async function pollUntilDone(taskId, file) {
-  const maxWait = 600;
+  const maxWait = 60 * 60; // 后台长音频允许持续等待，前端用退避轮询避免打满限流
   const startTime = Date.now();
   let visualPct = 72;
   const isLargeVideo = !!file && isVideoFile(file) && file.size >= 20 * 1024 * 1024;
+  let rateLimitHits = 0;
 
   while (true) {
     if (Date.now() - startTime > maxWait * 1000) {
-      throw new Error('转写超时（超过10分钟），请重试');
+      throw new Error('转写超时（超过60分钟），请稍后重试');
     }
 
-    await new Promise(r => setTimeout(r, TRANSCRIBE_STATUS_POLL_MS));
+    ensureNotCancelled();
+    const elapsedBeforePoll = (Date.now() - startTime) / 1000;
+    await sleep(getStatusPollDelay(elapsedBeforePoll, rateLimitHits));
+    ensureNotCancelled();
 
     try {
       const data = await fetchTaskStatus(taskId);
       const elapsed = (Date.now() - startTime) / 1000;
 
+      rateLimitHits = 0;
       if (data.status === 'completed') {
+        cancelBtn.style.display = 'none';
         setProgress(100, '转写完成');
         return data.result || '';
+      } else if (data.status === 'cancelled') {
+        throw new Error(CANCELLED_ERROR_MESSAGE);
       } else if (data.status === 'error') {
         throw new Error(data.error || '转写失败');
       } else if (data.phase === 'preprocessing') {
@@ -1077,6 +1209,13 @@ async function pollUntilDone(taskId, file) {
         setProgress(visualPct, queuePos > 0 ? `排队中（前面还有 ${queuePos} 个任务）` : '任务已提交，服务端正在准备转写...');
       }
     } catch (e) {
+      if (isCancelledError(e)) throw e;
+      if (e.status === 429) {
+        rateLimitHits += 1;
+        setProgress(Math.max(visualPct, 75), '任务仍在处理中，稍后自动刷新...');
+        loadingDetail.textContent = '状态查询过于频繁，已自动降低刷新频率；不会重新上传同一文件。';
+        continue;
+      }
       if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('网络错误')) {
         if (isIOSFeishuWebView()) {
           throw new Error(getFriendlyNetworkError('poll'));
@@ -1104,6 +1243,7 @@ function downloadText() {
 }
 
 function reset() {
+  resetTranscribeState();
   uploadArea.style.display = 'block';
   resultArea.style.display = 'none';
   fileInput.value = '';
