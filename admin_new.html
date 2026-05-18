@@ -429,6 +429,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <button class="bs" onclick="loadToolGovernance()">刷新</button>
           <button class="bp" onclick="saveToolGovernance()">保存策略</button>
           <button class="bs" onclick="cleanupRiskTemp()">清理/生命周期</button>
+          <button class="bd" onclick="setGovernanceTab('cleanup'); scanR2Storage()">扫描 R2</button>
         </div>
       </div>
       <div class="transcribe-actions-row" style="gap:8px;flex-wrap:wrap;margin-bottom:14px;">
@@ -449,6 +450,15 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
           <div class="transcribe-status-item"><div class="k">当前全站并发</div><div class="v" id="riskActiveGlobal">-</div></div>
           <div class="transcribe-status-item"><div class="k">今日总流量</div><div class="v" id="riskUsageSummary">-</div></div>
           <div class="transcribe-status-item"><div class="k">注册工具数</div><div class="v" id="riskToolCount">-</div></div>
+        </div>
+        <div class="transcribe-status-header" style="margin-top:14px"><div><div class="transcribe-status-title">R2 管控面板</div><div class="transcribe-status-desc" id="r2MetricsHint">显示 R2 工具、风险、今日估算与最近扫描结果。</div></div><button class="bs" onclick="setGovernanceTab('cleanup'); scanR2Storage()">立即扫描 R2</button></div>
+        <div class="transcribe-status-grid" style="margin-top:10px">
+          <div class="transcribe-status-item"><div class="k">使用 R2 工具</div><div class="v" id="r2ToolCount">-</div></div>
+          <div class="transcribe-status-item"><div class="k">高风险 R2 工具</div><div class="v" id="r2HighRiskCount">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日 R2 上传估算</div><div class="v" id="r2TodayUpload">-</div></div>
+          <div class="transcribe-status-item"><div class="k">今日 R2 请求/拒绝估算</div><div class="v" id="r2TodayRequests">-</div></div>
+          <div class="transcribe-status-item"><div class="k">可清理临时对象</div><div class="v" id="r2Cleanable">-</div></div>
+          <div class="transcribe-status-item"><div class="k">R2 Metrics</div><div class="v" id="r2MetricsLink">未配置</div></div>
         </div>
       </div>
 
@@ -479,7 +489,13 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div class="fg" style="margin-top:12px;"><label>特殊额度 JSON（按 IP 配置，可覆盖工具限制）</label><textarea id="riskSpecialJson" style="min-height:150px;font-family:monospace;" placeholder='{"1.2.3.4":{"transcribe":{"per_ip_daily_count":10}}}'></textarea></div>
       </div>
       <div class="transcribe-status-card tool-admin-card governance-tab" data-tab="logs"><div class="transcribe-status-summary" id="riskLogs">点击刷新读取治理日志。</div></div>
-      <div class="douyin-test-card tool-admin-card governance-tab" data-tab="cleanup"><div class="transcribe-actions-title">清理/生命周期</div><div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));"><div><label>R2 孤儿小时</label><input id="lifeR2Hours" type="number" min="1"></div><div><label>本地临时小时</label><input id="lifeTempHours" type="number" min="1"></div><div><label>输出保留小时</label><input id="lifeOutputHours" type="number" min="1"></div><div><label>日志保留天</label><input id="lifeLogDays" type="number" min="1"></div></div><div class="info-note">MVP 清理接口只清理临时目录，不删除正式作品库。</div></div>
+      <div class="douyin-test-card tool-admin-card governance-tab" data-tab="cleanup">
+        <div class="transcribe-actions-title">清理/生命周期</div>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));"><div><label>R2 孤儿小时</label><input id="lifeR2Hours" type="number" min="1"></div><div><label>本地临时小时</label><input id="lifeTempHours" type="number" min="1"></div><div><label>输出保留小时</label><input id="lifeOutputHours" type="number" min="1"></div><div><label>日志保留天</label><input id="lifeLogDays" type="number" min="1"></div></div>
+        <div class="info-note">本地清理只处理临时目录；R2 清理必须先扫描、再输入 DELETE R2 二次确认。正式作品/未知 prefix/最近 24 小时对象默认保护。</div>
+        <div class="transcribe-actions-row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="bs" onclick="cleanupRiskTemp()">清理本地临时目录</button><button class="bp" onclick="scanR2Storage()">扫描 R2（不删除）</button><button class="bd" onclick="cleanupR2Storage()">二次确认删除 R2 候选项</button></div>
+        <div class="transcribe-status-summary" id="r2ScanBox" style="margin-top:12px">尚未扫描 R2。</div>
+      </div>
       <div class="douyin-test-card tool-admin-card governance-tab" data-tab="emergency"><div class="transcribe-actions-title">紧急保护模式</div><div class="transcribe-actions-desc">开启后高成本公开工具进入白名单模式，后台仍可用。</div><select id="riskEmergency"><option value="false">关闭</option><option value="true">开启</option></select><div class="transcribe-actions-row" style="margin-top:12px;"><button class="bd" onclick="toggleEmergency(true)">一键开启</button><button class="bs" onclick="toggleEmergency(false)">关闭保护</button></div></div>
     </section>
 
@@ -722,10 +738,42 @@ function linesToList(id) { return document.getElementById(id).value.split(/\n+/)
 function listToLines(v) { return (v || []).join('\n'); }
 function setGovernanceTab(tab) { governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); }
 function toolLabel(key) { return toolGovernanceCache?.registry?.[key]?.label || key; }
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function r2Badge(meta) {
+  if (!meta?.uses_r2) return '<span style="color:#777">不使用 R2</span>';
+  const mode = meta.r2_mode || 'none'; const risk = meta.r2_risk_level || 'low';
+  const label = mode === 'temporary' ? 'R2 临时' : mode === 'permanent' ? 'R2 正式' : mode === 'mixed' ? 'R2 混合' : '不使用 R2';
+  const color = risk === 'high' ? '#ff6b6b' : mode === 'temporary' ? '#5ad060' : '#f0c040';
+  return `<span style="color:${color};font-weight:700">${risk === 'high' ? 'R2 高风险 · ' : ''}${label}</span>`;
+}
+function renderR2Prefixes(meta) {
+  const rows = (meta?.r2_prefixes || []).map(p => `<div style="font-size:12px;color:#aaa;line-height:1.6;border-top:1px solid #333;padding-top:6px;margin-top:6px"><code>${esc(p.prefix)}</code>｜${esc(p.type || '-')}｜保留 ${p.retention_hours ?? '永久'}h｜自动清理：${p.safe_to_auto_clean ? '允许' : '禁止'}<br>${esc(p.description || '')}</div>`).join('');
+  return rows || '<div style="font-size:12px;color:#777;margin-top:6px">无 R2 prefix</div>';
+}
+function renderR2Scan(scan) {
+  const box = document.getElementById('r2ScanBox'); if (!box) return;
+  if (!scan) { box.textContent = '尚未扫描 R2。'; return; }
+  const totals = scan.totals || {};
+  const header = `状态：${scan.status || '-'}｜scan_id：${scan.scan_id || '-'}｜候选 ${totals.candidate_count || 0} 个 / ${fmtBytes(totals.candidate_bytes || 0)}｜保护 ${totals.protected_count || 0} 个 / ${fmtBytes(totals.protected_bytes || 0)}\n${scan.message || ''}`;
+  const lines = (scan.items || []).map(x => `${x.tool_key || '-'} ${x.prefix || '-'}：候选 ${x.candidate_count || 0} / ${fmtBytes(x.candidate_bytes || 0)}；保护 ${x.protected_count || 0}；最旧 ${x.oldest_object_time || '-'}；原因 ${(x.reasons || []).join(',') || '-'}`).join('\n');
+  box.textContent = header + (lines ? '\n\n' + lines : '') + (scan.missing?.length ? '\n缺少配置：' + scan.missing.join(', ') : '');
+}
+function renderR2Overview(r2) {
+  r2 = r2 || {};
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.innerHTML = val; };
+  set('r2ToolCount', r2.r2_tool_count ?? '-');
+  set('r2HighRiskCount', r2.r2_high_risk_tool_count ?? '-');
+  set('r2TodayUpload', `${r2.today_r2_upload_count_estimate || 0} 次 / ${fmtBytes(r2.today_r2_upload_bytes_estimate || 0)}`);
+  set('r2TodayRequests', `${r2.today_r2_request_count_estimate || 0} / 拒绝 ${r2.today_r2_reject_count_estimate || 0}`);
+  set('r2Cleanable', `${r2.cleanable_candidate_count || 0} 个 / ${fmtBytes(r2.cleanable_candidate_bytes || 0)}`);
+  set('r2MetricsLink', r2.metrics_url ? `<a href="${esc(r2.metrics_url)}" target="_blank" style="color:#f0c040">打开 Metrics</a>` : '未配置');
+  const hint=document.getElementById('r2MetricsHint'); if(hint) hint.textContent = r2.metrics_hint || '显示 R2 工具、风险、今日估算与最近扫描结果。';
+  renderR2Scan(r2.last_scan);
+}
 
 function renderRiskRegistry(registry) {
   const box = document.getElementById('riskRegistryBox'); if (!box) return;
-  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${meta.label || key} <span style="color:#777;font-size:12px;">${key}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${meta.risk_level || '-'}｜资源：${(meta.resources || []).join(' + ') || '-'}｜别名：${(meta.aliases || []).join(', ') || '-'}</div></div>`).join('') || '暂无工具';
+  box.innerHTML = Object.entries(registry || {}).map(([key, meta]) => `<div class="transcribe-check-group"><div class="transcribe-check-group-title">${esc(meta.label || key)} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(meta)}</span></div><div style="color:#aaa;font-size:13px;line-height:1.7;">风险：${esc(meta.risk_level || '-')}｜资源：${esc((meta.resources || []).join(' + ') || '-')}｜别名：${esc((meta.aliases || []).join(', ') || '-')}</div>${renderR2Prefixes(meta)}</div>`).join('') || '暂无工具';
 }
 function renderRiskTemplates(templates) {
   const box = document.getElementById('riskTemplatesBox'); if (!box) return;
@@ -737,7 +785,8 @@ function renderRiskTools(tools) {
   box.innerHTML = keys.map(key => {
     const t = (tools || {})[key] || {};
     return `<div class="transcribe-check-group">
-      <div class="transcribe-check-group-title">${toolLabel(key)} <span style="color:#777;font-size:12px;">${key}</span></div>
+      <div class="transcribe-check-group-title">${esc(toolLabel(key))} <span style="color:#777;font-size:12px;">${esc(key)}</span> <span style="float:right">${r2Badge(toolGovernanceCache?.registry?.[key])}</span></div>
+      ${renderR2Prefixes(toolGovernanceCache?.registry?.[key])}
       <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
         <div><label>启用</label><select id="risk_${key}_enabled"><option value="true">启用</option><option value="false">关闭</option></select></div>
         <div><label>模板</label><input id="risk_${key}_template" value="${t.template || ''}"></div>
@@ -764,6 +813,7 @@ async function loadToolGovernance() {
     document.getElementById('riskCurrentIp').textContent = data.client_ip || '-'; document.getElementById('riskActiveGlobal').textContent = data.active?.global || 0; document.getElementById('riskToolCount').textContent = Object.keys(data.registry || {}).length;
     const today = new Date().toISOString().slice(0,10); const daily = data.usage?.daily?.[today] || { global: { bytes: 0 }, tools: {} }; document.getElementById('riskUsageSummary').textContent = fmtBytes(daily.global?.bytes || 0);
     const logs = data.logs || []; document.getElementById('riskLogs').textContent = logs.length ? logs.slice(-80).reverse().map(x => `${x.timestamp || x.time || ''} ${x.allowed ? '允许' : '拒绝'} ${x.ip || '-'} ${x.tool_key || x.tool || '-'} ${x.action || '-'} ${fmtBytes(x.size_bytes || x.file_size || 0)} ${x.reason || ''}`).join('\n') : '暂无治理日志';
+    renderR2Overview(data.r2 || {});
     setGovernanceTab(governanceTab); toast('工具治理策略已加载', 'ok');
   } catch (e) { toast('加载工具治理失败: ' + e.message, 'err'); }
 }
@@ -779,6 +829,16 @@ async function saveToolGovernance() {
 }
 const saveResourceRisk = saveToolGovernance;
 async function cleanupRiskTemp() { if (!confirm('只清理临时目录，不删除正式作品库。继续？')) return; try { const res=await api('POST','/api/admin/risk/cleanup',{hours:Number(document.getElementById('lifeTempHours')?.value || 24)}); if(!res.ok) throw new Error(await res.text()); const data=await res.json(); toast(`已清理 ${data.deleted || 0} 个旧临时项`, 'ok'); await loadToolGovernance(); } catch(e){ toast('清理失败: '+e.message,'err'); } }
+async function scanR2Storage() {
+  try { const res=await api('POST','/api/admin/risk/r2/scan',{}); const data=await res.json(); if(!res.ok) throw new Error(data.error || data.message || await res.text()); renderR2Scan(data); toast(data.status === 'not_configured' ? 'R2 未配置，已显示所需配置' : 'R2 扫描完成（未删除）', data.status === 'not_configured' ? 'err' : 'ok'); await loadToolGovernance(); setGovernanceTab('cleanup'); } catch(e){ toast('R2 扫描失败: '+e.message,'err'); }
+}
+async function cleanupR2Storage() {
+  const scan = toolGovernanceCache?.r2?.last_scan; const scanId = scan?.scan_id;
+  if (!scanId) { toast('请先扫描 R2', 'err'); return; }
+  const confirmText = prompt(`将只删除 scan_id=${scanId} 中 safe_to_auto_clean=true、超过保留期且非正式作品的候选对象。请输入 DELETE R2 确认：`);
+  if (confirmText === null) return;
+  try { const res=await api('POST','/api/admin/risk/r2/cleanup',{scan_id:scanId, confirm_text:confirmText}); const data=await res.json(); if(!res.ok) throw new Error(data.error || data.message || await res.text()); toast(`R2 清理完成：删除 ${data.deleted_count || 0} 个 / ${fmtBytes(data.deleted_bytes || 0)}`, 'ok'); await loadToolGovernance(); setGovernanceTab('cleanup'); } catch(e){ toast('R2 清理失败: '+e.message,'err'); }
+}
 async function toggleEmergency(enabled) { try { const res=await api('POST','/api/admin/risk/emergency',{enabled}); if(!res.ok) throw new Error(await res.text()); toast(enabled?'紧急保护已开启':'紧急保护已关闭','ok'); await loadToolGovernance(); setGovernanceTab('emergency'); } catch(e){ toast('紧急保护切换失败: '+e.message,'err'); } }
 
 function renderTranscribeChecks(checks) {
