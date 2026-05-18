@@ -572,7 +572,11 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 <script>
 const API_WAN = 'https://api.soda567.dpdns.org';
 const API_LAN = 'http://192.168.0.129:5001';
-let API = localStorage.getItem('soda_api') || API_WAN;
+function normalizeApiBase(url) {
+  if (typeof location !== 'undefined' && location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname)) return location.origin;
+  return url;
+}
+let API = normalizeApiBase(localStorage.getItem('soda_api') || API_WAN);
 
 function updateLoginApi() {
   const mode = document.getElementById('loginApiMode').value;
@@ -593,13 +597,17 @@ let uploadedFilename = null;
 
 function tok() { return localStorage.getItem('soda_token'); }
 
+function apiUrl(path) {
+  return normalizeApiBase(API) + path;
+}
+
 async function api(method, path, body, isForm) {
   const opts = { method, headers: {} };
   const t = tok();
   if (t) opts.headers['Authorization'] = 'Bearer ' + t;
   if (body && !isForm) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
   if (isForm) opts.body = body;
-  const res = await fetch(API + path, opts);
+  const res = await fetch(apiUrl(path), opts);
   if (res.status === 401) { logout(); throw new Error('未授权'); }
   return res;
 }
@@ -610,7 +618,7 @@ async function login() {
   const err = document.getElementById('loginError');
   err.textContent = '';
   try {
-    const res = await fetch(API + '/api/auth/login', {
+    const res = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({username:user, password:pass})
@@ -1138,7 +1146,7 @@ async function saveOrder() {
   const rows = document.querySelectorAll('.work-row');
   const order = [...rows].map(r => r.dataset.id).filter(id => id);
   try {
-    const res = await fetch(API + '/api/works/reorder', {
+    const res = await fetch(apiUrl('/api/works/reorder'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order })
@@ -1384,7 +1392,7 @@ async function saveWork() {
       try {
         const t = tok();
         if (!t) { toast('未登录，请刷新页面重新登录', 'err'); return; }
-        const res = await fetch(API + '/api/works/' + id, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + t }, body: fd });
+        const res = await fetch(apiUrl('/api/works/' + id), { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + t }, body: fd });
         const errText = res.ok ? '' : await res.text();
         if (!res.ok) throw new Error((errText || '请求失败') + ' [API: ' + API + ']');
         toast('更新成功（含封面）', 'ok'); closePanel(); loadWorks();
@@ -1479,7 +1487,7 @@ async function saveWork() {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.timeout = API === API_LAN ? 120000 : 60000; // 公网单块超时60s，快速失败快速重试
-      xhr.open('POST', API + '/api/upload_chunk');
+      xhr.open('POST', apiUrl('/api/upload_chunk'));
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
       xhr.upload.onprogress = (e) => {
         if (!e.lengthComputable) return;
@@ -1544,7 +1552,7 @@ async function saveWork() {
     fill.style.width = '90%';
     progPercent.textContent = '90%';
 
-    const mergeRes = await fetch(API + '/api/merge_chunks', {
+    const mergeRes = await fetch(apiUrl('/api/merge_chunks'), {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + t,
@@ -1579,7 +1587,7 @@ async function saveWork() {
       if (coverInput.files[0]) fd.append('thumbnail', coverInput.files[0]);
     }
 
-    const res = await fetch(API + '/api/works', {
+    const res = await fetch(apiUrl('/api/works'), {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + t },
       body: fd
@@ -1597,7 +1605,7 @@ async function saveWork() {
     }
   } catch (e) {
     // 上传失败时清理临时文件
-    try { await fetch(API + '/api/upload_cancel?file_id=' + fileId, { headers: { 'Authorization': 'Bearer ' + t } }); } catch {}
+    try { await fetch(apiUrl('/api/upload_cancel?file_id=' + fileId), { headers: { 'Authorization': 'Bearer ' + t } }); } catch {}
     uploadProgress.style.display='none';
     // 重置文件输入，避免下次点击不弹窗
     document.getElementById('fileInput').value = '';
