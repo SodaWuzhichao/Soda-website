@@ -65,7 +65,10 @@ nav {
 .section-label { font-size: .7rem; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
 .page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 200; letter-spacing: -2px; margin-bottom: 12px; }
 .page-desc { color: var(--muted); font-size: .95rem; line-height: 1.8; margin-bottom: 38px; max-width: 760px; }
-.grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .75fr); gap: 20px; align-items: start; }
+.upload-token-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .75fr); gap: 20px; align-items: start; }
+.full-card { width: 100%; }
+.param-grid { display: grid; gap: 14px; }
+.status-details { display: grid; gap: 10px; margin-top: 14px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
 .stack { display: grid; gap: 18px; }
 .card-title { font-size: 1rem; font-weight: 300; margin-bottom: 12px; }
@@ -175,7 +178,7 @@ nav {
 .notice { color: var(--muted); font-size: .82rem; line-height: 1.7; }
 footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); text-align: center; }
 @media (max-width: 900px) {
-  .grid { grid-template-columns: 1fr; }
+  .upload-token-row { grid-template-columns: 1fr; }
   .container { padding-top: 56px; }
 }
 @media (max-width: 640px) {
@@ -199,115 +202,105 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
   <h1 class="page-title">视频去字幕</h1>
   <p class="page-desc">上传视频，框选底部字幕区域，提交后由服务器自动处理。MVP 版适合固定字幕区域；处理期间请保持页面打开。</p>
 
-  <div class="grid">
-    <section class="stack">
-      <div class="card stack">
-        <div>
-          <div class="card-title">1. 上传视频</div>
-          <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择视频文件">
-            <input id="fileInput" type="file" accept="video/*" hidden>
-            <div class="upload-icon">🎞️</div>
-            <div class="upload-text">点击或拖拽视频到这里</div>
-            <div class="upload-hint">支持浏览器可预览的视频格式；实际可处理格式以后端为准。</div>
-            <div class="file-name" id="fileName"></div>
-          </div>
+  <!-- Top Row: Upload Video + Access Token -->
+  <div class="upload-token-row">
+    <section class="card stack upload-card">
+      <div>
+        <div class="card-title">1. 上传视频</div>
+        <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择视频文件">
+          <input id="fileInput" type="file" accept="video/*" hidden>
+          <div class="upload-icon">🎞️</div>
+          <div class="upload-text">点击或拖拽视频到这里</div>
+          <div class="upload-hint">支持浏览器可预览的视频格式；实际可处理格式以后端为准。</div>
+          <div class="file-name" id="fileName"></div>
         </div>
+      </div>
 
-        <div class="preview-shell" id="previewShell">
-          <div class="card-title">2. 预览并框选字幕区域</div>
-          <div class="video-wrap" id="videoWrap">
-            <video id="videoPreview" controls playsinline></video>
-            <div class="selection-layer" id="selectionLayer" title="拖拽框选字幕区域">
-              <div class="selection-box" id="selectionBox"></div>
-            </div>
+      <div class="preview-shell" id="previewShell">
+        <div class="card-title">2. 预览并框选字幕区域</div>
+        <div class="video-wrap" id="videoWrap">
+          <video id="videoPreview" controls playsinline></video>
+          <div class="selection-layer" id="selectionLayer" title="拖拽框选字幕区域">
+            <div class="selection-box" id="selectionBox"></div>
           </div>
-          <div class="btn-row" style="margin-top:12px;">
-            <button class="btn btn-secondary" id="selectModeBtn" type="button">开启拖拽框选</button>
-          </div>
-          <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；关闭后可正常操作视频控件。也可在右侧精确输入坐标。默认字幕区域：x=0, y=0.78, w=1, h=0.18（relative）。</div>
         </div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-secondary" id="selectModeBtn" type="button">开启拖拽框选</button>
+        </div>
+        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；关闭后可正常操作视频控件。也可在下方精确输入坐标。默认字幕区域：x=0, y=0.78, w=1, h=0.18（relative）。</div>
       </div>
     </section>
 
-    <aside class="stack">
-      <div class="card stack">
-        <div>
-          <div class="card-title">Access Token</div>
-          <div class="field">
-            <label for="accessToken">访问码</label>
-            <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
-            <div class="help">仅保存在当前浏览器 localStorage；请求时通过 X-Soda-Access-Token 发送，不会写入页面日志。</div>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
-          <button class="btn btn-danger" id="clearTokenBtn" type="button">清除</button>
+    <aside class="card stack token-card">
+      <div>
+        <div class="card-title">Access Token</div>
+        <div class="field">
+          <label for="accessToken">访问码</label>
+          <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
+          <div class="help">仅保存在当前浏览器 localStorage；请求时通过 X-Soda-Access-Token 发送，不会写入页面日志。</div>
         </div>
       </div>
-
-      <div class="card stack">
-        <div>
-          <div class="card-title">处理参数</div>
-          <div class="field">
-            <label for="coordMode">坐标模式</label>
-            <select class="select" id="coordMode">
-              <option value="relative">relative（0-1 比例）</option>
-              <option value="pixels">pixels（按原视频像素）</option>
-            </select>
-          </div>
-        </div>
-        <div class="coord-grid">
-          <div class="field"><label for="coordX">x</label><input class="input" id="coordX" type="number" step="0.001" value="0"></div>
-          <div class="field"><label for="coordY">y</label><input class="input" id="coordY" type="number" step="0.001" value="0.78"></div>
-          <div class="field"><label for="coordW">w</label><input class="input" id="coordW" type="number" step="0.001" value="1"></div>
-          <div class="field"><label for="coordH">h</label><input class="input" id="coordH" type="number" step="0.001" value="0.18"></div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" id="defaultBoxBtn" type="button">恢复默认区域</button>
-          <button class="btn btn-primary" id="submitBtn" type="button">提交去字幕任务</button>
-        </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
+        <button class="btn btn-danger" id="clearTokenBtn" type="button">清除</button>
       </div>
-
-      <div class="card status-panel">
-        <div class="card-title">任务状态</div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
-        <div class="status-line" id="statusLine">等待上传视频。</div>
-        <div class="subtle-row"><span>任务 ID</span><span id="taskIdText">-</span></div>
-        <div class="subtle-row"><span>当前状态</span><span id="taskStateText">未提交</span></div>
-        <div class="subtle-row"><span>最近更新</span><span id="taskUpdatedText">-</span></div>
-        <div class="download-area" id="downloadArea">
-          <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
-          <div class="help">下载同样会携带 Access Token；如果结果已过期，请重新提交任务。</div>
-        </div>
-      </div>
-
-      <details class="card">
-        <summary class="card-title" style="cursor:pointer;margin-bottom:0;">开发/测试选项</summary>
-        <div class="field" style="margin-top:14px;">
-          <label for="backendBase">后端地址</label>
-          <input class="input" id="backendBase" type="text" placeholder="留空使用 https://api.soda567.dpdns.org">
-          <div class="help">本地测试可填 http://127.0.0.1:5001；正式页面建议留空。</div>
-        </div>
-      </details>
-
-      <div class="notice">提示：去字幕效果取决于字幕区域是否稳定、背景复杂度和视频编码。建议先用短视频测试。</div>
     </aside>
   </div>
+
+  <!-- Full Width: Processing Parameters -->
+  <div class="card full-card" style="margin-top:20px;">
+    <div class="card-title">处理参数</div>
+    <div class="param-grid">
+      <div class="field">
+        <label for="coordMode">坐标模式</label>
+        <select class="select" id="coordMode">
+          <option value="relative">relative（0-1 比例）</option>
+          <option value="pixels">pixels（按原视频像素）</option>
+        </select>
+      </div>
+      <div class="coord-grid">
+        <div class="field"><label for="coordX">x</label><input class="input" id="coordX" type="number" step="0.001" value="0"></div>
+        <div class="field"><label for="coordY">y</label><input class="input" id="coordY" type="number" step="0.001" value="0.78"></div>
+        <div class="field"><label for="coordW">w</label><input class="input" id="coordW" type="number" step="0.001" value="1"></div>
+        <div class="field"><label for="coordH">h</label><input class="input" id="coordH" type="number" step="0.001" value="0.18"></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-secondary" id="defaultBoxBtn" type="button">恢复默认区域</button>
+      <button class="btn btn-primary" id="submitBtn" type="button">提交去字幕任务</button>
+    </div>
+  </div>
+
+  <!-- Full Width: Task Status -->
+  <div class="card full-card status-panel" style="margin-top:20px;">
+    <div class="card-title">任务状态</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+    <div class="status-line" id="statusLine">等待上传视频。</div>
+    <div class="status-details">
+      <div class="subtle-row"><span>任务 ID</span><span id="taskIdText">-</span></div>
+      <div class="subtle-row"><span>当前状态</span><span id="taskStateText">未提交</span></div>
+      <div class="subtle-row"><span>最近更新</span><span id="taskUpdatedText">-</span></div>
+    </div>
+    <div class="download-area" id="downloadArea">
+      <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
+      <div class="help">下载同样会携带 Access Token；如果结果已过期，请重新提交任务。</div>
+    </div>
+  </div>
+
+  <div class="notice" style="margin-top:20px;">提示：去字幕效果取决于字幕区域是否稳定、背景复杂度和视频编码。建议先用短视频测试。</div>
 </main>
 
 <footer>© 2026 SODA567</footer>
 
 <script>
 const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
-const API_BASE_DEFAULT = 'https://api.soda567.dpdns.org';
+const API_BASE = 'https://api.soda567.dpdns.org';
 const TOKEN_KEY = 'soda_access_token';
-const BACKEND_KEY = 'soda_video_subtitle_remover_api_base';
 
 const el = {
   accessToken: document.getElementById('accessToken'),
   saveTokenBtn: document.getElementById('saveTokenBtn'),
   clearTokenBtn: document.getElementById('clearTokenBtn'),
-  backendBase: document.getElementById('backendBase'),
   fileInput: document.getElementById('fileInput'),
   uploadArea: document.getElementById('uploadArea'),
   fileName: document.getElementById('fileName'),
@@ -355,8 +348,8 @@ function withSodaAccessToken(headers = {}) {
   return headers;
 }
 function getBackendBase() {
-  const raw = (el.backendBase.value || '').trim().replace(/\/$/, '');
-  return raw || API_BASE_DEFAULT;
+  const saved = localStorage.getItem('soda_video_subtitle_remover_api_base');
+  return (saved || '').trim().replace(/\/$/, '') || API_BASE;
 }
 function apiUrl(path) {
   return getBackendBase() + path;
@@ -466,7 +459,6 @@ function pointToRelative(event) {
 }
 function loadSavedSettings() {
   el.accessToken.value = getSodaAccessToken();
-  el.backendBase.value = localStorage.getItem(BACKEND_KEY) || '';
   setCoordInputs(DEFAULT_COORDS);
 }
 function selectFile(file) {
@@ -514,7 +506,6 @@ async function submitTask() {
     validateCoords(coords);
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
-    localStorage.setItem(BACKEND_KEY, (el.backendBase.value || '').trim());
 
     stopPolling();
     el.submitBtn.disabled = true;
@@ -673,7 +664,6 @@ el.clearTokenBtn.addEventListener('click', () => {
   setSodaAccessToken('');
   setStatus('访问码已清除。', 'warn');
 });
-el.backendBase.addEventListener('change', () => localStorage.setItem(BACKEND_KEY, (el.backendBase.value || '').trim()));
 el.selectionLayer.addEventListener('pointerdown', (event) => {
   if (!currentFile) return;
   dragStart = pointToRelative(event);
