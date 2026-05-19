@@ -508,6 +508,13 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
         <div class="info-note" id="atCreatedBox" style="display:none;margin-top:12px;white-space:pre-wrap"></div>
         <div id="accessTokensBox" class="transcribe-checks" style="margin-top:12px">点击刷新读取访问码列表。</div>
       </div>
+      <details class="douyin-test-card tool-admin-card governance-tab" data-tab="accessTokens" style="margin-top:12px;cursor:pointer;">
+        <summary style="font-size:1rem;font-weight:600;padding:8px 0;">🔧 开发/测试选项</summary>
+        <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:14px;">
+          <div><label>视频去字幕后端地址</label><input id="videoSubtitleBackend" placeholder="留空使用 https://api.soda567.dpdns.org"><div class="info-note" style="font-size:.78rem;">本地测试可填 http://127.0.0.1:5001；保存后刷新工具页生效（localStorage 独立存储）。</div></div>
+        </div>
+        <button class="bs" onclick="saveVideoSubtitleBackend()" style="margin-top:12px;">保存</button>
+      </details>
       <div class="douyin-test-card tool-admin-card governance-tab" data-tab="cleanup">
         <div class="transcribe-actions-title">清理/生命周期</div>
         <div class="douyin-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));"><div><label>R2 孤儿小时</label><input id="lifeR2Hours" type="number" min="1"></div><div><label>本地临时小时</label><input id="lifeTempHours" type="number" min="1"></div><div><label>输出保留小时</label><input id="lifeOutputHours" type="number" min="1"></div><div><label>日志保留天</label><input id="lifeLogDays" type="number" min="1"></div></div>
@@ -763,7 +770,19 @@ function boolVal(id) { return document.getElementById(id).value === 'true'; }
 function setBoolVal(id, v) { const el=document.getElementById(id); if(el) el.value = v ? 'true' : 'false'; }
 function linesToList(id) { return document.getElementById(id).value.split(/\n+/).map(s => s.trim()).filter(Boolean); }
 function listToLines(v) { return (v || []).join('\n'); }
-function setGovernanceTab(tab) { const prev = governanceTab; governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); if (tab === 'accessTokens' && prev !== 'accessTokens') loadAccessTokens(); }
+function setGovernanceTab(tab) { const prev = governanceTab; governanceTab = tab; document.querySelectorAll('.governance-tab').forEach(el => el.style.display = el.dataset.tab === tab ? '' : 'none'); if (tab === 'accessTokens' && prev !== 'accessTokens') { loadAccessTokens(); loadVideoSubtitleBackend(); } }
+function loadVideoSubtitleBackend() {
+  const el = document.getElementById('videoSubtitleBackend');
+  if (el) el.value = localStorage.getItem('soda_video_subtitle_remover_api_base') || '';
+}
+function saveVideoSubtitleBackend() {
+  const el = document.getElementById('videoSubtitleBackend');
+  if (!el) return;
+  const val = (el.value || '').trim().replace(/\/$/, '');
+  if (val) localStorage.setItem('soda_video_subtitle_remover_api_base', val);
+  else localStorage.removeItem('soda_video_subtitle_remover_api_base');
+  toast((val || '默认') + ' 已保存', 'ok');
+}
 function toolLabel(key) { return toolGovernanceCache?.registry?.[key]?.label || key; }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
