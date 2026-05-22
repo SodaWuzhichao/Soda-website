@@ -133,7 +133,7 @@ nav {
   user-select: none;
 }
 .video-wrap video { display: block; width: 100%; max-height: 560px; background: #000; }
-.selection-layer { position: absolute; inset: 0; cursor: crosshair; display: none; }
+.selection-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; cursor: crosshair; display: none; }
 .selection-layer.active { display: block; }
 .selection-box {
   position: absolute;
@@ -200,7 +200,7 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
 <main class="container">
   <p class="section-label">Video Tool</p>
   <h1 class="page-title">视频去字幕</h1>
-  <p class="page-desc">上传视频，框选底部字幕区域，提交后由服务器自动处理。MVP 版适合固定字幕区域；处理期间请保持页面打开。</p>
+  <p class="page-desc">上传视频，框选底部字幕区域，提交后由服务器自动处理。支持极速模糊和 AI 修复内测模式；AI 模式当前只处理短预览，处理期间请保持页面打开。</p>
 
   <!-- Top Row: Upload Video + Access Token -->
   <div class="upload-token-row">
@@ -251,6 +251,21 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
   <div class="card full-card" style="margin-top:20px;">
     <div class="card-title">处理参数</div>
     <div class="param-grid">
+      <div class="form-grid">
+        <div class="field">
+          <label for="removalMode">处理模式</label>
+          <select class="select" id="removalMode">
+            <option value="ai_inpaint" selected>AI 修复 ProPainter（内测，短预览）</option>
+            <option value="blur">极速模糊（完整视频）</option>
+          </select>
+          <div class="help" id="modeHelp">极速模糊会处理完整视频；AI 修复当前为内测短预览，默认仅处理前 5 秒，最多 10 秒。</div>
+        </div>
+        <div class="field">
+          <label for="previewSeconds">AI 预览时长（秒）</label>
+          <input class="input" id="previewSeconds" type="number" step="1" min="1" max="10" value="5">
+          <div class="help">仅 AI 修复模式生效；为了避免长视频卡死，后端会强制限制不超过 10 秒。</div>
+        </div>
+      </div>
       <div class="field">
         <label for="coordMode">坐标模式</label>
         <select class="select" id="coordMode">
@@ -279,6 +294,7 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
     <div class="status-details">
       <div class="subtle-row"><span>任务 ID</span><span id="taskIdText">-</span></div>
       <div class="subtle-row"><span>当前状态</span><span id="taskStateText">未提交</span></div>
+      <div class="subtle-row"><span>处理模式</span><span id="taskModeText">-</span></div>
       <div class="subtle-row"><span>最近更新</span><span id="taskUpdatedText">-</span></div>
     </div>
     <div class="download-area" id="downloadArea">
@@ -310,6 +326,9 @@ const el = {
   selectionLayer: document.getElementById('selectionLayer'),
   selectionBox: document.getElementById('selectionBox'),
   selectModeBtn: document.getElementById('selectModeBtn'),
+  removalMode: document.getElementById('removalMode'),
+  previewSeconds: document.getElementById('previewSeconds'),
+  modeHelp: document.getElementById('modeHelp'),
   coordMode: document.getElementById('coordMode'),
   coordX: document.getElementById('coordX'),
   coordY: document.getElementById('coordY'),
@@ -321,6 +340,7 @@ const el = {
   statusLine: document.getElementById('statusLine'),
   taskIdText: document.getElementById('taskIdText'),
   taskStateText: document.getElementById('taskStateText'),
+  taskModeText: document.getElementById('taskModeText'),
   taskUpdatedText: document.getElementById('taskUpdatedText'),
   downloadArea: document.getElementById('downloadArea'),
   downloadBtn: document.getElementById('downloadBtn')
@@ -370,10 +390,24 @@ function setSelectMode(enabled) {
   el.selectionLayer.classList.toggle('active', selectMode);
   el.selectModeBtn.textContent = selectMode ? '关闭拖拽框选' : '开启拖拽框选';
 }
-function updateTaskSummary(taskId, state) {
+function updateTaskSummary(taskId, state, mode = '') {
   el.taskIdText.textContent = taskId || '-';
   el.taskStateText.textContent = state || '未提交';
+  if (el.taskModeText) el.taskModeText.textContent = mode ? modeLabel(mode) : '-';
   el.taskUpdatedText.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+}
+function modeLabel(mode) {
+  return mode === 'ai_inpaint' ? 'AI 修复 ProPainter（短预览）' : '极速模糊';
+}
+function updateModeHelp() {
+  const ai = el.removalMode.value === 'ai_inpaint';
+  el.previewSeconds.disabled = !ai;
+  el.modeHelp.textContent = ai
+    ? 'AI 修复内测会调用 ProPainter，本地闭环先只处理短预览：默认前 5 秒，最多 10 秒。'
+    : '极速模糊保持原有兼容行为，会处理完整视频。';
+}
+function getRemovalMode() {
+  return el.removalMode.value === 'ai_inpaint' ? 'ai_inpaint' : 'blur';
 }
 function getCoords() {
   return {
@@ -430,7 +464,40 @@ function convertCoordsForMode(coords, targetMode) {
     h: relative.h * videoH
   };
 }
+function getRenderedVideoContentRect() {
+  const videoRect = el.videoPreview.getBoundingClientRect();
+  const wrapRect = el.videoWrap.getBoundingClientRect();
+  const videoW = el.videoPreview.videoWidth || 0;
+  const videoH = el.videoPreview.videoHeight || 0;
+  if (!videoRect.width || !videoRect.height || !videoW || !videoH) {
+    return { left: 0, top: 0, width: videoRect.width || wrapRect.width || 1, height: videoRect.height || wrapRect.height || 1 };
+  }
+  const videoRatio = videoW / videoH;
+  const boxRatio = videoRect.width / videoRect.height;
+  let width = videoRect.width;
+  let height = videoRect.height;
+  let left = videoRect.left - wrapRect.left;
+  let top = videoRect.top - wrapRect.top;
+  // Browser default/object-fit: contain may leave letterbox space inside the <video> box.
+  if (boxRatio > videoRatio) {
+    width = height * videoRatio;
+    left += (videoRect.width - width) / 2;
+  } else if (boxRatio < videoRatio) {
+    height = width / videoRatio;
+    top += (videoRect.height - height) / 2;
+  }
+  return { left, top, width, height };
+}
+function syncSelectionLayerToVideoContent() {
+  const rect = getRenderedVideoContentRect();
+  el.selectionLayer.style.left = rect.left + 'px';
+  el.selectionLayer.style.top = rect.top + 'px';
+  el.selectionLayer.style.width = rect.width + 'px';
+  el.selectionLayer.style.height = rect.height + 'px';
+  return rect;
+}
 function renderSelectionBox() {
+  syncSelectionLayerToVideoContent();
   const coords = coordsToRelative(getCoords());
   el.selectionBox.style.left = (coords.x * 100) + '%';
   el.selectionBox.style.top = (coords.y * 100) + '%';
@@ -452,6 +519,7 @@ function setCoordsFromRelative(relativeCoords) {
   }
 }
 function pointToRelative(event) {
+  syncSelectionLayerToVideoContent();
   const rect = el.selectionLayer.getBoundingClientRect();
   const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
   const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
@@ -460,6 +528,7 @@ function pointToRelative(event) {
 function loadSavedSettings() {
   el.accessToken.value = getSodaAccessToken();
   setCoordInputs(DEFAULT_COORDS);
+  updateModeHelp();
 }
 function selectFile(file) {
   if (!file) return;
@@ -516,6 +585,11 @@ async function submitTask() {
 
     const form = new FormData();
     form.append('file', currentFile, currentFile.name);
+    const removalMode = getRemovalMode();
+    form.append('mode', removalMode);
+    if (removalMode === 'ai_inpaint') form.append('preview_seconds', String(Math.min(10, Math.max(1, Number(el.previewSeconds.value) || 5))));
+    updateTaskSummary('', '准备提交', removalMode);
+    setStatus('本次提交模式：' + modeLabel(removalMode) + '。正在上传…', 'info');
     form.append('coord_mode', coords.coord_mode);
     form.append('x', String(coords.x));
     form.append('y', String(coords.y));
@@ -533,8 +607,8 @@ async function submitTask() {
     activeTaskId = data.task_id || data.id || '';
     if (!activeTaskId) throw new Error('后端未返回 task_id');
     setProgress(28);
-    updateTaskSummary(activeTaskId, data.status || 'queued');
-    setStatus('任务已创建，正在排队/处理中…', 'info');
+    updateTaskSummary(activeTaskId, data.status || 'queued', data.mode || removalMode);
+    setStatus(removalMode === 'ai_inpaint' ? 'AI 修复任务已创建：正在处理短预览…' : '任务已创建，正在排队/处理中…', 'info');
     pollTask();
   } catch (error) {
     setProgress(0);
@@ -562,11 +636,12 @@ async function pollTask() {
     if (!res.ok) throw new Error(await readError(res));
     const data = await res.json();
     const status = data.status || data.state || 'unknown';
-    updateTaskSummary(activeTaskId, status);
+    const mode = data.mode || '';
+    updateTaskSummary(activeTaskId, status, mode);
     setProgress(statusToProgress(status));
 
     if (status === 'succeeded' || status === 'success' || status === 'completed') {
-      setStatus('处理完成，可以下载结果。', 'ok');
+      setStatus((mode === 'ai_inpaint' ? 'AI 短预览处理完成，可以下载结果。' : '处理完成，可以下载结果。'), 'ok');
       el.downloadArea.classList.add('active');
       stopPolling();
       return;
@@ -577,8 +652,10 @@ async function pollTask() {
       stopPolling();
       return;
     }
+    const phase = data.phase ? ' / ' + data.phase : '';
+    const info = data.processing_info && data.processing_info.preview_seconds ? '（预览 ' + data.processing_info.preview_seconds + ' 秒）' : '';
     const extra = data.message ? '：' + data.message : '';
-    setStatus('当前状态：' + status + extra, status === 'queued' ? 'warn' : 'info');
+    setStatus('当前状态：' + status + phase + info + extra, status === 'queued' ? 'warn' : 'info');
     pollTimer = setTimeout(pollTask, 3000);
   } catch (error) {
     setStatus('查询状态失败：' + error.message, 'err');
@@ -639,6 +716,8 @@ el.fileInput.addEventListener('change', () => selectFile(el.fileInput.files[0]))
 });
 el.uploadArea.addEventListener('drop', (event) => selectFile(event.dataTransfer.files[0]));
 el.videoPreview.addEventListener('loadedmetadata', renderSelectionBox);
+el.videoPreview.addEventListener('loadeddata', renderSelectionBox);
+window.addEventListener('resize', renderSelectionBox);
 el.coordMode.addEventListener('change', (event) => {
   const targetMode = event.target.value;
   const previousMode = targetMode === 'relative' ? 'pixels' : 'relative';
@@ -651,6 +730,7 @@ el.coordMode.addEventListener('change', (event) => {
   }, targetMode));
 });
 [el.coordX, el.coordY, el.coordW, el.coordH].forEach((input) => input.addEventListener('input', renderSelectionBox));
+el.removalMode.addEventListener('change', updateModeHelp);
 el.defaultBoxBtn.addEventListener('click', () => setCoordInputs(DEFAULT_COORDS));
 el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
 el.submitBtn.addEventListener('click', submitTask);
