@@ -239,9 +239,14 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
           <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
           <div class="help">仅保存在当前浏览器 localStorage；请求时通过 X-Soda-Access-Token 发送，不会写入页面日志。</div>
         </div>
+        <div class="field">
+          <label for="backendBase">后端地址（本地测试）</label>
+          <input class="input" id="backendBase" type="url" autocomplete="off" placeholder="http://127.0.0.1:5001">
+          <div class="help">Mac mini 本机填 http://127.0.0.1:5001；其他设备填 http://100.73.100.90:5001。前端和后端都用 http，避免浏览器拦截。</div>
+        </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
+        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码/后端地址</button>
         <button class="btn btn-danger" id="clearTokenBtn" type="button">清除</button>
       </div>
     </aside>
@@ -315,6 +320,7 @@ const TOKEN_KEY = 'soda_access_token';
 
 const el = {
   accessToken: document.getElementById('accessToken'),
+  backendBase: document.getElementById('backendBase'),
   saveTokenBtn: document.getElementById('saveTokenBtn'),
   clearTokenBtn: document.getElementById('clearTokenBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -370,6 +376,11 @@ function withSodaAccessToken(headers = {}) {
 function getBackendBase() {
   const saved = localStorage.getItem('soda_video_subtitle_remover_api_base');
   return (saved || '').trim().replace(/\/$/, '') || API_BASE;
+}
+function setBackendBase(value) {
+  const base = String(value || '').trim().replace(/\/$/, '');
+  if (base) localStorage.setItem('soda_video_subtitle_remover_api_base', base);
+  else localStorage.removeItem('soda_video_subtitle_remover_api_base');
 }
 function apiUrl(path) {
   return getBackendBase() + path;
@@ -527,6 +538,7 @@ function pointToRelative(event) {
 }
 function loadSavedSettings() {
   el.accessToken.value = getSodaAccessToken();
+  el.backendBase.value = getBackendBase();
   setCoordInputs(DEFAULT_COORDS);
   updateModeHelp();
 }
@@ -581,7 +593,9 @@ async function submitTask() {
     el.downloadArea.classList.remove('active');
     setProgress(12);
     updateTaskSummary('', '提交中');
-    setStatus('正在上传并创建任务…', 'info');
+    const backendBase = (el.backendBase.value || '').trim();
+    if (backendBase) setBackendBase(backendBase);
+    setStatus('正在上传并创建任务… 后端：' + getBackendBase(), 'info');
 
     const form = new FormData();
     form.append('file', currentFile, currentFile.name);
@@ -737,12 +751,16 @@ el.submitBtn.addEventListener('click', submitTask);
 el.downloadBtn.addEventListener('click', downloadResult);
 el.saveTokenBtn.addEventListener('click', () => {
   setSodaAccessToken(el.accessToken.value);
-  setStatus(getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。', 'ok');
+  setBackendBase(el.backendBase.value);
+  el.backendBase.value = getBackendBase();
+  setStatus((getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。') + ' 当前后端：' + getBackendBase(), 'ok');
 });
 el.clearTokenBtn.addEventListener('click', () => {
   el.accessToken.value = '';
   setSodaAccessToken('');
-  setStatus('访问码已清除。', 'warn');
+  setBackendBase('');
+  el.backendBase.value = getBackendBase();
+  setStatus('访问码已清除，后端地址已恢复默认。当前后端：' + getBackendBase(), 'warn');
 });
 el.selectionLayer.addEventListener('pointerdown', (event) => {
   if (!currentFile) return;
