@@ -139,7 +139,7 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   .nav-item { padding:9px 12px; position:static !important; width:auto; font-size:12px; border-left:none; border-bottom:2px solid transparent; white-space:nowrap; }
   .nav-item.active { border-left:none; border-bottom-color:#f0c040; }
   #navWorks, #navTranscribe, #navMusic { order:3; flex:0 0 auto; }
-  #apiModeBtn, #logoutBtn { order:2; flex:0 0 auto; margin-left:0 !important; }
+  #logoutBtn { order:2; flex:0 0 auto; margin-left:0 !important; }
   #navWorks { display:none; }
   .main-content { margin-left:0; padding:116px 12px 12px; }
   .page-header { flex-direction:row; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:12px 0; }
@@ -208,20 +208,18 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   #filterBar select, #filterBar input { font-size:11px; padding:5px 8px; min-width:80px; }
   .login-box { padding:24px; width:90%; }
   .login-box h1 { font-size:1.5rem; }
-  #apiModeBtn, #logoutBtn { position:static !important; width:auto !important; z-index:auto; display:inline-flex !important; align-items:center; justify-content:center; border-bottom-color:transparent; }
-  .sidebar { display:grid; grid-template-columns:1fr auto auto; align-items:center; }
+  #logoutBtn { position:static !important; width:auto !important; z-index:auto; display:inline-flex !important; align-items:center; justify-content:center; border-bottom-color:transparent; }
+  .sidebar { display:grid; grid-template-columns:1fr auto; align-items:center; }
   .sidebar .logo { grid-column:1; }
-  #apiModeBtn { grid-column:2; }
-  #logoutBtn { grid-column:3; }
+  #logoutBtn { grid-column:2; }
   #navWorks, #navTranscribe, #navMusic { grid-row:2; }
 
 }
 @media (max-width: 480px) {
-  .sidebar { padding:8px; grid-template-columns:1fr auto auto; gap:6px; }
+  .sidebar { padding:8px; grid-template-columns:1fr auto; gap:6px; }
   .sidebar .logo { min-width:84px; }
   .sidebar .logo img { height:32px !important; }
   .nav-item { padding:8px 8px; font-size:11px; }
-  #apiModeBtn { font-size:11px !important; padding:8px 8px !important; }
   #logoutBtn { padding:8px 8px; }
   .main-content { padding:108px 10px 12px; }
   .transcribe-status-actions, .tool-inline-actions { grid-template-columns:1fr; }
@@ -244,10 +242,6 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
   <div class="login-box">
     <h1>SODA <span style="color:#f0c040">Admin</span></h1>
     <p>后台管理系统</p>
-    <select id="loginApiMode" onchange="updateLoginApi()" style="margin-bottom:16px;padding:10px;background:#111;border:1px solid #2a2a30;color:#e8e8e8;border-radius:4px;font-size:14px">
-      <option value="wan">🌐 公网模式</option>
-      <option value="lan">🏠 局域网模式</option>
-    </select>
     <input type="text" id="loginUser" placeholder="用户名" value="soda" />
     <input type="password" id="loginPass" placeholder="密码" />
     <button class="bp" onclick="login()">登录</button>
@@ -267,7 +261,6 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
     <div class="nav-item" id="navTranscribe" onclick="switchView('transcribe')">🛠️ 转写服务</div>
     <div class="nav-item" id="navMusic" onclick="switchView('music')">🎵 音频工具</div>
     <div class="nav-item" id="navToolGovernance" onclick="switchView('toolGovernance')">🧰 工具治理中心</div>
-    <div class="nav-item" id="apiModeBtn" onclick="toggleApiMode()" style="padding:8px 12px;color:#888;font-size:12px;background:#1a1a1f;border-radius:6px;">🌐 公网模式</div>
     <div class="nav-item" id="logoutBtn" onclick="logout()">🚪 退出登录</div>
   </div>
   <div class="main-content">
@@ -597,26 +590,9 @@ button { cursor: pointer; border: none; border-radius: 4px; font-size: 14px; pad
 
 <script>
 const API_WAN = 'https://api.soda567.dpdns.org';
-const API_LAN = 'http://192.168.0.129:5001';
+const API = API_WAN;
 function normalizeApiBase(url) {
-  if (typeof location !== 'undefined' && location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname)) return location.origin;
   return url;
-}
-let API = normalizeApiBase(localStorage.getItem('soda_api') || API_WAN);
-
-function updateLoginApi() {
-  const mode = document.getElementById('loginApiMode').value;
-  API = mode === 'lan' ? API_LAN : API_WAN;
-}
-
-function toggleApiMode() {
-  API = (API === API_WAN) ? API_LAN : API_WAN;
-  localStorage.setItem('soda_api', API);
-  const btn = document.getElementById('apiModeBtn');
-  btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
-  btn.style.color = API === API_LAN ? '#5ad060' : '#888';
-  toast('已切换到 ' + (API === API_LAN ? '局域网直传' : '公网'), 'ok');
-  loadWorks();
 }
 let works = [];
 let uploadedFilename = null;
@@ -698,18 +674,8 @@ function switchView(view) {
 function showAdmin() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('adminLayout').style.display = 'flex';
-  // 初始化 API 模式按钮状态
-  const savedApi = localStorage.getItem('soda_api');
-  if (savedApi) {
-    API = savedApi;
-    const btn = document.getElementById('apiModeBtn');
-    if (btn) {
-      btn.textContent = API === API_LAN ? '🏠 局域网模式' : '🌐 公网模式';
-      btn.style.color = API === API_LAN ? '#5ad060' : '#888';
-    }
-    const loginMode = document.getElementById('loginApiMode');
-    if (loginMode) loginMode.value = API === API_LAN ? 'lan' : 'wan';
-  }
+  // 正式环境固定使用公网 API，清理旧版本留下的本地 API 偏好
+  localStorage.removeItem('soda_api');
   switchView(currentView);
   loadWorks();
 }
@@ -1395,13 +1361,13 @@ function captureFrame() {
     canvas.getContext('2d').drawImage(fv, 0, 0);
   } catch (e) {
     console.error('drawImage failed:', e);
-    toast('截帧失败：当前视频源可能不支持跨域截帧，请切到局域网模式后重试', 'err');
+    toast('截帧失败：当前视频源可能不支持跨域截帧，请检查视频源跨域权限后重试', 'err');
     return;
   }
   try {
     canvas.toBlob(blob => {
       if (!blob) {
-        toast('截帧失败：当前视频源可能不支持跨域截帧，请切到局域网模式后重试', 'err');
+        toast('截帧失败：当前视频源可能不支持跨域截帧，请检查视频源跨域权限后重试', 'err');
         return;
       }
       capturedCoverBlob = blob;
@@ -1416,7 +1382,7 @@ function captureFrame() {
     }, 'image/jpeg', 0.92);
   } catch (e) {
     console.error('toBlob failed:', e);
-    toast('截帧失败：当前视频源可能不支持跨域截帧，请切到局域网模式后重试', 'err');
+    toast('截帧失败：当前视频源可能不支持跨域截帧，请检查视频源跨域权限后重试', 'err');
   }
 }
 
@@ -1521,9 +1487,9 @@ async function saveWork() {
   const t = tok();
   if (!t) { toast('未登录，请重新登录', 'err'); return; }
 
-  // 分块配置：公网弱网走小分块，局域网走大分块
-  const CHUNK_SIZE = API === API_LAN ? (10 * 1024 * 1024) : (2 * 1024 * 1024); // LAN=10MB, WAN=2MB
-  const MAX_RETRIES = API === API_LAN ? 5 : 8;
+  // 正式环境固定公网模式：小分块 + 多重试，优先稳定性
+  const CHUNK_SIZE = 2 * 1024 * 1024;
+  const MAX_RETRIES = 8;
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
@@ -1570,7 +1536,7 @@ async function saveWork() {
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.timeout = API === API_LAN ? 120000 : 60000; // 公网单块超时60s，快速失败快速重试
+      xhr.timeout = 60000; // 公网单块超时60s，快速失败快速重试
       xhr.open('POST', apiUrl('/api/upload_chunk'));
       xhr.setRequestHeader('Authorization', 'Bearer ' + t);
       xhr.upload.onprogress = (e) => {
@@ -1623,7 +1589,7 @@ async function saveWork() {
   try {
     // 顺序上传 - 稳定可靠，支持断点续传
     for (let i = 0; i < totalParts; i++) {
-      const chunkLabel = uploadedParts.has(i) ? '（跳过已上传）' : `（第 ${i + 1}/${totalParts} 块，${API === API_LAN ? '局域网' : '公网'}模式）`;
+      const chunkLabel = uploadedParts.has(i) ? '（跳过已上传）' : `（第 ${i + 1}/${totalParts} 块，公网模式）`;
       progFileName.textContent = `正在上传: ${file.name} ${chunkLabel}`;
       await uploadChunk(i);
       const pct = Math.round((i + 1) / totalParts * 85);
