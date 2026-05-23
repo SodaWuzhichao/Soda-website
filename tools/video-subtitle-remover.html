@@ -205,12 +205,12 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
 <main class="container">
   <p class="section-label">Video Tool</p>
   <h1 class="page-title">视频去字幕</h1>
-  <p class="page-desc">上传视频，框选字幕区域后交给服务器处理。正式版固定公网后端；AI 修复改为“预览分段”策略，先看效果再决定是否继续加长。</p>
+  <p class="page-desc">上传视频，框选字幕区域后交给服务器处理。正式版固定公网后端；当前只保留 AI 修复，支持分段预览，先看效果再决定是否继续加长。</p>
 
   <section class="strategy-grid" aria-label="处理建议">
     <div class="strategy-card"><strong>1. 先短预览</strong><span>AI 修复先用 5 秒验证字幕框和背景效果，别一上来拉长时长。</span></div>
     <div class="strategy-card"><strong>2. 框小一点</strong><span>只覆盖字幕文字区域，减少 AI 需要重绘的面积，效果和成功率都会更好。</span></div>
-    <div class="strategy-card"><strong>3. 长片走任务化</strong><span>长时长不走一次性提交，后端排队处理，页面只轮询状态。</span></div>
+    <div class="strategy-card"><strong>3. 长片分段跑</strong><span>超过 10 秒会自动切成 5 秒小段，逐段 AI 修复后再拼接。</span></div>
   </section>
 
   <!-- Top Row: Upload Video + Access Token -->
@@ -270,16 +270,15 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
       <div class="form-grid">
         <div class="field">
           <label for="removalMode">处理模式</label>
-          <select class="select" id="removalMode">
-            <option value="ai_inpaint" selected>AI 修复 ProPainter（预览分段）</option>
-            <option value="blur">极速模糊（完整视频）</option>
+          <select class="select" id="removalMode" disabled>
+            <option value="ai_inpaint" selected>AI 修复 ProPainter（分段预览）</option>
           </select>
-          <div class="help" id="modeHelp">AI 修复先输出短预览；时长越长越慢，建议先 5 秒验证区域和效果。</div>
+          <div class="help" id="modeHelp">已清理极速模糊模式；当前只保留 AI 修复。建议先 5-10 秒验证区域和效果，再逐步加长。</div>
         </div>
         <div class="field">
           <label for="previewSeconds">AI 预览时长（秒）</label>
-          <input class="input" id="previewSeconds" type="number" step="1" min="1" max="20" value="5">
-          <div class="help">仅 AI 修复模式生效；建议 3-8 秒。超过 10 秒前端会自动降低处理帧率/尺寸，避免提交失败。</div>
+          <input class="input" id="previewSeconds" type="number" step="1" min="1" max="60" value="5">
+          <div class="help">建议先 5-10 秒测试。最长 60 秒；超过 10 秒会自动分段并降低处理帧率/尺寸，优先保证成功率。</div>
         </div>
       </div>
       <div class="field">
@@ -319,7 +318,7 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
     </div>
   </div>
 
-  <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘，不要整条底部全选；AI 修复适合复杂背景，极速模糊适合要求稳定、完整视频快速出片。</div>
+  <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘，不要整条底部全选；AI 修复适合复杂背景，但长时长会明显变慢，建议逐步加长测试。</div>
 </main>
 
 <footer>© 2026 SODA567</footer>
@@ -419,17 +418,17 @@ function updateTaskSummary(taskId, state, mode = '') {
   el.taskUpdatedText.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 }
 function modeLabel(mode) {
-  return mode === 'ai_inpaint' ? 'AI 修复 ProPainter（预览分段）' : '极速模糊';
+  return 'AI 修复 ProPainter（分段预览）';
 }
 function updateModeHelp() {
   const ai = el.removalMode.value === 'ai_inpaint';
   el.previewSeconds.disabled = !ai;
   el.modeHelp.textContent = ai
     ? 'AI 修复会先生成预览片段：3-8 秒最稳，超过 10 秒自动降级处理参数，避免长请求失败。'
-    : '极速模糊保持原有兼容行为，会处理完整视频。';
+    : '当前只保留 AI 修复。';
 }
 function getRemovalMode() {
-  return el.removalMode.value === 'ai_inpaint' ? 'ai_inpaint' : 'blur';
+  return 'ai_inpaint';
 }
 function getCoords() {
   return {
@@ -612,7 +611,7 @@ async function submitTask() {
     form.append('file', currentFile, currentFile.name);
     const removalMode = getRemovalMode();
     form.append('mode', removalMode);
-    if (removalMode === 'ai_inpaint') form.append('preview_seconds', String(Math.min(20, Math.max(1, Number(el.previewSeconds.value) || 5))));
+    if (removalMode === 'ai_inpaint') form.append('preview_seconds', String(Math.min(60, Math.max(1, Number(el.previewSeconds.value) || 5))));
     updateTaskSummary('', '准备提交', removalMode);
     setStatus('本次提交模式：' + modeLabel(removalMode) + '。正在上传…', 'info');
     form.append('coord_mode', coords.coord_mode);
@@ -633,7 +632,7 @@ async function submitTask() {
     if (!activeTaskId) throw new Error('后端未返回 task_id');
     setProgress(28);
     updateTaskSummary(activeTaskId, data.status || 'queued', data.mode || removalMode);
-    setStatus(removalMode === 'ai_inpaint' ? 'AI 修复任务已创建：正在处理预览片段…' : '任务已创建，正在排队/处理中…', 'info');
+    setStatus('AI 修复任务已创建：正在处理预览片段…', 'info');
     pollTask();
   } catch (error) {
     setProgress(0);
@@ -666,7 +665,7 @@ async function pollTask() {
     setProgress(statusToProgress(status));
 
     if (status === 'succeeded' || status === 'success' || status === 'completed') {
-      setStatus((mode === 'ai_inpaint' ? 'AI 预览片段处理完成，可以下载查看效果。' : '处理完成，可以下载结果。'), 'ok');
+      setStatus('AI 预览片段处理完成，可以下载查看效果。', 'ok');
       el.downloadArea.classList.add('active');
       stopPolling();
       return;
