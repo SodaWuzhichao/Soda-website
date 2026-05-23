@@ -678,7 +678,13 @@ async function pollTask() {
       return;
     }
     const phase = data.phase ? ' / ' + data.phase : '';
-    const info = data.processing_info && data.processing_info.preview_seconds ? '（预览 ' + data.processing_info.preview_seconds + ' 秒）' : '';
+    const pi = data.processing_info || {};
+    let info = '';
+    if (pi.segmented) {
+      info = '（分段 ' + (pi.segment_index || '-') + '/' + (pi.total_segments || '-') + '，目标 ' + (pi.actual_total_seconds || pi.requested_preview_seconds || '-') + ' 秒）';
+    } else if (pi.preview_seconds) {
+      info = '（预览 ' + pi.preview_seconds + ' 秒）';
+    }
     const extra = data.message ? '：' + data.message : '';
     setStatus('当前状态：' + status + phase + info + extra, status === 'queued' ? 'warn' : 'info');
     pollTimer = setTimeout(pollTask, 3000);
