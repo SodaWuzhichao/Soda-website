@@ -837,11 +837,26 @@ async function loadAccessTokens() {
     const res = await api('GET', '/api/admin/access-tokens');
     const data = await res.json(); if (!res.ok) throw new Error(data.error || await res.text());
     const rows = data.tokens || [];
-    box.innerHTML = rows.map(t => `<div class="transcribe-check-group">
+    box.innerHTML = rows.map(t => {
+      const dailyMb = Math.round((Number(t.daily_bytes_limit || 0) / 1024 / 1024) * 10) / 10;
+      return `<div class="transcribe-check-group" id="token_${esc(t.id)}">
       <div class="transcribe-check-group-title">${esc(t.name || t.id)} <span style="color:#777;font-size:12px">${esc(t.id)}</span> <span style="float:right;color:${t.enabled ? '#5ad060' : '#ff6b6b'}">${t.enabled ? '启用' : '停用'}</span></div>
       <div style="color:#aaa;font-size:13px;line-height:1.7;">Token：<code>${esc(t.token_preview || '')}</code>｜工具：${esc((t.allowed_tools || []).join(', ') || '全部')}｜每日：${t.daily_count_limit || 0} 次 / ${fmtBytes(t.daily_bytes_limit || 0)}｜单文件：${t.max_file_mb || 0}MB｜并发：${t.max_concurrent || 0}｜AI：${t.allow_ai_mode ? '允许' : '否'}<br>过期：${esc(t.expires_at || '永不过期')}｜最后使用：${esc(t.last_used_at || '-')}｜IP：${esc(t.last_used_ip || '-')}<br>备注：${esc(t.notes || '')}</div>
-      <div class="transcribe-actions-row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="bs" onclick="patchAccessToken('${esc(t.id)}', ${t.enabled ? 'false' : 'true'})">${t.enabled ? '禁用' : '启用'}</button><button class="bd" onclick="deleteAccessToken('${esc(t.id)}')">软删除</button></div>
-    </div>`).join('') || '暂无 Access Token';
+      <div class="transcribe-actions-row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="bs" onclick="showAccessTokenEditor('${esc(t.id)}')">编辑额度</button><button class="bs" onclick="patchAccessToken('${esc(t.id)}', ${t.enabled ? 'false' : 'true'})">${t.enabled ? '禁用' : '启用'}</button><button class="bd" onclick="deleteAccessToken('${esc(t.id)}')">软删除</button></div>
+      <div class="douyin-form-grid" id="edit_${esc(t.id)}" style="display:none;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;padding:12px;border:1px solid #333;border-radius:10px;background:#101010;">
+        <div><label>名称</label><input id="edit_${esc(t.id)}_name" value="${esc(t.name || '')}"></div>
+        <div><label>允许工具</label><input id="edit_${esc(t.id)}_tools" value="${esc((t.allowed_tools || []).join(', '))}"></div>
+        <div><label>每日次数</label><input id="edit_${esc(t.id)}_count" type="number" min="0" value="${Number(t.daily_count_limit || 0)}"></div>
+        <div><label>每日容量 MB</label><input id="edit_${esc(t.id)}_mb" type="number" min="0" value="${dailyMb}"></div>
+        <div><label>单文件 MB</label><input id="edit_${esc(t.id)}_file" type="number" min="0" value="${Number(t.max_file_mb || 0)}"></div>
+        <div><label>并发</label><input id="edit_${esc(t.id)}_conc" type="number" min="0" value="${Number(t.max_concurrent || 1)}"></div>
+        <div><label>允许 AI</label><select id="edit_${esc(t.id)}_ai"><option value="true" ${t.allow_ai_mode ? 'selected' : ''}>允许</option><option value="false" ${!t.allow_ai_mode ? 'selected' : ''}>不允许</option></select></div>
+        <div><label>过期时间</label><input id="edit_${esc(t.id)}_exp" value="${esc(t.expires_at || '')}" placeholder="留空永不过期"></div>
+        <div style="grid-column:1/-1"><label>备注</label><textarea id="edit_${esc(t.id)}_notes" rows="2">${esc(t.notes || '')}</textarea></div>
+        <div class="transcribe-actions-row" style="grid-column:1/-1;gap:8px;flex-wrap:wrap"><button class="bp" onclick="saveAccessTokenEditor('${esc(t.id)}')">保存修改</button><button class="bs" onclick="showAccessTokenEditor('${esc(t.id)}', false)">取消</button></div>
+      </div>
+    </div>`;
+    }).join('') || '暂无 Access Token';
   } catch (e) { box.textContent = '加载访问码失败：' + e.message; }
 }
 async function createAccessToken() {
@@ -851,6 +866,27 @@ async function createAccessToken() {
     const box = document.getElementById('atCreatedBox'); box.style.display = ''; box.textContent = '请立即复制保存，明文 token 只显示这一次：\n' + (data.access_token || data.token?.access_token || '');
     toast('Access Token 已创建，请复制保存', 'ok'); await loadAccessTokens();
   } catch (e) { toast('创建访问码失败: ' + e.message, 'err'); }
+}
+function showAccessTokenEditor(id, show = true) { const el = document.getElementById(`edit_${id}`); if (el) el.style.display = show ? 'grid' : 'none'; }
+async function saveAccessTokenEditor(id) {
+  try {
+    const body = {
+      name: document.getElementById(`edit_${id}_name`).value.trim() || '未命名访问码',
+      allowed_tools: document.getElementById(`edit_${id}_tools`).value.split(',').map(s=>s.trim()).filter(Boolean),
+      daily_count_limit: Number(document.getElementById(`edit_${id}_count`).value || 0),
+      daily_bytes_limit: mbToBytes(Number(document.getElementById(`edit_${id}_mb`).value || 0)),
+      max_file_mb: Number(document.getElementById(`edit_${id}_file`).value || 0),
+      max_concurrent: Number(document.getElementById(`edit_${id}_conc`).value || 1),
+      allow_ai_mode: document.getElementById(`edit_${id}_ai`).value === 'true',
+      expires_at: document.getElementById(`edit_${id}_exp`).value.trim(),
+      notes: document.getElementById(`edit_${id}_notes`).value.trim()
+    };
+    const res = await api('POST', `/api/admin/access-tokens/${id}/patch`, body);
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || await res.text());
+    toast('访问码额度已更新','ok');
+    await loadAccessTokens();
+  } catch(e){ toast('保存访问码失败: '+e.message,'err'); }
 }
 async function patchAccessToken(id, enabled) { try { const res = await api('POST', `/api/admin/access-tokens/${id}/patch`, {enabled: enabled === 'true'}); if(!res.ok) throw new Error(await res.text()); toast('访问码已更新','ok'); await loadAccessTokens(); } catch(e){ toast('更新访问码失败: '+e.message,'err'); } }
 async function deleteAccessToken(id) { if(!confirm('确认软删除此访问码？')) return; try { const res = await api('POST', `/api/admin/access-tokens/${id}/delete`, {}); if(!res.ok) throw new Error(await res.text()); toast('访问码已软删除','ok'); await loadAccessTokens(); } catch(e){ toast('删除访问码失败: '+e.message,'err'); } }
