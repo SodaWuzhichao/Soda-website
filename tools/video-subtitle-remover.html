@@ -580,12 +580,34 @@ function formatBytes(bytes) {
   while (size >= 1024 && idx < units.length - 1) { size /= 1024; idx += 1; }
   return (idx === 0 ? size : size.toFixed(1)) + units[idx];
 }
+function friendlyErrorMessage(data, fallback) {
+  const code = data && (data.error || data.code);
+  const msg = (data && (data.message || data.raw_message)) || fallback || '';
+  const token = (data && data.token) || {};
+  const usage = token.usage_today || {};
+  if (code === 'quota_exceeded') {
+    if ((data.raw_message || msg || '').includes('bytes')) {
+      const used = usage.bytes != null ? (usage.bytes / 1024 / 1024).toFixed(1) : '-';
+      const limit = usage.bytes_limit ? (usage.bytes_limit / 1024 / 1024).toFixed(1) : '-';
+      return `今日上传流量已用完（已用 ${used}MB / 上限 ${limit}MB），请明天再试或提高访问码流量额度。`;
+    }
+    const used = usage.count != null ? usage.count : '-';
+    const limit = usage.count_limit || '-';
+    return `今日提交次数已用完（已用 ${used}/${limit} 次），请明天再试或提高访问码每日次数。`;
+  }
+  if (code === 'file_too_large') return msg || '文件超过单文件大小限制。';
+  if (code === 'invalid') return '访问码无效，请检查 Access Token 是否粘贴正确。';
+  if (code === 'disabled') return '访问码已停用，请到后台启用或更换访问码。';
+  if (code === 'expired') return '访问码已过期，请重新创建或延长有效期。';
+  if (code === 'not_allowed') return '当前访问码没有这个工具的权限。';
+  return msg || fallback || '请求失败';
+}
 async function readError(res) {
   const text = await res.text().catch(() => '');
   if (!text) return res.status + ' ' + res.statusText;
   try {
     const data = JSON.parse(text);
-    return data.error || data.message || text;
+    return friendlyErrorMessage(data, text);
   } catch (_) {
     return text.slice(0, 300);
   }
