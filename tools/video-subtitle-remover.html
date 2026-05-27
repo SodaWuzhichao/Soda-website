@@ -180,6 +180,14 @@ nav {
 .subtle-row span:last-child { color: var(--text); text-align: right; word-break: break-all; }
 .download-area { display: none; }
 .download-area.active { display: block; }
+.segment-builder { display: grid; gap: 12px; margin-top: 16px; padding: 14px; border: 1px solid rgba(255,215,0,.14); border-radius: 12px; background: rgba(255,215,0,.03); }
+.segment-list { display: grid; gap: 10px; }
+.segment-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: #101010; }
+.segment-card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+.segment-card.failed { border-color: rgba(255,102,102,.35); }
+.segment-card.succeeded { border-color: rgba(90,208,96,.25); }
+.segment-card video { width: 100%; max-height: 260px; background: #000; border-radius: 8px; }
+.segment-meta { color: var(--muted); font-size: .82rem; line-height: 1.6; }
 .notice { color: var(--muted); font-size: .82rem; line-height: 1.7; }
 footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); text-align: center; }
 @media (max-width: 900px) {
@@ -294,6 +302,17 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
         <div class="field"><label for="coordW">w</label><input class="input" id="coordW" type="number" step="0.001" value="1"></div>
         <div class="field"><label for="coordH">h</label><input class="input" id="coordH" type="number" step="0.001" value="0.18"></div>
       </div>
+      <div class="segment-builder">
+        <div>
+          <div class="card-title" style="margin-bottom:4px;">多片段预览（可选）</div>
+          <div class="help">填写多个 start/end 后会一次上传原视频，后端逐段处理；暂不合成完整视频，每段可独立预览/下载/重试。留空则沿用上面的单预览时长。</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="addSegmentBtn" type="button">添加当前 5 秒片段</button>
+          <button class="btn btn-secondary" id="addEmptySegmentBtn" type="button">添加空片段</button>
+        </div>
+        <div class="segment-list" id="segmentList"></div>
+      </div>
     </div>
     <div class="btn-row" style="margin-top:14px;">
       <button class="btn btn-secondary" id="defaultBoxBtn" type="button">恢复默认区域</button>
@@ -316,6 +335,7 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
       <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
       <div class="help">下载同样会携带 Access Token；如果结果已过期，请重新提交任务。</div>
     </div>
+    <div class="segment-list" id="segmentResultList"></div>
   </div>
 
   <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘，不要整条底部全选；AI 修复适合复杂背景，但长时长会明显变慢，建议逐步加长测试。</div>
@@ -359,7 +379,11 @@ const el = {
   taskModeText: document.getElementById('taskModeText'),
   taskUpdatedText: document.getElementById('taskUpdatedText'),
   downloadArea: document.getElementById('downloadArea'),
-  downloadBtn: document.getElementById('downloadBtn')
+  downloadBtn: document.getElementById('downloadBtn'),
+  addSegmentBtn: document.getElementById('addSegmentBtn'),
+  addEmptySegmentBtn: document.getElementById('addEmptySegmentBtn'),
+  segmentList: document.getElementById('segmentList'),
+  segmentResultList: document.getElementById('segmentResultList')
 };
 
 let currentFile = null;
@@ -369,6 +393,7 @@ let pollTimer = 0;
 let dragStart = null;
 let isDragging = false;
 let selectMode = false;
+let segments = [];
 
 function getSodaAccessToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
@@ -569,6 +594,7 @@ function selectFile(file) {
   setProgress(0);
   updateTaskSummary('', '未提交');
   el.downloadArea.classList.remove('active');
+  if (el.segmentResultList) el.segmentResultList.innerHTML = '';
   setStatus('视频已选择，请确认字幕区域后提交。', 'info');
   renderSelectionBox();
 }
@@ -580,6 +606,103 @@ function formatBytes(bytes) {
   while (size >= 1024 && idx < units.length - 1) { size /= 1024; idx += 1; }
   return (idx === 0 ? size : size.toFixed(1)) + units[idx];
 }
+function normalizeSegment(start, end) {
+  const s = Math.max(0, Number(start) || 0);
+  const e = Math.max(s + 0.1, Number(end) || (s + 5));
+  return { start: Math.round(s * 1000) / 1000, end: Math.round(e * 1000) / 1000 };
+}
+function addSegment(start, end) {
+  segments.push(normalizeSegment(start, end));
+  renderSegmentInputs();
+}
+function removeSegment(index) {
+  segments.splice(index, 1);
+  renderSegmentInputs();
+}
+function updateSegment(index, key, value) {
+  if (!segments[index]) return;
+  segments[index][key] = Number(value);
+}
+function getValidSegments() {
+  return segments.map((seg) => normalizeSegment(seg.start, seg.end)).filter((seg) => seg.end > seg.start);
+}
+function renderSegmentInputs() {
+  if (!el.segmentList) return;
+  if (!segments.length) {
+    el.segmentList.innerHTML = '<div class="help">还没有多片段；不添加则使用单预览时长。</div>';
+    return;
+  }
+  el.segmentList.innerHTML = segments.map((seg, index) => `
+    <div class="segment-row">
+      <div class="field"><label>开始（秒）</label><input class="input segment-start" type="number" min="0" step="0.1" data-index="${index}" value="${seg.start}"></div>
+      <div class="field"><label>结束（秒）</label><input class="input segment-end" type="number" min="0" step="0.1" data-index="${index}" value="${seg.end}"></div>
+      <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除</button>
+    </div>
+  `).join('');
+}
+function renderSegmentResults(task) {
+  if (!el.segmentResultList) return;
+  const list = task && Array.isArray(task.segments) ? task.segments : [];
+  if (!list.length) {
+    el.segmentResultList.innerHTML = '';
+    return;
+  }
+  el.segmentResultList.innerHTML = list.map((seg) => {
+    const cls = seg.status === 'succeeded' ? 'succeeded' : (seg.status === 'failed' ? 'failed' : '');
+    const preview = seg.status === 'succeeded' && seg.preview_url
+      ? `<video controls playsinline src="${apiUrl(seg.preview_url)}"></video>`
+      : '';
+    const download = seg.status === 'succeeded' && seg.download_url
+      ? `<button class="btn btn-primary segment-download" type="button" data-url="${seg.download_url}" data-index="${seg.index || ''}">下载片段</button>`
+      : '';
+    const retry = seg.status === 'failed'
+      ? `<button class="btn btn-secondary segment-retry" type="button" data-id="${seg.segment_id}">重试片段</button>`
+      : '';
+    const err = seg.error ? `<div class="status-line err">${escapeHtml(seg.error)}</div>` : '';
+    return `<div class="segment-card ${cls}">
+      <div><strong>片段 ${seg.index || '-'}：</strong>${seg.start}s - ${seg.end}s · ${seg.status || 'queued'} / ${seg.phase || '-'}</div>
+      <div class="segment-meta">重试次数：${seg.retry_count || 0}</div>
+      ${err}${preview}<div class="btn-row">${download}${retry}</div>
+    </div>`;
+  }).join('');
+}
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+}
+async function downloadSegment(url, index) {
+  try {
+    const res = await fetch(apiUrl(url), { method: 'GET', headers: withSodaAccessToken({}), mode: 'cors' });
+    if (!res.ok) throw new Error(await readError(res));
+    const blob = await res.blob();
+    const object = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = object;
+    a.download = makeDownloadName().replace('.mp4', `_segment_${index || ''}.mp4`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(object), 30000);
+  } catch (error) {
+    setStatus('片段下载失败：' + error.message, 'err');
+  }
+}
+async function retrySegment(segmentId) {
+  if (!activeTaskId || !segmentId) return;
+  try {
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/segments/' + encodeURIComponent(segmentId) + '/retry'), {
+      method: 'POST',
+      headers: withSodaAccessToken({}),
+      mode: 'cors'
+    });
+    if (!res.ok) throw new Error(await readError(res));
+    setStatus('片段已加入重试队列。', 'info');
+    stopPolling();
+    pollTask();
+  } catch (error) {
+    setStatus('片段重试失败：' + error.message, 'err');
+  }
+}
+
 function friendlyErrorMessage(data, fallback) {
   const code = data && (data.error || data.code);
   const msg = (data && (data.message || data.raw_message)) || fallback || '';
@@ -633,7 +756,12 @@ async function submitTask() {
     form.append('file', currentFile, currentFile.name);
     const removalMode = getRemovalMode();
     form.append('mode', removalMode);
-    if (removalMode === 'ai_inpaint') form.append('preview_seconds', String(Math.min(60, Math.max(1, Number(el.previewSeconds.value) || 5))));
+    const validSegments = getValidSegments();
+    if (removalMode === 'ai_inpaint' && validSegments.length) {
+      form.append('segments_json', JSON.stringify(validSegments));
+    } else if (removalMode === 'ai_inpaint') {
+      form.append('preview_seconds', String(Math.min(60, Math.max(1, Number(el.previewSeconds.value) || 5))));
+    }
     updateTaskSummary('', '准备提交', removalMode);
     setStatus('本次提交模式：' + modeLabel(removalMode) + '。正在上传…', 'info');
     form.append('coord_mode', coords.coord_mode);
@@ -668,6 +796,7 @@ function statusToProgress(status) {
   if (status === 'queued') return 36;
   if (status === 'running' || status === 'processing') return 68;
   if (status === 'succeeded' || status === 'success' || status === 'completed') return 100;
+  if (status === 'partial_failed') return 100;
   if (status === 'failed' || status === 'error') return 100;
   return 45;
 }
@@ -681,14 +810,21 @@ async function pollTask() {
     });
     if (!res.ok) throw new Error(await readError(res));
     const data = await res.json();
+    renderSegmentResults(data);
     const status = data.status || data.state || 'unknown';
     const mode = data.mode || '';
     updateTaskSummary(activeTaskId, status, mode);
     setProgress(statusToProgress(status));
 
     if (status === 'succeeded' || status === 'success' || status === 'completed') {
-      setStatus('AI 预览片段处理完成，可以下载查看效果。', 'ok');
-      el.downloadArea.classList.add('active');
+      const hasSegments = Array.isArray(data.segments) && data.segments.length > 0;
+      setStatus(hasSegments ? '所有片段处理完成，可分别预览/下载。' : 'AI 预览片段处理完成，可以下载查看效果。', 'ok');
+      el.downloadArea.classList.toggle('active', !hasSegments);
+      stopPolling();
+      return;
+    }
+    if (status === 'partial_failed') {
+      setStatus('部分片段处理失败；成功片段可下载，失败片段可单独重试。', 'warn');
       stopPolling();
       return;
     }
@@ -787,6 +923,27 @@ el.defaultBoxBtn.addEventListener('click', () => setCoordInputs(DEFAULT_COORDS))
 el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
 el.submitBtn.addEventListener('click', submitTask);
 el.downloadBtn.addEventListener('click', downloadResult);
+el.addSegmentBtn.addEventListener('click', () => {
+  const start = el.videoPreview.currentTime || 0;
+  const duration = Number(el.previewSeconds.value) || 5;
+  addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
+});
+el.addEmptySegmentBtn.addEventListener('click', () => addSegment(0, 5));
+el.segmentList.addEventListener('input', (event) => {
+  const index = Number(event.target.dataset.index);
+  if (event.target.classList.contains('segment-start')) updateSegment(index, 'start', event.target.value);
+  if (event.target.classList.contains('segment-end')) updateSegment(index, 'end', event.target.value);
+});
+el.segmentList.addEventListener('click', (event) => {
+  const btn = event.target.closest('.segment-remove');
+  if (btn) removeSegment(Number(btn.dataset.index));
+});
+el.segmentResultList.addEventListener('click', (event) => {
+  const retryBtn = event.target.closest('.segment-retry');
+  const downloadBtn = event.target.closest('.segment-download');
+  if (retryBtn) retrySegment(retryBtn.dataset.id);
+  if (downloadBtn) downloadSegment(downloadBtn.dataset.url, downloadBtn.dataset.index);
+});
 el.saveTokenBtn.addEventListener('click', () => {
   setSodaAccessToken(el.accessToken.value);
   setBackendBase('');
@@ -826,6 +983,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 loadSavedSettings();
+renderSegmentInputs();
 renderSelectionBox();
 </script>
 </body>
