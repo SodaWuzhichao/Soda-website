@@ -8,197 +8,92 @@
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --surface-soft: #101010;
-  --gold: #ffd700;
-  --text: #e8e8e8;
-  --muted: #777;
-  --muted-2: #5e5e5e;
-  --border: #262626;
-  --ok: #5ad060;
-  --warn: #f0c46a;
-  --info: #7ec8ff;
-  --danger: #ff6666;
+  --bg:#0a0a0a; --surface:#141414; --surface-soft:#101010; --gold:#ffd700;
+  --text:#e8e8e8; --muted:#777; --muted-2:#5e5e5e; --border:#262626;
+  --ok:#5ad060; --warn:#f0c46a; --info:#7ec8ff; --danger:#ff6666;
 }
 html { color-scheme: dark; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 200;
-  min-height: 100vh;
-}
-a { color: inherit; }
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 24px 48px;
-  border-bottom: 1px solid var(--border);
-}
-.logo-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  line-height: 1;
-}
-.logo-wrap img { height: 52px; width: auto; border-radius: 4px; }
-.logo-text { display: flex; flex-direction: column; justify-content: center; }
-.logo-text strong { font-weight: 700; letter-spacing: -0.5px; color: #fff; font-size: 1.2em; }
-.logo-text span { font-weight: 200; letter-spacing: 3.5px; font-size: 0.65em; opacity: 0.8; color: #fff; margin-top: 2px; }
-.nav-back {
-  padding: 10px 20px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 300;
-  letter-spacing: 1px;
-  transition: all .3s;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: var(--text);
-}
-.nav-back:hover { border-color: var(--gold); color: var(--gold); }
-.container { max-width: 1040px; margin: 0 auto; padding: 80px 48px; }
-.section-label { font-size: .7rem; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
-.page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 200; letter-spacing: -2px; margin-bottom: 12px; }
-.page-desc { color: var(--muted); font-size: .95rem; line-height: 1.8; margin-bottom: 38px; max-width: 760px; }
-.upload-token-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .75fr); gap: 20px; align-items: start; }
-.full-card { width: 100%; }
-.param-grid { display: grid; gap: 14px; }
-.status-details { display: grid; gap: 10px; margin-top: 14px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-.stack { display: grid; gap: 18px; }
-.card-title { font-size: 1rem; font-weight: 300; margin-bottom: 12px; }
-.field label { display: block; margin-bottom: 8px; color: var(--muted); font-size: .84rem; }
-.input, .select {
-  width: 100%;
-  padding: 12px 14px;
-  background: #111;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font: inherit;
-}
-.input:focus, .select:focus { outline: none; border-color: var(--gold); }
-.input::placeholder { color: #4e4e4e; }
-.help { margin-top: 8px; color: var(--muted-2); font-size: .78rem; line-height: 1.6; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.coord-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
-.btn {
-  padding: 13px 20px;
-  border-radius: 6px;
-  font-weight: 300;
-  font-size: .9rem;
-  transition: all .3s;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  font-family: inherit;
-  letter-spacing: .5px;
-  background: transparent;
-  color: var(--text);
-}
-.btn:hover { transform: translateY(-2px); }
-.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.btn-primary { background: var(--gold); color: #111; border-color: var(--gold); }
-.btn-primary:hover { box-shadow: 0 8px 20px rgba(255,215,0,.3); }
-.btn-secondary:hover { border-color: rgba(255,255,255,.4); }
-.btn-danger { border-color: rgba(255,102,102,.35); color: #ff9a9a; }
-.upload-area {
-  background: var(--surface-soft);
-  border: 2px dashed var(--border);
-  border-radius: 10px;
-  padding: 36px 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all .3s;
-}
-.upload-area:hover, .upload-area.dragover { border-color: var(--gold); background: rgba(255,215,0,.05); }
-.upload-icon { font-size: 2.8rem; margin-bottom: 12px; }
-.upload-text { font-size: 1.05rem; margin-bottom: 8px; }
-.upload-hint { font-size: .84rem; color: var(--muted); }
-.file-name { margin-top: 12px; color: var(--gold); font-size: .85rem; word-break: break-all; }
-.preview-shell { display: none; }
-.preview-shell.active { display: block; }
-.video-wrap {
-  position: relative;
-  width: 100%;
-  background: #050505;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  user-select: none;
-}
-.video-wrap video { display: block; width: 100%; max-height: 560px; background: #000; }
-.selection-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; cursor: crosshair; display: none; }
-.selection-layer.active { display: block; }
-.selection-box {
-  position: absolute;
-  border: 2px solid var(--gold);
-  background: rgba(255,215,0,.16);
-  box-shadow: 0 0 0 9999px rgba(0,0,0,.28);
-  pointer-events: none;
-}
-.selection-box::after {
-  content: "字幕区域";
-  position: absolute;
-  top: -30px;
-  left: 0;
-  padding: 4px 8px;
-  background: rgba(0,0,0,.8);
-  border: 1px solid rgba(255,215,0,.45);
-  color: var(--gold);
-  font-size: 12px;
-  white-space: nowrap;
-}
+body { background:var(--bg); color:var(--text); font-family:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-weight:200; min-height:100vh; }
+a { color:inherit; }
+nav { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:24px 48px; border-bottom:1px solid var(--border); }
+.logo-wrap { display:flex; align-items:center; gap:8px; text-decoration:none; line-height:1; }
+.logo-wrap img { height:52px; width:auto; border-radius:4px; }
+.logo-text { display:flex; flex-direction:column; justify-content:center; }
+.logo-text strong { font-weight:700; letter-spacing:-.5px; color:#fff; font-size:1.2em; }
+.logo-text span { font-weight:200; letter-spacing:3.5px; font-size:.65em; opacity:.8; color:#fff; margin-top:2px; }
+.nav-back { padding:10px 20px; border-radius:6px; text-decoration:none; font-size:.85rem; font-weight:300; letter-spacing:1px; transition:all .3s; border:1px solid rgba(255,255,255,.2); color:var(--text); }
+.nav-back:hover { border-color:var(--gold); color:var(--gold); }
+.container { max-width:1040px; margin:0 auto; padding:80px 48px; }
+.section-label { font-size:.7rem; letter-spacing:4px; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
+.page-title { font-size:clamp(2rem,4vw,3rem); font-weight:200; letter-spacing:-2px; margin-bottom:12px; }
+.page-desc { color:var(--muted); font-size:.95rem; line-height:1.8; margin-bottom:38px; max-width:760px; }
+.upload-token-row { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr); gap:20px; align-items:start; }
+.full-card { width:100%; }
+.param-grid,.status-details,.stack { display:grid; gap:14px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; }
+.card-title { font-size:1rem; font-weight:300; margin-bottom:12px; }
+.field label { display:block; margin-bottom:8px; color:var(--muted); font-size:.84rem; }
+.input,.select { width:100%; padding:12px 14px; background:#111; border:1px solid var(--border); border-radius:10px; color:var(--text); font:inherit; }
+.input:focus,.select:focus { outline:none; border-color:var(--gold); }
+.input::placeholder { color:#4e4e4e; }
+.help { margin-top:8px; color:var(--muted-2); font-size:.78rem; line-height:1.6; }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.coord-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.btn-row { display:flex; flex-wrap:wrap; gap:12px; }
+.btn { padding:13px 20px; border-radius:6px; font-weight:300; font-size:.9rem; transition:all .3s; cursor:pointer; border:1px solid var(--border); font-family:inherit; letter-spacing:.5px; background:transparent; color:var(--text); }
+.btn:hover { transform:translateY(-2px); }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.btn-primary { background:var(--gold); color:#111; border-color:var(--gold); }
+.btn-primary:hover { box-shadow:0 8px 20px rgba(255,215,0,.3); }
+.btn-secondary:hover { border-color:rgba(255,255,255,.4); }
+.btn-danger { border-color:rgba(255,102,102,.35); color:#ff9a9a; }
+.upload-area { background:var(--surface-soft); border:2px dashed var(--border); border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all .3s; }
+.upload-area:hover,.upload-area.dragover { border-color:var(--gold); background:rgba(255,215,0,.05); }
+.upload-icon { font-size:2.8rem; margin-bottom:12px; }
+.upload-text { font-size:1.05rem; margin-bottom:8px; }
+.upload-hint { font-size:.84rem; color:var(--muted); }
+.file-name { margin-top:12px; color:var(--gold); font-size:.85rem; word-break:break-all; }
+.preview-shell { display:none; }
+.preview-shell.active { display:block; }
+.video-wrap { position:relative; width:100%; background:#050505; border:1px solid var(--border); border-radius:12px; overflow:hidden; user-select:none; }
+.video-wrap video { display:block; width:100%; max-height:560px; background:#000; }
+.selection-layer { position:absolute; left:0; top:0; width:0; height:0; cursor:crosshair; display:none; }
+.selection-layer.active { display:block; }
+.selection-box { position:absolute; border:2px solid var(--gold); background:rgba(255,215,0,.14); box-shadow:0 0 0 9999px rgba(0,0,0,.18); pointer-events:none; }
+.selection-box::after { content:"当前框"; position:absolute; top:-30px; left:0; padding:4px 8px; background:rgba(0,0,0,.8); border:1px solid rgba(255,215,0,.45); color:var(--gold); font-size:12px; white-space:nowrap; }
+.overlay-box { position:absolute; border:1px solid rgba(126,200,255,.95); background:rgba(126,200,255,.13); pointer-events:none; }
+.overlay-box.active { border-color:var(--gold); background:rgba(255,215,0,.15); }
+.overlay-box::after { content:attr(data-label); position:absolute; top:-24px; left:0; padding:3px 7px; border-radius:999px; background:rgba(0,0,0,.78); color:#bfe6ff; font-size:11px; white-space:nowrap; }
+.overlay-box.active::after { color:var(--gold); }
 .strategy-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
 .strategy-card { background:linear-gradient(180deg,rgba(255,215,0,.07),rgba(255,255,255,.02)); border:1px solid rgba(255,215,0,.18); border-radius:14px; padding:16px; min-height:118px; }
 .strategy-card strong { display:block; color:#fff; font-weight:400; margin-bottom:8px; }
 .strategy-card span { display:block; color:var(--muted); font-size:.82rem; line-height:1.7; }
-.recommend-panel { background:rgba(126,200,255,.07); border:1px solid rgba(126,200,255,.18); color:#bfe6ff; border-radius:12px; padding:14px; line-height:1.7; font-size:.84rem; margin-top:14px; }
-.status-panel { display: grid; gap: 12px; }
-.status-line {
-  min-height: 44px;
-  padding: 13px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-soft);
-  color: var(--muted);
-  line-height: 1.6;
-  word-break: break-word;
-}
-.status-line.ok { color: var(--ok); border-color: rgba(90,208,96,.25); }
-.status-line.warn { color: var(--warn); border-color: rgba(240,196,106,.25); }
-.status-line.err { color: var(--danger); border-color: rgba(255,102,102,.25); }
-.status-line.info { color: var(--info); border-color: rgba(126,200,255,.22); }
-.progress-bar-bg { height: 8px; background: #0d0d0d; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
-.progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), #fff2a6); transition: width .3s; }
-.subtle-row { display: flex; justify-content: space-between; gap: 14px; color: var(--muted); font-size: .84rem; border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 9px; }
-.subtle-row span:last-child { color: var(--text); text-align: right; word-break: break-all; }
-.download-area { display: none; }
-.download-area.active { display: block; }
-.segment-builder { display: grid; gap: 12px; margin-top: 16px; padding: 14px; border: 1px solid rgba(255,215,0,.14); border-radius: 12px; background: rgba(255,215,0,.03); }
-.segment-list { display: grid; gap: 10px; }
-.segment-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: #101010; }
-.segment-card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
-.segment-card.failed { border-color: rgba(255,102,102,.35); }
-.segment-card.succeeded { border-color: rgba(90,208,96,.25); }
-.segment-card video { width: 100%; max-height: 260px; background: #000; border-radius: 8px; }
-.segment-meta { color: var(--muted); font-size: .82rem; line-height: 1.6; }
-.notice { color: var(--muted); font-size: .82rem; line-height: 1.7; }
-footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); text-align: center; }
-@media (max-width: 900px) {
-  .upload-token-row, .strategy-grid { grid-template-columns: 1fr; }
-  .container { padding-top: 56px; }
-}
-@media (max-width: 640px) {
-  nav, .container { padding-left: 24px; padding-right: 24px; }
-  .form-grid, .coord-grid { grid-template-columns: 1fr 1fr; }
-  .btn { width: 100%; }
-}
+.status-panel { display:grid; gap:12px; }
+.status-line { min-height:44px; padding:13px 14px; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); color:var(--muted); line-height:1.6; word-break:break-word; }
+.status-line.ok { color:var(--ok); border-color:rgba(90,208,96,.25); }
+.status-line.warn { color:var(--warn); border-color:rgba(240,196,106,.25); }
+.status-line.err { color:var(--danger); border-color:rgba(255,102,102,.25); }
+.status-line.info { color:var(--info); border-color:rgba(126,200,255,.22); }
+.progress-bar-bg { height:8px; background:#0d0d0d; border:1px solid var(--border); border-radius:999px; overflow:hidden; }
+.progress-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#fff2a6); transition:width .3s; }
+.subtle-row { display:flex; justify-content:space-between; gap:14px; color:var(--muted); font-size:.84rem; border-bottom:1px solid rgba(255,255,255,.06); padding-bottom:9px; }
+.subtle-row span:last-child { color:var(--text); text-align:right; word-break:break-all; }
+.download-area { display:none; }
+.download-area.active { display:block; }
+.segment-builder { display:grid; gap:12px; margin-top:16px; padding:14px; border:1px solid rgba(255,215,0,.14); border-radius:12px; background:rgba(255,215,0,.03); }
+.segment-list { display:grid; gap:10px; }
+.segment-row { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; padding:10px; border:1px solid var(--border); border-radius:10px; background:#101010; }
+.region-list { display:grid; gap:8px; margin-top:10px; grid-column:1/-1; }
+.region-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:9px 10px; border:1px solid rgba(126,200,255,.18); border-radius:10px; color:var(--muted); font-size:.8rem; }
+.segment-card { display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-soft); }
+.segment-card.failed { border-color:rgba(255,102,102,.35); }
+.segment-card.succeeded { border-color:rgba(90,208,96,.25); }
+.segment-card video { width:100%; max-height:260px; background:#000; border-radius:8px; }
+.segment-meta,.notice { color:var(--muted); font-size:.82rem; line-height:1.7; }
+footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); text-align:center; }
+@media (max-width:900px) { .upload-token-row,.strategy-grid { grid-template-columns:1fr; } .container { padding-top:56px; } }
+@media (max-width:640px) { nav,.container { padding-left:24px; padding-right:24px; } .form-grid,.coord-grid,.segment-row { grid-template-columns:1fr; } .btn { width:100%; } }
 </style>
 </head>
 <body>
@@ -213,12 +108,12 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
 <main class="container">
   <p class="section-label">Video Tool</p>
   <h1 class="page-title">视频去字幕</h1>
-  <p class="page-desc">上传视频，框选字幕区域后交给服务器处理。正式版固定公网后端；当前只保留 AI 修复，支持分段预览，先看效果再决定是否继续加长。</p>
+  <p class="page-desc">上传视频，在预览区框选一个或多个字幕区域后统一处理。当前保留 AI 修复模式，支持同一时间片段内多个框选，先看效果再决定是否加长。</p>
 
   <section class="strategy-grid" aria-label="处理建议">
     <div class="strategy-card"><strong>1. 先短预览</strong><span>AI 修复先用 5 秒验证字幕框和背景效果，别一上来拉长时长。</span></div>
     <div class="strategy-card"><strong>2. 框小一点</strong><span>只覆盖字幕文字区域，减少 AI 需要重绘的面积，效果和成功率都会更好。</span></div>
-    <div class="strategy-card"><strong>3. 长片分段跑</strong><span>超过 10 秒会自动切成 5 秒小段，逐段 AI 修复后再拼接。</span></div>
+    <div class="strategy-card"><strong>3. 多框一次跑</strong><span>同一 5 秒里有多处字幕，可连续添加多个框，一次上传逐个修复。</span></div>
   </section>
 
   <!-- Top Row: Upload Video + Access Token -->
@@ -245,8 +140,9 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
         </div>
         <div class="btn-row" style="margin-top:12px;">
           <button class="btn btn-secondary" id="selectModeBtn" type="button">开启拖拽框选</button>
+          <button class="btn btn-secondary" id="addCurrentBoxBtn" type="button">把当前框加入片段</button>
         </div>
-        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；关闭后可正常操作视频控件。也可在下方精确输入坐标。默认字幕区域：x=0, y=0.78, w=1, h=0.18（relative）。</div>
+        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；同一片段可添加多个框。关闭后可正常操作视频控件。</div>
       </div>
     </section>
 
@@ -258,14 +154,9 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
           <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
           <div class="help">仅保存在当前浏览器 localStorage；请求时通过 X-Soda-Access-Token 发送，不会写入页面日志。</div>
         </div>
-        <div class="field">
-          <label for="backendBase">后端地址</label>
-          <input class="input" id="backendBase" type="url" autocomplete="off" value="https://api.soda567.dpdns.org" readonly>
-          <div class="help">正式环境固定走公网 API，不再提供局域网/本地切换。</div>
-        </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码/后端地址</button>
+        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
         <button class="btn btn-danger" id="clearTokenBtn" type="button">清除</button>
       </div>
     </aside>
@@ -305,10 +196,11 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
       <div class="segment-builder">
         <div>
           <div class="card-title" style="margin-bottom:4px;">多片段预览（可选）</div>
-          <div class="help">填写多个 start/end 后会一次上传原视频，后端逐段处理；暂不合成完整视频，每段可独立预览/下载/重试。留空则沿用上面的单预览时长。</div>
+          <div class="help">填写多个 start/end 后会一次上传原视频，后端逐段处理。每个片段可包含多个框选区域，适合 5 秒内多处字幕；留空则使用上方单预览时长和当前框。</div>
         </div>
         <div class="btn-row">
           <button class="btn btn-secondary" id="addSegmentBtn" type="button">添加当前 5 秒片段</button>
+          <button class="btn btn-secondary" id="addCurrentBoxToActiveBtn" type="button">把当前框加入选中片段</button>
           <button class="btn btn-secondary" id="addEmptySegmentBtn" type="button">添加空片段</button>
         </div>
         <div class="segment-list" id="segmentList"></div>
@@ -338,19 +230,18 @@ footer { padding: 28px 48px; border-top: 1px solid var(--border); font-size: .75
     <div class="segment-list" id="segmentResultList"></div>
   </div>
 
-  <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘，不要整条底部全选；AI 修复适合复杂背景，但长时长会明显变慢，建议逐步加长测试。</div>
+  <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘；同一片段有多处字幕就添加多个小框，比整条底部全选更稳。</div>
 </main>
 
 <footer>© 2026 SODA567</footer>
 
 <script>
 const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
-const API_BASE = 'https://api.soda567.dpdns.org';
+const API_BASE = '';
 const TOKEN_KEY = 'soda_access_token';
 
 const el = {
   accessToken: document.getElementById('accessToken'),
-  backendBase: document.getElementById('backendBase'),
   saveTokenBtn: document.getElementById('saveTokenBtn'),
   clearTokenBtn: document.getElementById('clearTokenBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -381,6 +272,8 @@ const el = {
   downloadArea: document.getElementById('downloadArea'),
   downloadBtn: document.getElementById('downloadBtn'),
   addSegmentBtn: document.getElementById('addSegmentBtn'),
+  addCurrentBoxBtn: document.getElementById('addCurrentBoxBtn'),
+  addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
   addEmptySegmentBtn: document.getElementById('addEmptySegmentBtn'),
   segmentList: document.getElementById('segmentList'),
   segmentResultList: document.getElementById('segmentResultList')
@@ -394,6 +287,7 @@ let dragStart = null;
 let isDragging = false;
 let selectMode = false;
 let segments = [];
+let activeSegmentIndex = -1;
 
 function getSodaAccessToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
@@ -408,17 +302,8 @@ function withSodaAccessToken(headers = {}) {
   if (token) headers['X-Soda-Access-Token'] = token;
   return headers;
 }
-function getBackendBase() {
-  const saved = localStorage.getItem('soda_video_subtitle_remover_api_base');
-  return (saved || '').trim().replace(/\/$/, '') || API_BASE;
-}
-function setBackendBase(value) {
-  const base = String(value || '').trim().replace(/\/$/, '');
-  if (base) localStorage.setItem('soda_video_subtitle_remover_api_base', base);
-  else localStorage.removeItem('soda_video_subtitle_remover_api_base');
-}
 function apiUrl(path) {
-  return getBackendBase() + path;
+  return API_BASE + path;
 }
 function setStatus(message, type = '') {
   el.statusLine.textContent = message;
@@ -482,6 +367,7 @@ function setCoordInputs(coords) {
   el.coordW.value = formatCoord(coords.w);
   el.coordH.value = formatCoord(coords.h);
   renderSelectionBox();
+  renderStoredRegionOverlays();
 }
 function formatCoord(value) {
   const n = Number(value);
@@ -550,6 +436,24 @@ function renderSelectionBox() {
   el.selectionBox.style.width = (coords.w * 100) + '%';
   el.selectionBox.style.height = (coords.h * 100) + '%';
 }
+function renderStoredRegionOverlays() {
+  if (!el.selectionLayer) return;
+  syncSelectionLayerToVideoContent();
+  el.selectionLayer.querySelectorAll('.overlay-box').forEach((node) => node.remove());
+  segments.forEach((seg, sIndex) => {
+    ensureRegionList(seg).forEach((region, rIndex) => {
+      const coords = coordsToRelative(region);
+      const box = document.createElement('div');
+      box.className = 'overlay-box' + (sIndex === activeSegmentIndex ? ' active' : '');
+      box.dataset.label = `片段${sIndex + 1}-框${rIndex + 1}`;
+      box.style.left = (coords.x * 100) + '%';
+      box.style.top = (coords.y * 100) + '%';
+      box.style.width = (coords.w * 100) + '%';
+      box.style.height = (coords.h * 100) + '%';
+      el.selectionLayer.appendChild(box);
+    });
+  });
+}
 function setCoordsFromRelative(relativeCoords) {
   if (el.coordMode.value === 'pixels') {
     const { videoW, videoH } = getVideoPixels();
@@ -573,7 +477,6 @@ function pointToRelative(event) {
 }
 function loadSavedSettings() {
   el.accessToken.value = getSodaAccessToken();
-  el.backendBase.value = getBackendBase();
   setCoordInputs(DEFAULT_COORDS);
   updateModeHelp();
 }
@@ -611,34 +514,99 @@ function normalizeSegment(start, end) {
   const e = Math.max(s + 0.1, Number(end) || (s + 5));
   return { start: Math.round(s * 1000) / 1000, end: Math.round(e * 1000) / 1000 };
 }
-function addSegment(start, end) {
-  segments.push(normalizeSegment(start, end));
+function cloneCurrentRegion() {
+  const coords = coordsToRelative(getCoords());
+  return {
+    coord_mode: 'relative',
+    x: Number(formatCoord(coords.x)),
+    y: Number(formatCoord(coords.y)),
+    w: Number(formatCoord(coords.w)),
+    h: Number(formatCoord(coords.h))
+  };
+}
+function ensureRegionList(seg) {
+  if (!Array.isArray(seg.regions)) seg.regions = [];
+  return seg.regions;
+}
+function addRegionToSegment(index, region) {
+  if (!segments[index]) return;
+  ensureRegionList(segments[index]).push(region || cloneCurrentRegion());
+  activeSegmentIndex = index;
   renderSegmentInputs();
+  renderStoredRegionOverlays();
+}
+function removeRegion(segmentIndex, regionIndex) {
+  if (!segments[segmentIndex]) return;
+  ensureRegionList(segments[segmentIndex]).splice(regionIndex, 1);
+  renderSegmentInputs();
+  renderStoredRegionOverlays();
+}
+function setActiveSegment(index) {
+  activeSegmentIndex = Number(index);
+  renderSegmentInputs();
+  renderStoredRegionOverlays();
+}
+function addCurrentRegionToActiveSegment() {
+  if (!segments.length) {
+    const start = el.videoPreview.currentTime || 0;
+    const duration = Number(el.previewSeconds.value) || 5;
+    addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
+  }
+  const index = activeSegmentIndex >= 0 ? activeSegmentIndex : segments.length - 1;
+  addRegionToSegment(index, cloneCurrentRegion());
+  setStatus('已把当前框加入片段 ' + (index + 1) + '。', 'ok');
+}
+function addSegment(start, end) {
+  const seg = normalizeSegment(start, end);
+  seg.regions = [cloneCurrentRegion()];
+  segments.push(seg);
+  activeSegmentIndex = segments.length - 1;
+  renderSegmentInputs();
+  renderStoredRegionOverlays();
 }
 function removeSegment(index) {
   segments.splice(index, 1);
+  if (activeSegmentIndex >= segments.length) activeSegmentIndex = segments.length - 1;
   renderSegmentInputs();
+  renderStoredRegionOverlays();
 }
 function updateSegment(index, key, value) {
   if (!segments[index]) return;
   segments[index][key] = Number(value);
 }
 function getValidSegments() {
-  return segments.map((seg) => normalizeSegment(seg.start, seg.end)).filter((seg) => seg.end > seg.start);
+  return segments.map((seg) => {
+    const normalized = normalizeSegment(seg.start, seg.end);
+    normalized.regions = ensureRegionList(seg).length ? ensureRegionList(seg) : [cloneCurrentRegion()];
+    return normalized;
+  }).filter((seg) => seg.end > seg.start);
 }
 function renderSegmentInputs() {
   if (!el.segmentList) return;
   if (!segments.length) {
-    el.segmentList.innerHTML = '<div class="help">还没有多片段；不添加则使用单预览时长。</div>';
+    el.segmentList.innerHTML = '<div class="help">还没有多片段；不添加则使用单预览时长和当前框。</div>';
     return;
   }
-  el.segmentList.innerHTML = segments.map((seg, index) => `
-    <div class="segment-row">
+  el.segmentList.innerHTML = segments.map((seg, index) => {
+    const regions = ensureRegionList(seg);
+    const regionHtml = regions.length ? regions.map((region, rIndex) => `
+      <div class="region-row">
+        <span>框 ${rIndex + 1} · x=${region.x}, y=${region.y}, w=${region.w}, h=${region.h}</span>
+        <button class="btn btn-danger region-remove" type="button" data-segment-index="${index}" data-region-index="${rIndex}">删除框</button>
+      </div>
+    `).join('') : '<div class="help">这个片段还没有框，会默认使用当前坐标框。</div>';
+    return `
+    <div class="segment-row" data-active="${activeSegmentIndex === index ? '1' : '0'}" style="border-color:${activeSegmentIndex === index ? 'rgba(255,215,0,.45)' : 'var(--border)'}">
       <div class="field"><label>开始（秒）</label><input class="input segment-start" type="number" min="0" step="0.1" data-index="${index}" value="${seg.start}"></div>
       <div class="field"><label>结束（秒）</label><input class="input segment-end" type="number" min="0" step="0.1" data-index="${index}" value="${seg.end}"></div>
-      <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除</button>
-    </div>
-  `).join('');
+      <div class="btn-row">
+        <button class="btn btn-secondary segment-active" type="button" data-index="${index}">${activeSegmentIndex === index ? '已选中' : '选中'}</button>
+        <button class="btn btn-secondary region-add" type="button" data-index="${index}">加当前框</button>
+        <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除</button>
+      </div>
+      <div class="region-list">${regionHtml}</div>
+    </div>`;
+  }).join('');
 }
 function renderSegmentResults(task) {
   if (!el.segmentResultList) return;
@@ -748,9 +716,7 @@ async function submitTask() {
     el.downloadArea.classList.remove('active');
     setProgress(12);
     updateTaskSummary('', '提交中');
-    setBackendBase('');
-    if (el.backendBase) el.backendBase.value = getBackendBase();
-    setStatus('正在上传并创建任务… 后端：' + getBackendBase(), 'info');
+    setStatus('正在上传并创建任务…', 'info');
 
     const form = new FormData();
     form.append('file', currentFile, currentFile.name);
@@ -903,9 +869,9 @@ el.fileInput.addEventListener('change', () => selectFile(el.fileInput.files[0]))
   });
 });
 el.uploadArea.addEventListener('drop', (event) => selectFile(event.dataTransfer.files[0]));
-el.videoPreview.addEventListener('loadedmetadata', renderSelectionBox);
-el.videoPreview.addEventListener('loadeddata', renderSelectionBox);
-window.addEventListener('resize', renderSelectionBox);
+el.videoPreview.addEventListener('loadedmetadata', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
+el.videoPreview.addEventListener('loadeddata', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
+window.addEventListener('resize', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
 el.coordMode.addEventListener('change', (event) => {
   const targetMode = event.target.value;
   const previousMode = targetMode === 'relative' ? 'pixels' : 'relative';
@@ -928,6 +894,8 @@ el.addSegmentBtn.addEventListener('click', () => {
   const duration = Number(el.previewSeconds.value) || 5;
   addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
 });
+el.addCurrentBoxBtn.addEventListener('click', addCurrentRegionToActiveSegment);
+el.addCurrentBoxToActiveBtn.addEventListener('click', addCurrentRegionToActiveSegment);
 el.addEmptySegmentBtn.addEventListener('click', () => addSegment(0, 5));
 el.segmentList.addEventListener('input', (event) => {
   const index = Number(event.target.dataset.index);
@@ -935,8 +903,14 @@ el.segmentList.addEventListener('input', (event) => {
   if (event.target.classList.contains('segment-end')) updateSegment(index, 'end', event.target.value);
 });
 el.segmentList.addEventListener('click', (event) => {
-  const btn = event.target.closest('.segment-remove');
-  if (btn) removeSegment(Number(btn.dataset.index));
+  const removeBtn = event.target.closest('.segment-remove');
+  const activeBtn = event.target.closest('.segment-active');
+  const addRegionBtn = event.target.closest('.region-add');
+  const removeRegionBtn = event.target.closest('.region-remove');
+  if (removeBtn) removeSegment(Number(removeBtn.dataset.index));
+  if (activeBtn) setActiveSegment(Number(activeBtn.dataset.index));
+  if (addRegionBtn) addRegionToSegment(Number(addRegionBtn.dataset.index), cloneCurrentRegion());
+  if (removeRegionBtn) removeRegion(Number(removeRegionBtn.dataset.segmentIndex), Number(removeRegionBtn.dataset.regionIndex));
 });
 el.segmentResultList.addEventListener('click', (event) => {
   const retryBtn = event.target.closest('.segment-retry');
@@ -946,16 +920,12 @@ el.segmentResultList.addEventListener('click', (event) => {
 });
 el.saveTokenBtn.addEventListener('click', () => {
   setSodaAccessToken(el.accessToken.value);
-  setBackendBase('');
-  el.backendBase.value = getBackendBase();
-  setStatus((getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。') + ' 当前后端：' + getBackendBase(), 'ok');
+  setStatus(getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。', 'ok');
 });
 el.clearTokenBtn.addEventListener('click', () => {
   el.accessToken.value = '';
   setSodaAccessToken('');
-  setBackendBase('');
-  el.backendBase.value = getBackendBase();
-  setStatus('访问码已清除，后端地址已恢复默认。当前后端：' + getBackendBase(), 'warn');
+  setStatus('访问码已清除。', 'warn');
 });
 el.selectionLayer.addEventListener('pointerdown', (event) => {
   if (!currentFile) return;
@@ -976,6 +946,7 @@ el.selectionLayer.addEventListener('pointerup', (event) => {
   isDragging = false;
   dragStart = null;
   try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {}
+  renderStoredRegionOverlays();
 });
 window.addEventListener('beforeunload', () => {
   stopPolling();
@@ -985,6 +956,7 @@ window.addEventListener('beforeunload', () => {
 loadSavedSettings();
 renderSegmentInputs();
 renderSelectionBox();
+renderStoredRegionOverlays();
 </script>
 </body>
 </html>
