@@ -888,7 +888,18 @@ async function saveAccessTokenEditor(id) {
     await loadAccessTokens();
   } catch(e){ toast('保存访问码失败: '+e.message,'err'); }
 }
-async function patchAccessToken(id, enabled) { try { const res = await api('POST', `/api/admin/access-tokens/${id}/patch`, {enabled: enabled === 'true'}); if(!res.ok) throw new Error(await res.text()); toast('访问码已更新','ok'); await loadAccessTokens(); } catch(e){ toast('更新访问码失败: '+e.message,'err'); } }
+async function patchAccessToken(id, enabled) {
+  try {
+    const nextEnabled = enabled === true || enabled === 'true';
+    const res = await api('POST', `/api/admin/access-tokens/${id}/patch`, {enabled: nextEnabled});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || data.message || JSON.stringify(data) || await res.text());
+    const actual = data.token && data.token.enabled;
+    if (actual !== nextEnabled) throw new Error(`后端返回状态未生效：期望${nextEnabled ? '启用' : '停用'}，实际${actual ? '启用' : '停用'}`);
+    toast(nextEnabled ? '访问码已启用' : '访问码已停用','ok');
+    await loadAccessTokens();
+  } catch(e){ toast('更新访问码失败: '+e.message,'err'); }
+}
 async function deleteAccessToken(id) { if(!confirm('确认软删除此访问码？')) return; try { const res = await api('POST', `/api/admin/access-tokens/${id}/delete`, {}); if(!res.ok) throw new Error(await res.text()); toast('访问码已软删除','ok'); await loadAccessTokens(); } catch(e){ toast('删除访问码失败: '+e.message,'err'); } }
 function getSodaAccessToken() { return localStorage.getItem('soda_access_token') || ''; }
 function setSodaAccessToken(v) { localStorage.setItem('soda_access_token', String(v || '').trim()); }
