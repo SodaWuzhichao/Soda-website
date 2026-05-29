@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>视频去字幕 | SODA567</title>
+<title>视频去字幕 / 去水印 | SODA567</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,6 +27,15 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .page-title { font-size:clamp(2rem,4vw,3rem); font-weight:200; letter-spacing:-2px; margin-bottom:16px; }
 .page-desc { color:var(--muted); font-size:.95rem; margin-bottom:36px; line-height:1.8; }
 .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; margin-top:24px; }
+.mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 0 28px; }
+.mode-card { text-align:left; padding:16px; border:1px solid var(--border); border-radius:8px; background:#101010; color:var(--text); cursor:pointer; transition:all .25s; font:inherit; }
+.mode-card strong { display:block; font-size:1rem; margin-bottom:6px; color:#fff; }
+.mode-card span { display:block; color:var(--muted); font-size:.82rem; line-height:1.65; }
+.mode-card.active { border-color:var(--gold); background:rgba(255,215,0,.07); box-shadow:0 0 0 1px rgba(255,215,0,.16) inset; }
+.mode-card.active strong { color:var(--gold); }
+.mode-note { padding:12px 14px; border:1px solid rgba(255,215,0,.2); border-radius:8px; color:var(--muted); background:rgba(255,215,0,.04); font-size:.86rem; line-height:1.7; margin-bottom:18px; }
+.timeline.watermark-mode { opacity:.42; }
+.timeline.watermark-mode .timeline-track, .timeline.watermark-mode .btn-group, .timeline.watermark-mode .segment-list { display:none; }
 .upload-area { background:var(--surface); border:2px dashed var(--border); border-radius:8px; padding:54px 32px; text-align:center; cursor:pointer; transition:all .3s; }
 .upload-area:hover,.upload-area.dragover { border-color:var(--gold); background:rgba(255,215,0,.05); }
 .upload-icon { font-size:3rem; margin-bottom:16px; }
@@ -89,7 +98,7 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .download-area { display:none; }
 .download-area.active { display:block; }
 footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); text-align:center; }
-@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.76rem; } .timeline-meta { flex-direction:column; } .segment-time-edit { grid-template-columns:1fr; } }
+@media (max-width:768px) { .mode-switch { grid-template-columns:1fr; } nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.76rem; } .timeline-meta { flex-direction:column; } .segment-time-edit { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -102,14 +111,26 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
 </nav>
 
 <main class="container">
-  <h1 class="page-title">视频去字幕</h1>
-  <p class="page-desc">上传视频，直接在预览画面框选字幕区域；需要处理哪一段，就在时间线上拖出来。</p>
+  <h1 class="page-title" id="pageTitle">视频去字幕 / 去水印</h1>
+  <p class="page-desc" id="pageDesc">上传视频，选择「去字幕」或「去水印」；直接在预览画面框选要修复的区域。</p>
+
+  <div class="mode-switch" role="tablist" aria-label="处理模式">
+    <button class="mode-card active" id="subtitleModeBtn" type="button" data-removal-type="subtitle" role="tab" aria-selected="true">
+      <strong>去字幕</strong>
+      <span>适合处理某段字幕，提交时只上传选中片段；本地高质量裁剪，不上传完整原视频。</span>
+    </button>
+    <button class="mode-card" id="watermarkModeBtn" type="button" data-removal-type="watermark" role="tab" aria-selected="false">
+      <strong>去水印</strong>
+      <span>适合固定水印/角标，提交整条视频，后端自动分段处理，耗时较长。</span>
+    </button>
+  </div>
+  <div class="mode-note" id="modeNote">当前为去字幕模式：框选字幕区域，并在时间线上选择要处理的片段。</div>
 
   <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择视频文件">
     <input id="fileInput" type="file" accept="video/*" hidden>
     <div class="upload-icon">🎞️</div>
     <div class="upload-text">点击或拖拽视频到这里</div>
-    <div class="upload-hint">本地预览后框选字幕区域；高质量片段裁剪：提交时只上传你选择的裁剪片段（默认高码率，减少二次压缩）</div>
+    <div class="upload-hint"><span id="uploadHintText">本地预览后框选字幕区域；高质量片段裁剪：提交时只上传你选择的裁剪片段（默认高码率，减少二次压缩）</span></div>
     <div class="file-name" id="fileName"></div>
   </div>
 
@@ -138,9 +159,9 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
       <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">撤销上个框</button>
       <button class="btn btn-danger" id="clearAllBoxesBtn" type="button">清除所有框</button>
     </div>
-    <div class="help" style="margin-top:10px;">开启框选后，拖出字幕区域并松手即自动加入当前片段。可连续框选多个小区域。</div>
+    <div class="help" id="boxHelp" style="margin-top:10px;">开启框选后，拖出字幕区域并松手即自动加入当前片段。可连续框选多个小区域。</div>
 
-    <div class="timeline">
+    <div class="timeline" id="timelineBox">
       <div class="timeline-track" id="timelineTrack" title="在这里拖拽选择处理时间段">
         <div class="timeline-playhead" id="timelinePlayhead"></div>
       </div>
@@ -189,6 +210,14 @@ const CLIP_MIME_CANDIDATES = [
 
 
 const el = {
+  pageTitle: document.getElementById('pageTitle'),
+  pageDesc: document.getElementById('pageDesc'),
+  subtitleModeBtn: document.getElementById('subtitleModeBtn'),
+  watermarkModeBtn: document.getElementById('watermarkModeBtn'),
+  modeNote: document.getElementById('modeNote'),
+  uploadHintText: document.getElementById('uploadHintText'),
+  boxHelp: document.getElementById('boxHelp'),
+  timelineBox: document.getElementById('timelineBox'),
   accessToken: document.getElementById('accessToken'),
   saveTokenBtn: document.getElementById('saveTokenBtn'),
   clearTokenBtn: document.getElementById('clearTokenBtn'),
@@ -238,6 +267,7 @@ let timelineDrag = null;
 let timelinePreview = null;
 let dragHasSelection = false;
 let fullVideoUrl = '';
+let removalType = 'subtitle';
 
 function getSodaAccessToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function setSodaAccessToken(value) { const token = String(value || '').trim(); token ? localStorage.setItem(TOKEN_KEY, token) : localStorage.removeItem(TOKEN_KEY); }
@@ -341,7 +371,7 @@ function pointToRelative(event) {
   return { x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)), y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)) };
 }
 function cloneCurrentRegion() {
-  if (!hasCurrentRegion) throw new Error('请先在画面上框选字幕区域，或点击“使用底部默认框”。');
+  if (!hasCurrentRegion) throw new Error(removalType === 'watermark' ? '请先在画面上框选水印区域。' : '请先在画面上框选字幕区域，或点击“使用底部默认框”。');
   return { coord_mode:'relative', x:round3(currentRegion.x), y:round3(currentRegion.y), w:round3(currentRegion.w), h:round3(currentRegion.h) };
 }
 function round3(n) { return Math.round(Number(n) * 1000) / 1000; }
@@ -490,6 +520,53 @@ function timelinePointToSeconds(event) {
   return ratio * (Number(el.videoPreview.duration) || 0);
 }
 
+function getRemovalLabel() { return removalType === 'watermark' ? '去水印' : '去字幕'; }
+function applyRemovalMode(nextType) {
+  removalType = nextType === 'watermark' ? 'watermark' : 'subtitle';
+  const isWatermark = removalType === 'watermark';
+  el.subtitleModeBtn.classList.toggle('active', !isWatermark);
+  el.watermarkModeBtn.classList.toggle('active', isWatermark);
+  el.subtitleModeBtn.setAttribute('aria-selected', String(!isWatermark));
+  el.watermarkModeBtn.setAttribute('aria-selected', String(isWatermark));
+  el.pageTitle.textContent = isWatermark ? '视频去水印' : '视频去字幕';
+  el.pageDesc.textContent = isWatermark
+    ? '上传视频，框选固定水印/角标区域；提交后上传完整视频，后端自动分段处理并合成完整视频。'
+    : '上传视频，直接在预览画面框选字幕区域；需要处理哪一段，就在时间线上拖出来。';
+  el.modeNote.textContent = isWatermark
+    ? '当前为去水印模式：只需要框选水印区域，不需要手动选择时间片段；默认处理整条视频，耗时较长。'
+    : '当前为去字幕模式：框选字幕区域，并在时间线上选择要处理的片段。';
+  el.uploadHintText.textContent = isWatermark
+    ? '本地预览后框选固定水印/角标区域；提交时上传完整原视频，后端按 10-15 秒自动分段去水印并拼回完整视频。'
+    : '本地预览后框选字幕区域；高质量片段裁剪：提交时只上传你选择的裁剪片段（默认高码率，减少二次压缩）';
+  el.boxHelp.textContent = isWatermark
+    ? '开启框选后，拖出水印/角标区域并松手即可。去水印模式会把当前框应用到整条视频。'
+    : '开启框选后，拖出字幕区域并松手即自动加入当前片段。可连续框选多个小区域。';
+  el.timelineBox.classList.toggle('watermark-mode', isWatermark);
+  el.timelineHint.textContent = isWatermark ? '去水印模式默认处理整条视频，无需选择时间片段。' : '拖拽时间线选择处理片段；不选则默认处理当前 5 秒。';
+  el.submitBtn.textContent = isWatermark ? '提交去水印任务' : '提交去字幕任务';
+  if (isWatermark) {
+    activeSegmentIndex = -1;
+    renderStoredRegionOverlays();
+  } else {
+    renderStoredRegionOverlays();
+  }
+}
+function getWatermarkSubmitSegment() {
+  if (!hasCurrentRegion) {
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const list = ensureRegionList(segments[i]);
+      if (list.length) {
+        setCurrentRegion(list[list.length - 1], true);
+        break;
+      }
+    }
+  }
+  if (!hasCurrentRegion) throw new Error('请先框选水印区域。');
+  const duration = Number(el.videoPreview.duration) || 0;
+  if (!duration) throw new Error('视频时长尚未读取完成，请稍等片刻。');
+  return [{ segment_id:'full_video_watermark', start:0, end:round3(duration), duration:round3(duration), regions:[cloneCurrentRegion()] }];
+}
+
 function selectFile(file) {
   if (!file) return;
   if (!file.type.startsWith('video/')) { setStatus('请选择视频文件。', 'err'); return; }
@@ -512,7 +589,7 @@ function selectFile(file) {
   fullVideoUrl = '';
   el.segmentResultList.innerHTML = '';
   renderSegments();
-  setStatus('视频已选择：先在画面框选字幕，再在时间线上选择片段。', 'warn');
+  setStatus(removalType === 'watermark' ? '视频已选择：请框选水印/角标区域；提交后将上传完整视频并自动分段处理。' : '视频已选择：先在画面框选字幕，再在时间线上选择片段。', 'warn');
 }
 
 function friendlyErrorMessage(data, fallback) {
@@ -555,7 +632,7 @@ async function createUploadSession(file) {
     body:JSON.stringify({ filename:file.name, size:file.size, content_type:file.type || '', chunk_size:CHUNK_UPLOAD_SIZE })
   });
 }
-async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
+async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet, purpose = 'fallback') {
   for (let attempt = 1; attempt <= CHUNK_UPLOAD_RETRIES; attempt++) {
     try {
       const res = await fetch(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/chunks/' + index), {
@@ -567,7 +644,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
       uploadedSet.add(index);
       const pct = 8 + Math.round((uploadedSet.size / totalChunks) * 72);
       setProgress(pct);
-      setStatus(`备用路径：正在分片上传视频 ${uploadedSet.size}/${totalChunks}。默认不会走这里；仅在浏览器本地裁剪不可用时使用。`, 'warn');
+      setStatus(purpose === 'watermark' ? `正在上传完整视频用于去水印 ${uploadedSet.size}/${totalChunks}；后端会自动分段处理。` : `备用路径：正在分片上传视频 ${uploadedSet.size}/${totalChunks}。默认不会走这里；仅在浏览器本地裁剪不可用时使用。`, 'warn');
       return;
     } catch (error) {
       if (attempt >= CHUNK_UPLOAD_RETRIES) throw new Error(`第 ${index + 1} 个分片上传失败，已重试 ${CHUNK_UPLOAD_RETRIES} 次：${error.message}`);
@@ -576,9 +653,9 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
     }
   }
 }
-async function uploadVideoInChunks(file) {
+async function uploadVideoInChunks(file, purpose = 'fallback') {
   setProgress(5);
-  setStatus('备用路径：正在创建分片上传会话…', 'warn');
+  setStatus(purpose === 'watermark' ? '正在创建完整视频上传会话，用于去水印…' : '备用路径：正在创建分片上传会话…', 'warn');
   const session = await createUploadSession(file);
   const uploadId = session.upload_id;
   if (!uploadId) throw new Error('后端未返回 upload_id');
@@ -590,10 +667,10 @@ async function uploadVideoInChunks(file) {
     if (uploadedSet.has(index)) continue;
     const start = index * chunkSize;
     const end = Math.min(file.size, start + chunkSize);
-    await uploadOneChunk(uploadId, index, file.slice(start, end), totalChunks, uploadedSet);
+    await uploadOneChunk(uploadId, index, file.slice(start, end), totalChunks, uploadedSet, purpose);
   }
   setProgress(84);
-  setStatus('备用路径：分片已上传完成，正在合并…', 'warn');
+  setStatus(purpose === 'watermark' ? '完整视频分片已上传完成，正在合并…' : '备用路径：分片已上传完成，正在合并…', 'warn');
   const completed = await fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/complete'), { method:'POST', headers:withSodaAccessToken({}) });
   if (!completed.source_path) throw new Error('后端未返回合并后的视频路径');
   setProgress(90);
@@ -709,6 +786,8 @@ async function createSubtitleTask(uploadFile, submitSegments) {
   const form = new FormData();
   form.append('file', uploadFile, uploadFile.name);
   form.append('mode', 'ai_inpaint');
+  form.append('removal_type', removalType);
+  form.append('task_type', removalType);
   form.append('segments_json', JSON.stringify(submitSegments));
   form.append('coord_mode', 'relative');
   form.append('x', String(submitSegments[0].regions[0].x));
@@ -727,10 +806,31 @@ async function createTaskForSelectedSegment(segment, segmentIndex, totalSegments
   const data = await createSubtitleTask(clip.file, [trimmedSegment]);
   return { data, trimmedSegment };
 }
+async function createWatermarkTask(submitSegments) {
+  const uploaded = await uploadVideoInChunks(currentFile, 'watermark');
+  const form = new FormData();
+  form.append('upload_id', uploaded.uploadId);
+  form.append('source_path', uploaded.sourcePath);
+  form.append('mode', 'ai_inpaint');
+  form.append('removal_type', 'watermark');
+  form.append('task_type', 'watermark');
+  form.append('segments_json', JSON.stringify(submitSegments));
+  form.append('coord_mode', 'relative');
+  form.append('x', String(submitSegments[0].regions[0].x));
+  form.append('y', String(submitSegments[0].regions[0].y));
+  form.append('w', String(submitSegments[0].regions[0].w));
+  form.append('h', String(submitSegments[0].regions[0].h));
+  setProgress(92);
+  setStatus('完整视频已上传，正在创建去水印任务；后端会自动按短片段处理并拼回完整视频…', 'warn');
+  const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), { method:'POST', headers:withSodaAccessToken({}), body:form });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
 async function submitTask() {
   try {
     if (!currentFile) throw new Error('请先上传视频文件');
-    const submitSegments = getSubmitSegments();
+    const submitSegments = removalType === 'watermark' ? getWatermarkSubmitSegment() : getSubmitSegments();
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
     stopPolling();
@@ -740,6 +840,15 @@ async function submitTask() {
     el.downloadFullBtn.style.display = 'none';
     fullVideoUrl = '';
     activeTaskId = '';
+
+    if (removalType === 'watermark') {
+      const data = await createWatermarkTask(submitSegments);
+      activeTaskId = data && data.task_id ? data.task_id : '';
+      if (!activeTaskId) throw new Error('后端未返回 task_id');
+      setStatus('去水印任务已创建：完整视频已上传，后端正在自动分段处理，耗时较长…', 'warn');
+      pollTask();
+      return;
+    }
 
     const taskResults = [];
     for (let index = 0; index < submitSegments.length; index++) {
@@ -801,7 +910,7 @@ function renderComposeControls(task) {
     el.composeBtn.textContent = '重新合成完整视频';
     el.downloadFullBtn.style.display = 'inline-block';
   } else {
-    el.composeBtn.textContent = '导出完整视频';
+    el.composeBtn.textContent = removalType === 'watermark' ? '重新合成完整视频' : '导出完整视频';
     el.downloadFullBtn.style.display = 'none';
   }
 }
@@ -831,7 +940,7 @@ async function downloadFullVideo() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + '_full_subtitle_removed.mp4';
+    a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + (removalType === 'watermark' ? '_watermark_removed.mp4' : '_full_subtitle_removed.mp4');
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   } catch (error) { setStatus('完整视频下载失败：' + error.message, 'err'); }
@@ -848,9 +957,9 @@ async function pollTask() {
     setProgress(statusToProgress(status));
     if (['succeeded','success','completed'].includes(status)) {
       const hasSegments = Array.isArray(data.segments) && data.segments.length > 0;
-      if (data.compose_status === 'running') setStatus('片段处理完成，正在合成完整视频…', 'warn');
-      else if (data.compose_status === 'succeeded') setStatus('完整视频已合成，可以下载。', 'ok');
-      else setStatus(hasSegments ? '片段处理完成，可导出完整视频。' : '处理完成，可以下载。', 'ok');
+      if (data.compose_status === 'running') setStatus((data.removal_type === 'watermark' ? '去水印片段处理完成，正在自动拼回完整视频…' : '片段处理完成，正在合成完整视频…'), 'warn');
+      else if (data.compose_status === 'succeeded') setStatus((data.removal_type === 'watermark' ? '去水印完整视频已合成，可以下载。' : '完整视频已合成，可以下载。'), 'ok');
+      else setStatus(hasSegments ? (data.removal_type === 'watermark' ? '去水印片段处理完成，正在准备完整视频。' : '片段处理完成，可导出完整视频。') : '处理完成，可以下载。', 'ok');
       el.downloadArea.classList.toggle('active', !hasSegments);
       if (data.compose_status === 'running') { pollTimer = setTimeout(pollTask, 3000); return; }
       if (data.compose_status === 'succeeded') { stopPolling(); return; }
@@ -858,7 +967,7 @@ async function pollTask() {
     }
     if (status === 'partial_failed') { setStatus('部分片段处理失败；成功片段可下载，失败片段可重试。', 'warn'); stopPolling(); return; }
     if (status === 'failed' || status === 'error') { setStatus('处理失败：' + (data.error || data.message || '任务处理失败'), 'err'); stopPolling(); return; }
-    setStatus('当前状态：' + status + (data.phase ? ' / ' + data.phase : ''), 'warn');
+    setStatus((data.removal_type === 'watermark' ? '去水印处理中：' : '当前状态：') + status + (data.phase ? ' / ' + phaseLabel(data.phase) : ''), 'warn');
     pollTimer = setTimeout(pollTask, 3000);
   } catch (error) { setStatus('查询状态失败：' + error.message, 'err'); pollTimer = setTimeout(pollTask, 5000); }
 }
@@ -870,7 +979,7 @@ async function downloadResult() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + '_subtitle_removed.mp4';
+    a.href = url; a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + (removalType === 'watermark' ? '_watermark_removed.mp4' : '_subtitle_removed.mp4');
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   } catch (error) { setStatus('下载失败：' + error.message, 'err'); }
@@ -882,7 +991,7 @@ async function downloadSegment(url, index) {
     const blob = await res.blob();
     const object = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = object; a.download = `subtitle_removed_segment_${index || ''}.mp4`;
+    a.href = object; a.download = `${removalType === 'watermark' ? 'watermark' : 'subtitle'}_removed_segment_${index || ''}.mp4`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(object), 30000);
   } catch (error) { setStatus('片段下载失败：' + error.message, 'err'); }
@@ -897,6 +1006,8 @@ async function retrySegment(segmentId) {
   } catch (error) { setStatus('片段重试失败：' + error.message, 'err'); }
 }
 
+el.subtitleModeBtn.addEventListener('click', () => applyRemovalMode('subtitle'));
+el.watermarkModeBtn.addEventListener('click', () => applyRemovalMode('watermark'));
 el.uploadArea.addEventListener('click', () => el.fileInput.click());
 el.uploadArea.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.fileInput.click(); } });
 el.fileInput.addEventListener('change', () => selectFile(el.fileInput.files[0]));
@@ -907,7 +1018,7 @@ el.videoPreview.addEventListener('loadedmetadata', () => { renderSelectionBox();
 el.videoPreview.addEventListener('timeupdate', renderTimeline);
 window.addEventListener('resize', () => { renderSelectionBox(); renderStoredRegionOverlays(); renderTimeline(); });
 el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
-el.defaultBoxBtn.addEventListener('click', () => { setCurrentRegion(DEFAULT_COORDS, true); setStatus('已使用底部默认框，可直接提交或加入片段。', 'warn'); });
+el.defaultBoxBtn.addEventListener('click', () => { setCurrentRegion(DEFAULT_COORDS, true); setStatus(removalType === 'watermark' ? '已使用底部默认框作为水印区域，可直接提交整条视频去水印。' : '已使用底部默认框，可直接提交或加入片段。', 'warn'); });
 el.clearCurrentBoxBtn.addEventListener('click', undoLastSubtitleBox);
 el.clearAllBoxesBtn.addEventListener('click', () => { segments.forEach((seg) => { seg.regions = []; }); clearCurrentRegion(); renderSegments(); renderStoredRegionOverlays(); setStatus('所有框已清除，时间片段保留。', 'warn'); });
 el.addSegmentBtn.addEventListener('click', () => { try { const seg = defaultCurrentFiveSeconds(); addSegment(seg.start, seg.end, hasCurrentRegion ? [cloneCurrentRegion()] : []); } catch (error) { setStatus(error.message, 'warn'); } });
@@ -968,13 +1079,15 @@ el.selectionLayer.addEventListener('pointerup', (event) => {
   dragHasSelection = false;
   try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {}
   if (shouldAutoAdd) {
-    try { addCurrentRegionToActiveSegment(); }
-    catch (error) { setStatus(error.message, 'warn'); }
+    try {
+      if (removalType === 'watermark') { renderStoredRegionOverlays(); setStatus('已框选水印区域；提交后将处理整条视频。', 'ok'); }
+      else addCurrentRegionToActiveSegment();
+    } catch (error) { setStatus(error.message, 'warn'); }
   } else {
     renderStoredRegionOverlays();
   }
 });
-el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; const selected = event.target.closest('.timeline-selection:not(.preview)'); if (selected && selected.dataset.index != null) { selectSegment(Number(selected.dataset.index)); return; } const start = timelinePointToSeconds(event); timelineDrag = { start }; timelinePreview = null; el.timelineTrack.setPointerCapture(event.pointerId); });
+el.timelineTrack.addEventListener('pointerdown', (event) => { if (removalType === 'watermark') return; if (!currentFile || !el.videoPreview.duration) return; const selected = event.target.closest('.timeline-selection:not(.preview)'); if (selected && selected.dataset.index != null) { selectSegment(Number(selected.dataset.index)); return; } const start = timelinePointToSeconds(event); timelineDrag = { start }; timelinePreview = null; el.timelineTrack.setPointerCapture(event.pointerId); });
 el.timelineTrack.addEventListener('pointermove', (event) => {
   if (!timelineDrag) return;
   const end = timelinePointToSeconds(event);
@@ -997,6 +1110,7 @@ el.timelineTrack.addEventListener('pointerup', (event) => {
 window.addEventListener('beforeunload', () => { stopPolling(); if (objectUrl) URL.revokeObjectURL(objectUrl); });
 
 el.accessToken.value = getSodaAccessToken();
+applyRemovalMode('subtitle');
 renderSegments();
 renderSelectionBox();
 </script>
