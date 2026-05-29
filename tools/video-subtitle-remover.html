@@ -179,6 +179,7 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
 const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
 const API_BASE = 'https://api.soda567.dpdns.org';
 const TOKEN_KEY = 'soda_access_token';
+const PUBLIC_UPLOAD_LIMIT_MB = 95;
 
 const el = {
   accessToken: document.getElementById('accessToken'),
@@ -240,6 +241,14 @@ function formatTime(seconds) { const s = Math.max(0, Number(seconds) || 0); cons
 function formatBytes(bytes) { if (!Number.isFinite(bytes)) return '-'; const units=['B','KB','MB','GB']; let size=bytes, i=0; while(size>=1024&&i<units.length-1){size/=1024;i++;} return (i?size.toFixed(1):size)+units[i]; }
 function setStatus(message, type = '') { el.statusLine.textContent = message; el.statusLine.className = 'status' + (type ? ' ' + type : ''); }
 function setProgress(percent) { el.progressBar.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
+function isPublicApiUpload() { return API_BASE.includes('api.soda567.dpdns.org') || location.hostname === 'soda567.dpdns.org'; }
+function assertUploadSizeAllowed(file) {
+  if (!file || !isPublicApiUpload()) return;
+  const limitBytes = PUBLIC_UPLOAD_LIMIT_MB * 1024 * 1024;
+  if (file.size > limitBytes) {
+    throw new Error(`当前公网上传链路单文件建议不超过 ${PUBLIC_UPLOAD_LIMIT_MB}MB。这个视频约 ${formatBytes(file.size)}，可能被 Cloudflare 拦截导致 Failed to fetch。请先压缩视频，或后续改走直传/内网大文件通道。`);
+  }
+}
 function stopPolling() { if (pollTimer) clearTimeout(pollTimer); pollTimer = 0; }
 function apiDone() { return activeTaskId && activeTaskId !== ''; }
 
@@ -494,6 +503,7 @@ function getSubmitSegments() {
 async function submitTask() {
   try {
     if (!currentFile) throw new Error('请先上传视频文件');
+    assertUploadSizeAllowed(currentFile);
     const submitSegments = getSubmitSegments();
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
@@ -524,7 +534,10 @@ async function submitTask() {
     pollTask();
   } catch (error) {
     setProgress(0);
-    setStatus('提交失败：' + error.message, 'err');
+    const message = error && error.name === 'TypeError' && String(error.message || '').includes('fetch')
+      ? '网络上传没有拿到后端响应。常见原因：文件超过公网链路限制、Cloudflare/隧道中断，或网络临时断开。请检查文件大小，建议公网单文件控制在 ' + PUBLIC_UPLOAD_LIMIT_MB + 'MB 以内。'
+      : error.message;
+    setStatus('提交失败：' + message, 'err');
   } finally { el.submitBtn.disabled = false; }
 }
 function statusToProgress(status) {
