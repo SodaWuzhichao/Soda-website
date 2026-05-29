@@ -323,20 +323,31 @@ function addCurrentRegionToActiveSegment() {
   renderStoredRegionOverlays();
   setStatus('已添加当前框。', 'ok');
 }
+function selectSegment(index, syncVideo = true) {
+  if (!segments[index]) return;
+  activeSegmentIndex = index;
+  if (syncVideo && Number.isFinite(Number(segments[index].start))) {
+    el.videoPreview.currentTime = Math.max(0, Number(segments[index].start) || 0);
+  }
+  renderSegments();
+  renderStoredRegionOverlays();
+}
 function renderStoredRegionOverlays() {
   if (!el.selectionLayer) return;
   syncSelectionLayerToVideoContent();
   el.selectionLayer.querySelectorAll('.overlay-box').forEach((node) => node.remove());
-  segments.forEach((seg, sIndex) => ensureRegionList(seg).forEach((region, rIndex) => {
+  if (activeSegmentIndex < 0 || !segments[activeSegmentIndex]) return;
+  const seg = segments[activeSegmentIndex];
+  ensureRegionList(seg).forEach((region, rIndex) => {
     const box = document.createElement('div');
-    box.className = 'overlay-box' + (sIndex === activeSegmentIndex ? ' active' : '');
-    box.dataset.label = `片段${sIndex + 1}-框${rIndex + 1}`;
+    box.className = 'overlay-box active';
+    box.dataset.label = `片段${activeSegmentIndex + 1}-框${rIndex + 1}`;
     box.style.left = (region.x * 100) + '%';
     box.style.top = (region.y * 100) + '%';
     box.style.width = (region.w * 100) + '%';
     box.style.height = (region.h * 100) + '%';
     el.selectionLayer.appendChild(box);
-  }));
+  });
 }
 function renderSegments() {
   renderTimeline();
@@ -573,7 +584,7 @@ el.segmentList.addEventListener('click', (event) => {
   const removeBtn = event.target.closest('.segment-remove');
   const activeBtn = event.target.closest('.segment-active');
   if (removeBtn) { segments.splice(Number(removeBtn.dataset.index), 1); if (activeSegmentIndex >= segments.length) activeSegmentIndex = segments.length - 1; renderSegments(); renderStoredRegionOverlays(); }
-  if (activeBtn) { activeSegmentIndex = Number(activeBtn.dataset.index); renderSegments(); renderStoredRegionOverlays(); }
+  if (activeBtn) selectSegment(Number(activeBtn.dataset.index));
 });
 el.segmentList.addEventListener('input', (event) => {
   const input = event.target.closest('.segment-time-input');
@@ -591,10 +602,13 @@ el.segmentList.addEventListener('input', (event) => {
   }
   activeSegmentIndex = index;
   renderTimeline();
+  renderStoredRegionOverlays();
 });
 el.segmentList.addEventListener('change', (event) => {
-  if (!event.target.closest('.segment-time-input')) return;
-  renderSegments();
+  const input = event.target.closest('.segment-time-input');
+  if (!input) return;
+  const index = Number(input.dataset.index);
+  if (segments[index]) selectSegment(index);
 });
 el.segmentResultList.addEventListener('click', (event) => {
   const retryBtn = event.target.closest('.segment-retry');
@@ -622,7 +636,7 @@ el.selectionLayer.addEventListener('pointerup', (event) => {
     renderStoredRegionOverlays();
   }
 });
-el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; const start = timelinePointToSeconds(event); timelineDrag = { start }; timelinePreview = null; el.timelineTrack.setPointerCapture(event.pointerId); });
+el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; const selected = event.target.closest('.timeline-selection:not(.preview)'); if (selected && selected.dataset.index != null) { selectSegment(Number(selected.dataset.index)); return; } const start = timelinePointToSeconds(event); timelineDrag = { start }; timelinePreview = null; el.timelineTrack.setPointerCapture(event.pointerId); });
 el.timelineTrack.addEventListener('pointermove', (event) => {
   if (!timelineDrag) return;
   const end = timelinePointToSeconds(event);
