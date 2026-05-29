@@ -507,6 +507,13 @@ function statusToProgress(status) {
   if (['succeeded','success','completed','partial_failed','failed','error'].includes(status)) return 100;
   return 45;
 }
+function phaseLabel(phase) {
+  const text = String(phase || '');
+  const chunk = text.match(/chunk_(\d+)_of_(\d+)/);
+  if (chunk) return `自动切分处理中 ${chunk[1]}/${chunk[2]}`;
+  if (text === 'joining_chunks') return '正在拼回长片段';
+  return text || '-';
+}
 function renderSegmentResults(task) {
   const list = task && Array.isArray(task.segments) ? task.segments : [];
   if (!list.length) { el.segmentResultList.innerHTML = ''; return; }
@@ -516,7 +523,8 @@ function renderSegmentResults(task) {
     const download = seg.status === 'succeeded' && seg.download_url ? `<button class="btn btn-primary segment-download" type="button" data-url="${seg.download_url}" data-index="${seg.index || ''}">下载片段</button>` : '';
     const retry = seg.status === 'failed' ? `<button class="btn btn-secondary segment-retry" type="button" data-id="${seg.segment_id}">重试片段</button>` : '';
     const err = seg.error ? `<div class="status err">${escapeHtml(seg.error)}</div>` : '';
-    return `<div class="segment-card ${cls}"><div>片段 ${seg.index || '-'}：${seg.start}s - ${seg.end}s · ${seg.status || 'queued'}</div>${err}${preview}<div class="btn-group">${download}${retry}</div></div>`;
+    const sub = seg.sub_segments ? ` · 子片段 ${seg.sub_segments.current || 0}/${seg.sub_segments.total || 0}` : '';
+    return `<div class="segment-card ${cls}"><div>片段 ${seg.index || '-'}：${seg.start}s - ${seg.end}s · ${seg.status || 'queued'} · ${phaseLabel(seg.phase)}${sub}</div>${err}${preview}<div class="btn-group">${download}${retry}</div></div>`;
   }).join('');
 }
 function renderComposeControls(task) {
