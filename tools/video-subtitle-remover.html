@@ -109,7 +109,7 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
     <input id="fileInput" type="file" accept="video/*" hidden>
     <div class="upload-icon">🎞️</div>
     <div class="upload-text">点击或拖拽视频到这里</div>
-    <div class="upload-hint">上传后框选字幕区域，再在时间线上选择处理片段</div>
+    <div class="upload-hint">本地预览后框选字幕区域；提交时只上传你选择的裁剪片段</div>
     <div class="file-name" id="fileName"></div>
   </div>
 
@@ -179,9 +179,14 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
 const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
 const API_BASE = 'https://api.soda567.dpdns.org';
 const TOKEN_KEY = 'soda_access_token';
-const PUBLIC_UPLOAD_LIMIT_MB = 95;
 const CHUNK_UPLOAD_SIZE = 32 * 1024 * 1024;
 const CHUNK_UPLOAD_RETRIES = 3;
+const CLIP_MIME_CANDIDATES = [
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
+  'video/webm'
+];
+
 
 const el = {
   accessToken: document.getElementById('accessToken'),
@@ -241,9 +246,51 @@ function apiUrl(path) { return API_BASE + path; }
 function escapeHtml(value) { return String(value || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
 function formatTime(seconds) { const s = Math.max(0, Number(seconds) || 0); const m = Math.floor(s / 60); const rest = Math.floor(s % 60).toString().padStart(2, '0'); const ms = Math.round((s % 1) * 10); return ms ? `${m}:${rest}.${ms}` : `${m}:${rest}`; }
 function formatBytes(bytes) { if (!Number.isFinite(bytes)) return '-'; const units=['B','KB','MB','GB']; let size=bytes, i=0; while(size>=1024&&i<units.length-1){size/=1024;i++;} return (i?size.toFixed(1):size)+units[i]; }
+function waitForEvent(target, eventName, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => cleanup(() => reject(new Error(`等待 ${eventName} 超时`))), timeoutMs);
+    const onEvent = () => cleanup(resolve);
+    const onError = () => cleanup(() => reject(new Error('媒体读取失败')));
+    function cleanup(done) {
+      clearTimeout(timer);
+      target.removeEventListener(eventName, onEvent);
+      target.removeEventListener('error', onError);
+      done();
+    }
+    target.addEventListener(eventName, onEvent, { once:true });
+    target.addEventListener('error', onError, { once:true });
+  });
+}
+function seekVideo(video, seconds) {
+  return new Promise((resolve, reject) => {
+    const target = Math.max(0, Number(seconds) || 0);
+    const timer = setTimeout(() => cleanup(() => reject(new Error('视频定位超时'))), 15000);
+    const onSeeked = () => cleanup(resolve);
+    const onError = () => cleanup(() => reject(new Error('视频定位失败')));
+    function cleanup(done) {
+      clearTimeout(timer);
+      video.removeEventListener('seeked', onSeeked);
+      video.removeEventListener('error', onError);
+      done();
+    }
+    video.addEventListener('seeked', onSeeked, { once:true });
+    video.addEventListener('error', onError, { once:true });
+    video.currentTime = target;
+  });
+}
+function getClipMimeType() {
+  if (typeof MediaRecorder === 'undefined') return '';
+  return CLIP_MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+}
+function getClipExtension(mimeType) {
+  return String(mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+}
+function clipFileName(originalName, segmentIndex, mimeType) {
+  const base = String(originalName || 'video').replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_').slice(0, 80) || 'video';
+  return `${base}_selected_segment_${segmentIndex + 1}.${getClipExtension(mimeType)}`;
+}
 function setStatus(message, type = '') { el.statusLine.textContent = message; el.statusLine.className = 'status' + (type ? ' ' + type : ''); }
 function setProgress(percent) { el.progressBar.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
-function isPublicApiUpload() { return API_BASE.includes('api.soda567.dpdns.org') || location.hostname === 'soda567.dpdns.org'; }
 function stopPolling() { if (pollTimer) clearTimeout(pollTimer); pollTimer = 0; }
 function apiDone() { return activeTaskId && activeTaskId !== ''; }
 
@@ -520,7 +567,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
       uploadedSet.add(index);
       const pct = 8 + Math.round((uploadedSet.size / totalChunks) * 72);
       setProgress(pct);
-      setStatus(`正在上传原视频：${uploadedSet.size}/${totalChunks} 个分片（第 ${index + 1} 片已完成，当前只会处理你选择的片段）`, 'warn');
+      setStatus(`备用路径：正在分片上传视频 ${uploadedSet.size}/${totalChunks}。默认不会走这里；仅在浏览器本地裁剪不可用时使用。`, 'warn');
       return;
     } catch (error) {
       if (attempt >= CHUNK_UPLOAD_RETRIES) throw new Error(`第 ${index + 1} 个分片上传失败，已重试 ${CHUNK_UPLOAD_RETRIES} 次：${error.message}`);
@@ -531,7 +578,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
 }
 async function uploadVideoInChunks(file) {
   setProgress(5);
-  setStatus('正在创建原视频分片上传会话… 当前版本需先上传完整原视频，但只处理你选择的时间片段。', 'warn');
+  setStatus('备用路径：正在创建分片上传会话…', 'warn');
   const session = await createUploadSession(file);
   const uploadId = session.upload_id;
   if (!uploadId) throw new Error('后端未返回 upload_id');
@@ -546,17 +593,118 @@ async function uploadVideoInChunks(file) {
     await uploadOneChunk(uploadId, index, file.slice(start, end), totalChunks, uploadedSet);
   }
   setProgress(84);
-  setStatus('原视频分片已上传完成，正在合并；随后只处理你选择的片段…', 'warn');
+  setStatus('备用路径：分片已上传完成，正在合并…', 'warn');
   const completed = await fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/complete'), { method:'POST', headers:withSodaAccessToken({}) });
   if (!completed.source_path) throw new Error('后端未返回合并后的视频路径');
   setProgress(90);
   return { uploadId, sourcePath:completed.source_path };
 }
-async function createSubtitleTask(uploadResult, submitSegments) {
+async function recordSelectedClip(sourceFile, segment, segmentIndex, totalSegments) {
+  const duration = Math.max(0.1, round3(Number(segment.end) - Number(segment.start)));
+  const mimeType = getClipMimeType();
+  if (!mimeType) throw new Error('当前浏览器不支持 MediaRecorder 视频裁剪，请使用 Chrome 桌面版。');
+  setProgress(8 + Math.round((segmentIndex / totalSegments) * 72));
+  setStatus(`正在本地裁剪所选片段 ${segmentIndex + 1}/${totalSegments}：${formatTime(segment.start)} - ${formatTime(segment.end)}（不会上传原视频）…`, 'warn');
+
+  const sourceUrl = URL.createObjectURL(sourceFile);
+  const video = document.createElement('video');
+  video.src = sourceUrl;
+  video.muted = false;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.crossOrigin = 'anonymous';
+  video.style.position = 'fixed';
+  video.style.left = '-99999px';
+  video.style.top = '-99999px';
+  video.style.width = '1px';
+  video.style.height = '1px';
+  document.body.appendChild(video);
+
+  let audioContext = null;
+  try {
+    if (video.readyState < 1) await waitForEvent(video, 'loadedmetadata', 20000);
+    if (video.readyState < 2) {
+      await waitForEvent(video, 'loadeddata', 20000).catch(() => {
+        if (video.readyState < 2) throw new Error('无法读取视频帧');
+      });
+    }
+    await seekVideo(video, segment.start);
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { alpha:false });
+    if (!ctx) throw new Error('无法创建 Canvas 裁剪上下文');
+    const fps = 30;
+    const canvasStream = canvas.captureStream(fps);
+    const tracks = [...canvasStream.getVideoTracks()];
+    if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+      try {
+        const Ctx = AudioContext || webkitAudioContext;
+        audioContext = new Ctx();
+        const source = audioContext.createMediaElementSource(video);
+        const dest = audioContext.createMediaStreamDestination();
+        source.connect(dest);
+        dest.stream.getAudioTracks().forEach((track) => tracks.push(track));
+        if (audioContext.state === 'suspended') await audioContext.resume();
+      } catch (error) {
+        console.warn('音频裁剪初始化失败，将上传无声片段：', error);
+      }
+    }
+    const stream = new MediaStream(tracks);
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 6000000 });
+    const chunks = [];
+    recorder.ondataavailable = (event) => { if (event.data && event.data.size) chunks.push(event.data); };
+    const stopped = new Promise((resolve, reject) => {
+      recorder.onstop = resolve;
+      recorder.onerror = (event) => reject(event.error || new Error('本地裁剪录制失败'));
+    });
+    let drawing = true;
+    const drawFrame = () => {
+      if (!drawing) return;
+      try { ctx.drawImage(video, 0, 0, width, height); } catch (_) {}
+      requestAnimationFrame(drawFrame);
+    };
+    drawFrame();
+    recorder.start(1000);
+    await video.play();
+    await sleep(Math.ceil(duration * 1000));
+    drawing = false;
+    video.pause();
+    if (recorder.state !== 'inactive') recorder.stop();
+    await stopped;
+    stream.getTracks().forEach((track) => track.stop());
+    if (!chunks.length) throw new Error('本地裁剪没有生成视频数据');
+    const blob = new Blob(chunks, { type:mimeType });
+    if (!blob.size) throw new Error('本地裁剪生成了空片段');
+    const file = new File([blob], clipFileName(sourceFile.name, segmentIndex, mimeType), { type:mimeType });
+    setStatus(`已在本地裁剪片段 ${segmentIndex + 1}/${totalSegments}（${formatBytes(file.size)}），准备上传片段…`, 'warn');
+    return { file, duration };
+  } finally {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    video.remove();
+    URL.revokeObjectURL(sourceUrl);
+    if (audioContext) audioContext.close().catch(() => {});
+  }
+}
+function segmentForTrimmedClip(segment, duration) {
+  const regions = ensureRegionList(segment).map((region) => ({ ...region, coord_mode:region.coord_mode || 'relative' }));
+  return {
+    segment_id: segment.segment_id,
+    start: 0,
+    end: round3(duration),
+    duration: round3(duration),
+    original_start: round3(segment.start),
+    original_end: round3(segment.end),
+    regions
+  };
+}
+async function createSubtitleTask(uploadFile, submitSegments) {
   const form = new FormData();
-  if (uploadResult && uploadResult.uploadId) form.append('upload_id', uploadResult.uploadId);
-  if (uploadResult && uploadResult.sourcePath) form.append('source_path', uploadResult.sourcePath);
-  if (!uploadResult) form.append('file', currentFile, currentFile.name);
+  form.append('file', uploadFile, uploadFile.name);
   form.append('mode', 'ai_inpaint');
   form.append('segments_json', JSON.stringify(submitSegments));
   form.append('coord_mode', 'relative');
@@ -567,6 +715,14 @@ async function createSubtitleTask(uploadResult, submitSegments) {
   const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), { method:'POST', headers:withSodaAccessToken({}), body:form });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
+}
+async function createTaskForSelectedSegment(segment, segmentIndex, totalSegments) {
+  const clip = await recordSelectedClip(currentFile, segment, segmentIndex, totalSegments);
+  const trimmedSegment = segmentForTrimmedClip(segment, clip.duration);
+  setProgress(12 + Math.round(((segmentIndex + 0.75) / totalSegments) * 72));
+  setStatus(`正在上传已裁剪片段 ${segmentIndex + 1}/${totalSegments}（不是原视频）…`, 'warn');
+  const data = await createSubtitleTask(clip.file, [trimmedSegment]);
+  return { data, trimmedSegment };
 }
 async function submitTask() {
   try {
@@ -580,18 +736,24 @@ async function submitTask() {
     el.composeArea.classList.remove('active');
     el.downloadFullBtn.style.display = 'none';
     fullVideoUrl = '';
-    const uploadResult = await uploadVideoInChunks(currentFile);
-    setStatus('视频已合并，正在创建 AI 去字幕任务…', 'warn');
-    const data = await createSubtitleTask(uploadResult, submitSegments);
-    activeTaskId = data.task_id || '';
+    activeTaskId = '';
+
+    const taskResults = [];
+    for (let index = 0; index < submitSegments.length; index++) {
+      const result = await createTaskForSelectedSegment(submitSegments[index], index, submitSegments.length);
+      taskResults.push(result);
+    }
+    const firstTask = taskResults[0] && taskResults[0].data;
+    activeTaskId = firstTask && firstTask.task_id ? firstTask.task_id : '';
     if (!activeTaskId) throw new Error('后端未返回 task_id');
     setProgress(92);
-    setStatus('任务已创建，正在处理…', 'warn');
+    const extra = taskResults.length > 1 ? `（已为 ${taskResults.length} 个片段分别创建任务，当前页面跟踪第 1 个任务）` : '';
+    setStatus('片段上传完成，任务已创建，正在处理…' + extra, 'warn');
     pollTask();
   } catch (error) {
     setProgress(0);
     const message = error && error.name === 'TypeError' && String(error.message || '').includes('fetch')
-      ? '网络请求没有拿到后端响应。已改用分片上传，但仍可能是网络中断、访问码失效、后端重启或网关超时。请稍后重试；如果一直失败，请把文件大小和报错发给管理员。'
+      ? '网络请求没有拿到后端响应。当前默认只上传本地裁剪后的片段，可能是网络中断、访问码失效、后端重启或网关超时。请稍后重试；如果一直失败，请把片段时长和报错发给管理员。'
       : error.message;
     setStatus('提交失败：' + message, 'err');
   } finally { el.submitBtn.disabled = false; }
