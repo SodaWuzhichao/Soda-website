@@ -109,7 +109,7 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
     <input id="fileInput" type="file" accept="video/*" hidden>
     <div class="upload-icon">🎞️</div>
     <div class="upload-text">点击或拖拽视频到这里</div>
-    <div class="upload-hint">本地预览后框选字幕区域；提交时只上传你选择的裁剪片段</div>
+    <div class="upload-hint">本地预览后框选字幕区域；高质量片段裁剪：提交时只上传你选择的裁剪片段（默认高码率，减少二次压缩）</div>
     <div class="file-name" id="fileName"></div>
   </div>
 
@@ -604,7 +604,7 @@ async function recordSelectedClip(sourceFile, segment, segmentIndex, totalSegmen
   const mimeType = getClipMimeType();
   if (!mimeType) throw new Error('当前浏览器不支持 MediaRecorder 视频裁剪，请使用 Chrome 桌面版。');
   setProgress(8 + Math.round((segmentIndex / totalSegments) * 72));
-  setStatus(`正在本地裁剪所选片段 ${segmentIndex + 1}/${totalSegments}：${formatTime(segment.start)} - ${formatTime(segment.end)}（不会上传原视频）…`, 'warn');
+  setStatus(`正在高质量片段裁剪 ${segmentIndex + 1}/${totalSegments}：${formatTime(segment.start)} - ${formatTime(segment.end)}（不会上传原视频）…`, 'warn');
 
   const sourceUrl = URL.createObjectURL(sourceFile);
   const video = document.createElement('video');
@@ -653,7 +653,10 @@ async function recordSelectedClip(sourceFile, segment, segmentIndex, totalSegmen
       }
     }
     const stream = new MediaStream(tracks);
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 6000000 });
+    const maxSide = Math.max(width, height);
+    const clipVideoBitsPerSecond = maxSide <= 1280 ? 10000000 : 16000000;
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: clipVideoBitsPerSecond });
+    console.info('High quality local clip bitrate:', clipVideoBitsPerSecond);
     const chunks = [];
     recorder.ondataavailable = (event) => { if (event.data && event.data.size) chunks.push(event.data); };
     const stopped = new Promise((resolve, reject) => {
@@ -679,7 +682,7 @@ async function recordSelectedClip(sourceFile, segment, segmentIndex, totalSegmen
     const blob = new Blob(chunks, { type:mimeType });
     if (!blob.size) throw new Error('本地裁剪生成了空片段');
     const file = new File([blob], clipFileName(sourceFile.name, segmentIndex, mimeType), { type:mimeType });
-    setStatus(`已在本地裁剪片段 ${segmentIndex + 1}/${totalSegments}（${formatBytes(file.size)}），准备上传片段…`, 'warn');
+    setStatus(`已完成高质量片段裁剪 ${segmentIndex + 1}/${totalSegments}（${formatBytes(file.size)}），准备上传片段…`, 'warn');
     return { file, duration };
   } finally {
     video.pause();
