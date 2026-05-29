@@ -52,6 +52,7 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .timeline { margin-top:18px; }
 .timeline-track { position:relative; height:46px; border:1px solid var(--border); border-radius:8px; background:#0f0f0f; cursor:crosshair; overflow:hidden; }
 .timeline-selection { position:absolute; top:8px; bottom:8px; border:1px solid var(--gold); background:rgba(255,215,0,.2); border-radius:6px; min-width:3px; }
+.timeline-selection.preview { border-color:rgba(255,255,255,.65); background:rgba(255,255,255,.14); border-style:dashed; }
 .timeline-selection.active { box-shadow:0 0 0 1px rgba(255,215,0,.45); }
 .timeline-playhead { position:absolute; top:0; bottom:0; width:2px; background:#fff; opacity:.7; pointer-events:none; }
 .timeline-meta { display:flex; justify-content:space-between; gap:12px; margin-top:8px; color:var(--muted); font-size:.82rem; }
@@ -77,6 +78,10 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .segment-item { border:1px solid var(--border); border-radius:8px; padding:12px; background:#101010; }
 .segment-head { display:flex; justify-content:space-between; gap:12px; align-items:center; color:var(--text); font-size:.9rem; }
 .segment-meta { color:var(--muted); font-size:.8rem; line-height:1.7; margin-top:6px; }
+.segment-time-edit { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+.segment-time-edit label { color:var(--muted); font-size:.75rem; display:block; margin-bottom:5px; }
+.segment-time-edit input { width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:6px; background:#0b0b0b; color:var(--text); font:inherit; font-size:.86rem; }
+.segment-time-edit input:focus { outline:none; border-color:var(--gold); }
 .segment-card { display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#101010; }
 .segment-card.succeeded { border-color:rgba(90,208,96,.28); }
 .segment-card.failed { border-color:rgba(255,102,102,.32); }
@@ -84,7 +89,7 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .download-area { display:none; }
 .download-area.active { display:block; }
 footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); text-align:center; }
-@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.76rem; } .timeline-meta { flex-direction:column; } }
+@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.76rem; } .timeline-meta { flex-direction:column; } .segment-time-edit { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -145,7 +150,6 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
       </div>
       <div class="btn-group">
         <button class="btn btn-secondary" id="addSegmentBtn" type="button">添加当前 5 秒</button>
-        <button class="btn btn-secondary" id="addCurrentBoxToActiveBtn" type="button">把当前框加入选中片段</button>
         <button class="btn btn-ghost" id="clearSegmentsBtn" type="button">清空片段</button>
       </div>
       <div class="segment-list" id="segmentList"></div>
@@ -185,7 +189,6 @@ const el = {
   selectionLayer: document.getElementById('selectionLayer'),
   selectionBox: document.getElementById('selectionBox'),
   selectModeBtn: document.getElementById('selectModeBtn'),
-  addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
   clearCurrentBoxBtn: document.getElementById('clearCurrentBoxBtn'),
   clearAllBoxesBtn: document.getElementById('clearAllBoxesBtn'),
   defaultBoxBtn: document.getElementById('defaultBoxBtn'),
@@ -217,6 +220,7 @@ let currentRegion = { ...DEFAULT_COORDS };
 let segments = [];
 let activeSegmentIndex = -1;
 let timelineDrag = null;
+let timelinePreview = null;
 let dragHasSelection = false;
 
 function getSodaAccessToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
@@ -347,10 +351,13 @@ function renderSegments() {
         <span>片段 ${index + 1} · ${formatTime(seg.start)} - ${formatTime(seg.end)}</span>
         <span>${regions.length} 个框</span>
       </div>
-      <div class="segment-meta">${regions.length ? regions.map((_, i) => `框${i + 1}`).join(' / ') : '还没有框：选中此片段后添加当前框'}</div>
+      <div class="segment-meta">${regions.length ? regions.map((_, i) => `框${i + 1}`).join(' / ') : '还没有框：开启框选后拖出字幕区域，会自动加入当前片段'}</div>
+      <div class="segment-time-edit">
+        <div><label>开始</label><input class="segment-time-input" data-index="${index}" data-key="start" type="number" min="0" step="0.1" value="${seg.start}"></div>
+        <div><label>结束</label><input class="segment-time-input" data-index="${index}" data-key="end" type="number" min="0" step="0.1" value="${seg.end}"></div>
+      </div>
       <div class="btn-group" style="margin-top:10px;">
         <button class="btn btn-secondary segment-active" type="button" data-index="${index}">${index === activeSegmentIndex ? '已选中' : '选中'}</button>
-        <button class="btn btn-secondary region-add" type="button" data-index="${index}">加当前框</button>
         <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除片段</button>
       </div>
     </div>`;
@@ -363,6 +370,13 @@ function renderTimeline() {
   el.timelineDuration.textContent = duration ? `总时长 ${formatTime(duration)}` : '-';
   const current = duration ? Math.max(0, Math.min(1, (el.videoPreview.currentTime || 0) / duration)) : 0;
   el.timelinePlayhead.style.left = (current * 100) + '%';
+  if (duration && timelinePreview && timelinePreview.end > timelinePreview.start) {
+    const preview = document.createElement('div');
+    preview.className = 'timeline-selection preview';
+    preview.style.left = (timelinePreview.start / duration * 100) + '%';
+    preview.style.width = Math.max(0.5, ((timelinePreview.end - timelinePreview.start) / duration * 100)) + '%';
+    el.timelineTrack.appendChild(preview);
+  }
   segments.forEach((seg, index) => {
     if (!duration) return;
     const item = document.createElement('div');
@@ -549,7 +563,6 @@ el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
 el.defaultBoxBtn.addEventListener('click', () => { setCurrentRegion(DEFAULT_COORDS, true); setStatus('已使用底部默认框，可直接提交或加入片段。', 'warn'); });
 el.clearCurrentBoxBtn.addEventListener('click', () => { clearCurrentRegion(); setStatus('当前框已清除。', 'warn'); });
 el.clearAllBoxesBtn.addEventListener('click', () => { segments.forEach((seg) => { seg.regions = []; }); clearCurrentRegion(); renderSegments(); renderStoredRegionOverlays(); setStatus('所有框已清除，时间片段保留。', 'warn'); });
-el.addCurrentBoxToActiveBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
 el.addSegmentBtn.addEventListener('click', () => { try { const seg = defaultCurrentFiveSeconds(); addSegment(seg.start, seg.end, hasCurrentRegion ? [cloneCurrentRegion()] : []); } catch (error) { setStatus(error.message, 'warn'); } });
 el.clearSegmentsBtn.addEventListener('click', () => { segments = []; activeSegmentIndex = -1; renderSegments(); renderStoredRegionOverlays(); });
 el.submitBtn.addEventListener('click', submitTask);
@@ -559,10 +572,29 @@ el.clearTokenBtn.addEventListener('click', () => { el.accessToken.value = ''; se
 el.segmentList.addEventListener('click', (event) => {
   const removeBtn = event.target.closest('.segment-remove');
   const activeBtn = event.target.closest('.segment-active');
-  const addBtn = event.target.closest('.region-add');
   if (removeBtn) { segments.splice(Number(removeBtn.dataset.index), 1); if (activeSegmentIndex >= segments.length) activeSegmentIndex = segments.length - 1; renderSegments(); renderStoredRegionOverlays(); }
   if (activeBtn) { activeSegmentIndex = Number(activeBtn.dataset.index); renderSegments(); renderStoredRegionOverlays(); }
-  if (addBtn) { try { ensureRegionList(segments[Number(addBtn.dataset.index)]).push(cloneCurrentRegion()); activeSegmentIndex = Number(addBtn.dataset.index); renderSegments(); renderStoredRegionOverlays(); } catch (error) { setStatus(error.message, 'warn'); } }
+});
+el.segmentList.addEventListener('input', (event) => {
+  const input = event.target.closest('.segment-time-input');
+  if (!input) return;
+  const index = Number(input.dataset.index);
+  const key = input.dataset.key;
+  if (!segments[index]) return;
+  const duration = Number(el.videoPreview.duration) || 0;
+  let value = Math.max(0, Number(input.value) || 0);
+  if (duration) value = Math.min(value, duration);
+  segments[index][key] = round3(value);
+  if (segments[index].end <= segments[index].start) {
+    if (key === 'start') segments[index].start = Math.max(0, round3(segments[index].end - 0.1));
+    else segments[index].end = round3(segments[index].start + 0.1);
+  }
+  activeSegmentIndex = index;
+  renderTimeline();
+});
+el.segmentList.addEventListener('change', (event) => {
+  if (!event.target.closest('.segment-time-input')) return;
+  renderSegments();
 });
 el.segmentResultList.addEventListener('click', (event) => {
   const retryBtn = event.target.closest('.segment-retry');
@@ -590,11 +622,13 @@ el.selectionLayer.addEventListener('pointerup', (event) => {
     renderStoredRegionOverlays();
   }
 });
-el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; timelineDrag = { start: timelinePointToSeconds(event) }; el.timelineTrack.setPointerCapture(event.pointerId); });
+el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; const start = timelinePointToSeconds(event); timelineDrag = { start }; timelinePreview = null; el.timelineTrack.setPointerCapture(event.pointerId); });
 el.timelineTrack.addEventListener('pointermove', (event) => {
   if (!timelineDrag) return;
   const end = timelinePointToSeconds(event);
   const temp = normalizeSegment(Math.min(timelineDrag.start, end), Math.max(timelineDrag.start, end));
+  timelinePreview = { start: temp.start, end: temp.end };
+  renderTimeline();
   el.timelineHint.textContent = `选择中：${formatTime(temp.start)} - ${formatTime(temp.end)}`;
 });
 el.timelineTrack.addEventListener('pointerup', (event) => {
@@ -602,6 +636,7 @@ el.timelineTrack.addEventListener('pointerup', (event) => {
   const end = timelinePointToSeconds(event);
   const start = Math.min(timelineDrag.start, end), finish = Math.max(timelineDrag.start, end);
   timelineDrag = null;
+  timelinePreview = null;
   try { el.timelineTrack.releasePointerCapture(event.pointerId); } catch (_) {}
   if (Math.abs(finish - start) < 0.15) { el.videoPreview.currentTime = start; renderTimeline(); return; }
   addSegment(start, finish, hasCurrentRegion ? [cloneCurrentRegion()] : []);
