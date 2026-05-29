@@ -57,7 +57,7 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .timeline-meta { display:flex; justify-content:space-between; gap:12px; margin-top:8px; color:var(--muted); font-size:.82rem; }
 .btn-group { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px; }
 .preview-actions { flex-wrap:nowrap; gap:8px; }
-.preview-actions .btn { flex:1 1 0; min-width:0; padding:11px 10px; font-size:.82rem; letter-spacing:.2px; white-space:nowrap; }
+.preview-actions .btn { flex:1 1 0; min-width:0; padding:12px 12px; font-size:.86rem; letter-spacing:.25px; white-space:nowrap; }
 .btn { padding:14px 24px; border-radius:6px; text-decoration:none; font-weight:300; font-size:.9rem; transition:all .3s; cursor:pointer; border:none; font-family:inherit; letter-spacing:.5px; }
 .btn:disabled { opacity:.5; cursor:not-allowed; }
 .btn-primary { background:var(--gold); color:var(--bg); }
@@ -84,7 +84,7 @@ nav { display:flex; justify-content:space-between; align-items:center; padding:2
 .download-area { display:none; }
 .download-area.active { display:block; }
 footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); text-align:center; }
-@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.72rem; } .timeline-meta { flex-direction:column; } }
+@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group:not(.preview-actions) { flex-direction:column; } .btn-group:not(.preview-actions) .btn { width:100%; text-align:center; } .preview-actions { gap:6px; } .preview-actions .btn { padding:10px 6px; font-size:.76rem; } .timeline-meta { flex-direction:column; } }
 </style>
 </head>
 <body>
@@ -128,13 +128,12 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
     </div>
 
     <div class="btn-group preview-actions">
-      <button class="btn btn-secondary" id="selectModeBtn" type="button">框选</button>
-      <button class="btn btn-secondary" id="addCurrentBoxBtn" type="button">添加框</button>
-      <button class="btn btn-ghost" id="defaultBoxBtn" type="button">默认框</button>
-      <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">清当前</button>
-      <button class="btn btn-danger" id="clearAllBoxesBtn" type="button">清所有</button>
+      <button class="btn btn-secondary" id="selectModeBtn" type="button">开启框选</button>
+      <button class="btn btn-ghost" id="defaultBoxBtn" type="button">使用底部默认框</button>
+      <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">清除当前框</button>
+      <button class="btn btn-danger" id="clearAllBoxesBtn" type="button">清除所有框</button>
     </div>
-    <div class="help" style="margin-top:10px;">可连续添加多个框。同一时间段有多处字幕时，建议添加多个小框，不要整条底部全选。</div>
+    <div class="help" style="margin-top:10px;">开启框选后，拖出字幕区域并松手即自动加入当前片段。可连续框选多个小区域。</div>
 
     <div class="timeline">
       <div class="timeline-track" id="timelineTrack" title="在这里拖拽选择处理时间段">
@@ -186,7 +185,6 @@ const el = {
   selectionLayer: document.getElementById('selectionLayer'),
   selectionBox: document.getElementById('selectionBox'),
   selectModeBtn: document.getElementById('selectModeBtn'),
-  addCurrentBoxBtn: document.getElementById('addCurrentBoxBtn'),
   addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
   clearCurrentBoxBtn: document.getElementById('clearCurrentBoxBtn'),
   clearAllBoxesBtn: document.getElementById('clearAllBoxesBtn'),
@@ -219,6 +217,7 @@ let currentRegion = { ...DEFAULT_COORDS };
 let segments = [];
 let activeSegmentIndex = -1;
 let timelineDrag = null;
+let dragHasSelection = false;
 
 function getSodaAccessToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function setSodaAccessToken(value) { const token = String(value || '').trim(); token ? localStorage.setItem(TOKEN_KEY, token) : localStorage.removeItem(TOKEN_KEY); }
@@ -256,7 +255,7 @@ function syncSelectionLayerToVideoContent() {
 function setSelectMode(enabled) {
   selectMode = !!enabled;
   el.selectionLayer.classList.toggle('active', selectMode);
-  el.selectModeBtn.textContent = selectMode ? '关闭框选' : '框选';
+  el.selectModeBtn.textContent = selectMode ? '关闭框选' : '开启框选';
 }
 function renderSelectionBox() {
   syncSelectionLayerToVideoContent();
@@ -550,7 +549,6 @@ el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
 el.defaultBoxBtn.addEventListener('click', () => { setCurrentRegion(DEFAULT_COORDS, true); setStatus('已使用底部默认框，可直接提交或加入片段。', 'warn'); });
 el.clearCurrentBoxBtn.addEventListener('click', () => { clearCurrentRegion(); setStatus('当前框已清除。', 'warn'); });
 el.clearAllBoxesBtn.addEventListener('click', () => { segments.forEach((seg) => { seg.regions = []; }); clearCurrentRegion(); renderSegments(); renderStoredRegionOverlays(); setStatus('所有框已清除，时间片段保留。', 'warn'); });
-el.addCurrentBoxBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
 el.addCurrentBoxToActiveBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
 el.addSegmentBtn.addEventListener('click', () => { try { const seg = defaultCurrentFiveSeconds(); addSegment(seg.start, seg.end, hasCurrentRegion ? [cloneCurrentRegion()] : []); } catch (error) { setStatus(error.message, 'warn'); } });
 el.clearSegmentsBtn.addEventListener('click', () => { segments = []; activeSegmentIndex = -1; renderSegments(); renderStoredRegionOverlays(); });
@@ -572,14 +570,26 @@ el.segmentResultList.addEventListener('click', (event) => {
   if (retryBtn) retrySegment(retryBtn.dataset.id);
   if (downloadBtn) downloadSegment(downloadBtn.dataset.url, downloadBtn.dataset.index);
 });
-el.selectionLayer.addEventListener('pointerdown', (event) => { if (!currentFile) return; dragStart = pointToRelative(event); isDragging = true; el.selectionLayer.setPointerCapture(event.pointerId); });
+el.selectionLayer.addEventListener('pointerdown', (event) => { if (!currentFile) return; dragStart = pointToRelative(event); isDragging = true; dragHasSelection = false; el.selectionLayer.setPointerCapture(event.pointerId); });
 el.selectionLayer.addEventListener('pointermove', (event) => {
   if (!isDragging || !dragStart) return;
   const end = pointToRelative(event);
   const x = Math.min(dragStart.x, end.x), y = Math.min(dragStart.y, end.y), w = Math.abs(end.x - dragStart.x), h = Math.abs(end.y - dragStart.y);
-  if (w > 0.005 && h > 0.005) setCurrentRegion({ x, y, w, h, coord_mode:'relative' }, true);
+  if (w > 0.005 && h > 0.005) { dragHasSelection = true; setCurrentRegion({ x, y, w, h, coord_mode:'relative' }, true); }
 });
-el.selectionLayer.addEventListener('pointerup', (event) => { isDragging = false; dragStart = null; try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {} renderStoredRegionOverlays(); });
+el.selectionLayer.addEventListener('pointerup', (event) => {
+  const shouldAutoAdd = isDragging && dragHasSelection && hasCurrentRegion;
+  isDragging = false;
+  dragStart = null;
+  dragHasSelection = false;
+  try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {}
+  if (shouldAutoAdd) {
+    try { addCurrentRegionToActiveSegment(); }
+    catch (error) { setStatus(error.message, 'warn'); }
+  } else {
+    renderStoredRegionOverlays();
+  }
+});
 el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; timelineDrag = { start: timelinePointToSeconds(event) }; el.timelineTrack.setPointerCapture(event.pointerId); });
 el.timelineTrack.addEventListener('pointermove', (event) => {
   if (!timelineDrag) return;
