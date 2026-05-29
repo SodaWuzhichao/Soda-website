@@ -512,7 +512,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
   for (let attempt = 1; attempt <= CHUNK_UPLOAD_RETRIES; attempt++) {
     try {
       const res = await fetch(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/chunks/' + index), {
-        method:'PUT',
+        method:'POST',
         headers:withSodaAccessToken({ 'Content-Type':'application/octet-stream' }),
         body:blob
       });
