@@ -180,7 +180,7 @@ const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
 const API_BASE = 'https://api.soda567.dpdns.org';
 const TOKEN_KEY = 'soda_access_token';
 const PUBLIC_UPLOAD_LIMIT_MB = 95;
-const CHUNK_UPLOAD_SIZE = 8 * 1024 * 1024;
+const CHUNK_UPLOAD_SIZE = 32 * 1024 * 1024;
 const CHUNK_UPLOAD_RETRIES = 3;
 
 const el = {
@@ -520,7 +520,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
       uploadedSet.add(index);
       const pct = 8 + Math.round((uploadedSet.size / totalChunks) * 72);
       setProgress(pct);
-      setStatus(`正在分片上传：${uploadedSet.size}/${totalChunks}（第 ${index + 1} 片已完成）`, 'warn');
+      setStatus(`正在上传原视频：${uploadedSet.size}/${totalChunks} 个分片（第 ${index + 1} 片已完成，当前只会处理你选择的片段）`, 'warn');
       return;
     } catch (error) {
       if (attempt >= CHUNK_UPLOAD_RETRIES) throw new Error(`第 ${index + 1} 个分片上传失败，已重试 ${CHUNK_UPLOAD_RETRIES} 次：${error.message}`);
@@ -531,7 +531,7 @@ async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
 }
 async function uploadVideoInChunks(file) {
   setProgress(5);
-  setStatus('正在创建分片上传会话…', 'warn');
+  setStatus('正在创建原视频分片上传会话… 当前版本需先上传完整原视频，但只处理你选择的时间片段。', 'warn');
   const session = await createUploadSession(file);
   const uploadId = session.upload_id;
   if (!uploadId) throw new Error('后端未返回 upload_id');
@@ -546,7 +546,7 @@ async function uploadVideoInChunks(file) {
     await uploadOneChunk(uploadId, index, file.slice(start, end), totalChunks, uploadedSet);
   }
   setProgress(84);
-  setStatus('分片已上传完成，正在合并视频…', 'warn');
+  setStatus('原视频分片已上传完成，正在合并；随后只处理你选择的片段…', 'warn');
   const completed = await fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/complete'), { method:'POST', headers:withSodaAccessToken({}) });
   if (!completed.source_path) throw new Error('后端未返回合并后的视频路径');
   setProgress(90);
