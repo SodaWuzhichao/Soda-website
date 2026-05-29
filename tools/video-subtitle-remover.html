@@ -166,6 +166,10 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
   <div class="download-area" id="downloadArea" style="margin-top:18px;">
     <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
   </div>
+  <div class="download-area" id="composeArea" style="margin-top:18px;">
+    <button class="btn btn-primary" id="composeBtn" type="button">导出完整视频</button>
+    <button class="btn btn-secondary" id="downloadFullBtn" type="button" style="display:none;">下载完整视频</button>
+  </div>
   <div class="segment-list" id="segmentResultList"></div>
 </main>
 
@@ -205,6 +209,9 @@ const el = {
   progressBar: document.getElementById('progressBar'),
   downloadArea: document.getElementById('downloadArea'),
   downloadBtn: document.getElementById('downloadBtn'),
+  composeArea: document.getElementById('composeArea'),
+  composeBtn: document.getElementById('composeBtn'),
+  downloadFullBtn: document.getElementById('downloadFullBtn'),
   segmentResultList: document.getElementById('segmentResultList')
 };
 
@@ -222,6 +229,7 @@ let activeSegmentIndex = -1;
 let timelineDrag = null;
 let timelinePreview = null;
 let dragHasSelection = false;
+let fullVideoUrl = '';
 
 function getSodaAccessToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function setSodaAccessToken(value) { const token = String(value || '').trim(); token ? localStorage.setItem(TOKEN_KEY, token) : localStorage.removeItem(TOKEN_KEY); }
@@ -422,6 +430,9 @@ function selectFile(file) {
   stopPolling();
   setProgress(0);
   el.downloadArea.classList.remove('active');
+  el.composeArea.classList.remove('active');
+  el.downloadFullBtn.style.display = 'none';
+  fullVideoUrl = '';
   el.segmentResultList.innerHTML = '';
   renderSegments();
   setStatus('视频已选择：先在画面框选字幕，再在时间线上选择片段。', 'warn');
@@ -463,6 +474,9 @@ async function submitTask() {
     stopPolling();
     el.submitBtn.disabled = true;
     el.downloadArea.classList.remove('active');
+    el.composeArea.classList.remove('active');
+    el.downloadFullBtn.style.display = 'none';
+    fullVideoUrl = '';
     setProgress(12);
     setStatus('正在上传并创建任务…', 'warn');
     const form = new FormData();
@@ -505,6 +519,55 @@ function renderSegmentResults(task) {
     return `<div class="segment-card ${cls}"><div>片段 ${seg.index || '-'}：${seg.start}s - ${seg.end}s · ${seg.status || 'queued'}</div>${err}${preview}<div class="btn-group">${download}${retry}</div></div>`;
   }).join('');
 }
+function renderComposeControls(task) {
+  const list = task && Array.isArray(task.segments) ? task.segments : [];
+  const allSucceeded = list.length > 0 && list.every((seg) => seg.status === 'succeeded');
+  const composeStatus = task && task.compose_status;
+  fullVideoUrl = task && task.compose_url ? task.compose_url : fullVideoUrl;
+  el.composeArea.classList.toggle('active', allSucceeded || composeStatus === 'running' || composeStatus === 'succeeded');
+  el.composeBtn.disabled = composeStatus === 'running';
+  if (composeStatus === 'running') {
+    el.composeBtn.textContent = '正在合成…';
+    el.downloadFullBtn.style.display = 'none';
+  } else if (composeStatus === 'succeeded' && fullVideoUrl) {
+    el.composeBtn.textContent = '重新合成完整视频';
+    el.downloadFullBtn.style.display = 'inline-block';
+  } else {
+    el.composeBtn.textContent = '导出完整视频';
+    el.downloadFullBtn.style.display = 'none';
+  }
+}
+async function composeFullVideo() {
+  if (!activeTaskId) return;
+  try {
+    el.composeBtn.disabled = true;
+    setStatus('正在创建完整视频合成任务…', 'warn');
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/compose'), { method:'POST', headers:withSodaAccessToken({}) });
+    if (!res.ok) throw new Error(await readError(res));
+    const data = await res.json();
+    if (data.compose_url) fullVideoUrl = data.compose_url;
+    setStatus(data.status === 'succeeded' ? '完整视频已合成，可下载。' : '完整视频正在合成…', data.status === 'succeeded' ? 'ok' : 'warn');
+    stopPolling();
+    pollTask();
+  } catch (error) {
+    setStatus('合成失败：' + error.message, 'err');
+    el.composeBtn.disabled = false;
+  }
+}
+async function downloadFullVideo() {
+  if (!fullVideoUrl) return;
+  try {
+    const res = await fetch(apiUrl(fullVideoUrl), { headers:withSodaAccessToken({}) });
+    if (!res.ok) throw new Error(await readError(res));
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + '_full_subtitle_removed.mp4';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch (error) { setStatus('完整视频下载失败：' + error.message, 'err'); }
+}
 async function pollTask() {
   if (!activeTaskId) return;
   try {
@@ -512,12 +575,17 @@ async function pollTask() {
     if (!res.ok) throw new Error(await readError(res));
     const data = await res.json();
     renderSegmentResults(data);
+    renderComposeControls(data);
     const status = data.status || 'unknown';
     setProgress(statusToProgress(status));
     if (['succeeded','success','completed'].includes(status)) {
       const hasSegments = Array.isArray(data.segments) && data.segments.length > 0;
-      setStatus(hasSegments ? '片段处理完成，可分别预览/下载。' : '处理完成，可以下载。', 'ok');
+      if (data.compose_status === 'running') setStatus('片段处理完成，正在合成完整视频…', 'warn');
+      else if (data.compose_status === 'succeeded') setStatus('完整视频已合成，可以下载。', 'ok');
+      else setStatus(hasSegments ? '片段处理完成，可导出完整视频。' : '处理完成，可以下载。', 'ok');
       el.downloadArea.classList.toggle('active', !hasSegments);
+      if (data.compose_status === 'running') { pollTimer = setTimeout(pollTask, 3000); return; }
+      if (data.compose_status === 'succeeded') { stopPolling(); return; }
       stopPolling(); return;
     }
     if (status === 'partial_failed') { setStatus('部分片段处理失败；成功片段可下载，失败片段可重试。', 'warn'); stopPolling(); return; }
@@ -578,6 +646,8 @@ el.addSegmentBtn.addEventListener('click', () => { try { const seg = defaultCurr
 el.clearSegmentsBtn.addEventListener('click', () => { segments = []; activeSegmentIndex = -1; renderSegments(); renderStoredRegionOverlays(); });
 el.submitBtn.addEventListener('click', submitTask);
 el.downloadBtn.addEventListener('click', downloadResult);
+el.composeBtn.addEventListener('click', composeFullVideo);
+el.downloadFullBtn.addEventListener('click', downloadFullVideo);
 el.saveTokenBtn.addEventListener('click', () => { setSodaAccessToken(el.accessToken.value); setStatus(getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。', 'ok'); });
 el.clearTokenBtn.addEventListener('click', () => { el.accessToken.value = ''; setSodaAccessToken(''); setStatus('访问码已清除。', 'warn'); });
 el.segmentList.addEventListener('click', (event) => {
