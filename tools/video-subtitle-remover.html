@@ -180,6 +180,8 @@ const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
 const API_BASE = 'https://api.soda567.dpdns.org';
 const TOKEN_KEY = 'soda_access_token';
 const PUBLIC_UPLOAD_LIMIT_MB = 95;
+const CHUNK_UPLOAD_SIZE = 8 * 1024 * 1024;
+const CHUNK_UPLOAD_RETRIES = 3;
 
 const el = {
   accessToken: document.getElementById('accessToken'),
@@ -242,13 +244,6 @@ function formatBytes(bytes) { if (!Number.isFinite(bytes)) return '-'; const uni
 function setStatus(message, type = '') { el.statusLine.textContent = message; el.statusLine.className = 'status' + (type ? ' ' + type : ''); }
 function setProgress(percent) { el.progressBar.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
 function isPublicApiUpload() { return API_BASE.includes('api.soda567.dpdns.org') || location.hostname === 'soda567.dpdns.org'; }
-function assertUploadSizeAllowed(file) {
-  if (!file || !isPublicApiUpload()) return;
-  const limitBytes = PUBLIC_UPLOAD_LIMIT_MB * 1024 * 1024;
-  if (file.size > limitBytes) {
-    throw new Error(`当前公网上传链路单文件建议不超过 ${PUBLIC_UPLOAD_LIMIT_MB}MB。这个视频约 ${formatBytes(file.size)}，可能被 Cloudflare 拦截导致 Failed to fetch。请先压缩视频，或后续改走直传/内网大文件通道。`);
-  }
-}
 function stopPolling() { if (pollTimer) clearTimeout(pollTimer); pollTimer = 0; }
 function apiDone() { return activeTaskId && activeTaskId !== ''; }
 
@@ -500,10 +495,82 @@ function getSubmitSegments() {
   seg.regions = [cloneCurrentRegion()];
   return [seg];
 }
+async function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+async function fetchJsonWithError(url, options = {}) {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+async function createUploadSession(file) {
+  return fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads'), {
+    method:'POST',
+    headers:withSodaAccessToken({ 'Content-Type':'application/json' }),
+    body:JSON.stringify({ filename:file.name, size:file.size, content_type:file.type || '', chunk_size:CHUNK_UPLOAD_SIZE })
+  });
+}
+async function uploadOneChunk(uploadId, index, blob, totalChunks, uploadedSet) {
+  for (let attempt = 1; attempt <= CHUNK_UPLOAD_RETRIES; attempt++) {
+    try {
+      const res = await fetch(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/chunks/' + index), {
+        method:'PUT',
+        headers:withSodaAccessToken({ 'Content-Type':'application/octet-stream' }),
+        body:blob
+      });
+      if (!res.ok) throw new Error(await readError(res));
+      uploadedSet.add(index);
+      const pct = 8 + Math.round((uploadedSet.size / totalChunks) * 72);
+      setProgress(pct);
+      setStatus(`正在分片上传：${uploadedSet.size}/${totalChunks}（第 ${index + 1} 片已完成）`, 'warn');
+      return;
+    } catch (error) {
+      if (attempt >= CHUNK_UPLOAD_RETRIES) throw new Error(`第 ${index + 1} 个分片上传失败，已重试 ${CHUNK_UPLOAD_RETRIES} 次：${error.message}`);
+      setStatus(`第 ${index + 1} 个分片上传失败，${attempt}/${CHUNK_UPLOAD_RETRIES}，正在重试…`, 'warn');
+      await sleep(800 * attempt);
+    }
+  }
+}
+async function uploadVideoInChunks(file) {
+  setProgress(5);
+  setStatus('正在创建分片上传会话…', 'warn');
+  const session = await createUploadSession(file);
+  const uploadId = session.upload_id;
+  if (!uploadId) throw new Error('后端未返回 upload_id');
+  const chunkSize = Number(session.chunk_size) || CHUNK_UPLOAD_SIZE;
+  const totalChunks = Number(session.total_chunks) || Math.ceil(file.size / chunkSize);
+  const status = await fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId)), { headers:withSodaAccessToken({}) });
+  const uploadedSet = new Set(Array.isArray(status.uploaded_chunks) ? status.uploaded_chunks : []);
+  for (let index = 0; index < totalChunks; index++) {
+    if (uploadedSet.has(index)) continue;
+    const start = index * chunkSize;
+    const end = Math.min(file.size, start + chunkSize);
+    await uploadOneChunk(uploadId, index, file.slice(start, end), totalChunks, uploadedSet);
+  }
+  setProgress(84);
+  setStatus('分片已上传完成，正在合并视频…', 'warn');
+  const completed = await fetchJsonWithError(apiUrl('/api/video-subtitle-remover/uploads/' + encodeURIComponent(uploadId) + '/complete'), { method:'POST', headers:withSodaAccessToken({}) });
+  if (!completed.source_path) throw new Error('后端未返回合并后的视频路径');
+  setProgress(90);
+  return { uploadId, sourcePath:completed.source_path };
+}
+async function createSubtitleTask(uploadResult, submitSegments) {
+  const form = new FormData();
+  if (uploadResult && uploadResult.uploadId) form.append('upload_id', uploadResult.uploadId);
+  if (uploadResult && uploadResult.sourcePath) form.append('source_path', uploadResult.sourcePath);
+  if (!uploadResult) form.append('file', currentFile, currentFile.name);
+  form.append('mode', 'ai_inpaint');
+  form.append('segments_json', JSON.stringify(submitSegments));
+  form.append('coord_mode', 'relative');
+  form.append('x', String(submitSegments[0].regions[0].x));
+  form.append('y', String(submitSegments[0].regions[0].y));
+  form.append('w', String(submitSegments[0].regions[0].w));
+  form.append('h', String(submitSegments[0].regions[0].h));
+  const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), { method:'POST', headers:withSodaAccessToken({}), body:form });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
 async function submitTask() {
   try {
     if (!currentFile) throw new Error('请先上传视频文件');
-    assertUploadSizeAllowed(currentFile);
     const submitSegments = getSubmitSegments();
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
@@ -513,29 +580,18 @@ async function submitTask() {
     el.composeArea.classList.remove('active');
     el.downloadFullBtn.style.display = 'none';
     fullVideoUrl = '';
-    setProgress(12);
-    setStatus('正在上传并创建任务…', 'warn');
-    const form = new FormData();
-    form.append('file', currentFile, currentFile.name);
-    form.append('mode', 'ai_inpaint');
-    form.append('segments_json', JSON.stringify(submitSegments));
-    form.append('coord_mode', 'relative');
-    form.append('x', String(submitSegments[0].regions[0].x));
-    form.append('y', String(submitSegments[0].regions[0].y));
-    form.append('w', String(submitSegments[0].regions[0].w));
-    form.append('h', String(submitSegments[0].regions[0].h));
-    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), { method:'POST', headers:withSodaAccessToken({}), body:form });
-    if (!res.ok) throw new Error(await readError(res));
-    const data = await res.json();
+    const uploadResult = await uploadVideoInChunks(currentFile);
+    setStatus('视频已合并，正在创建 AI 去字幕任务…', 'warn');
+    const data = await createSubtitleTask(uploadResult, submitSegments);
     activeTaskId = data.task_id || '';
     if (!activeTaskId) throw new Error('后端未返回 task_id');
-    setProgress(28);
+    setProgress(92);
     setStatus('任务已创建，正在处理…', 'warn');
     pollTask();
   } catch (error) {
     setProgress(0);
     const message = error && error.name === 'TypeError' && String(error.message || '').includes('fetch')
-      ? '网络上传没有拿到后端响应。常见原因：文件超过公网链路限制、Cloudflare/隧道中断，或网络临时断开。请检查文件大小，建议公网单文件控制在 ' + PUBLIC_UPLOAD_LIMIT_MB + 'MB 以内。'
+      ? '网络请求没有拿到后端响应。已改用分片上传，但仍可能是网络中断、访问码失效、后端重启或网关超时。请稍后重试；如果一直失败，请把文件大小和报错发给管理员。'
       : error.message;
     setStatus('提交失败：' + message, 'err');
   } finally { el.submitBtn.disabled = false; }
