@@ -59,7 +59,8 @@ nav { display:flex; justify-content:space-between; align-items:center; gap:20px;
 .video-wrap video { display:block; width:100%; max-height:560px; background:#000; }
 .selection-layer { position:absolute; left:0; top:0; width:0; height:0; cursor:crosshair; display:none; }
 .selection-layer.active { display:block; }
-.selection-box { position:absolute; border:2px solid var(--gold); background:rgba(255,215,0,.14); box-shadow:0 0 0 9999px rgba(0,0,0,.18); pointer-events:none; }
+.selection-box { position:absolute; border:2px solid var(--gold); background:rgba(255,215,0,.14); box-shadow:0 0 0 9999px rgba(0,0,0,.18); pointer-events:none; display:none; }
+.selection-box.visible { display:block; }
 .selection-box::after { content:"当前框"; position:absolute; top:-30px; left:0; padding:4px 8px; background:rgba(0,0,0,.8); border:1px solid rgba(255,215,0,.45); color:var(--gold); font-size:12px; white-space:nowrap; }
 .overlay-box { position:absolute; border:1px solid rgba(126,200,255,.95); background:rgba(126,200,255,.13); pointer-events:none; }
 .overlay-box.active { border-color:var(--gold); background:rgba(255,215,0,.15); }
@@ -141,8 +142,9 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
         <div class="btn-row" style="margin-top:12px;">
           <button class="btn btn-secondary" id="selectModeBtn" type="button">开启拖拽框选</button>
           <button class="btn btn-secondary" id="addCurrentBoxBtn" type="button">把当前框加入片段</button>
+          <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">清除当前框</button>
         </div>
-        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；同一片段可添加多个框。关闭后可正常操作视频控件。</div>
+        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；默认不显示框，手动拖选后才出现。需要底部默认区域时点「使用默认区域」。</div>
       </div>
     </section>
 
@@ -207,7 +209,7 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
       </div>
     </div>
     <div class="btn-row" style="margin-top:14px;">
-      <button class="btn btn-secondary" id="defaultBoxBtn" type="button">恢复默认区域</button>
+      <button class="btn btn-secondary" id="defaultBoxBtn" type="button">使用默认区域</button>
       <button class="btn btn-primary" id="submitBtn" type="button">提交去字幕任务</button>
     </div>
   </div>
@@ -273,6 +275,7 @@ const el = {
   downloadBtn: document.getElementById('downloadBtn'),
   addSegmentBtn: document.getElementById('addSegmentBtn'),
   addCurrentBoxBtn: document.getElementById('addCurrentBoxBtn'),
+  clearCurrentBoxBtn: document.getElementById('clearCurrentBoxBtn'),
   addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
   addEmptySegmentBtn: document.getElementById('addEmptySegmentBtn'),
   segmentList: document.getElementById('segmentList'),
@@ -288,6 +291,7 @@ let isDragging = false;
 let selectMode = false;
 let segments = [];
 let activeSegmentIndex = -1;
+let hasCurrentRegion = false;
 
 function getSodaAccessToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
@@ -360,7 +364,8 @@ function validateCoords(coords) {
     }
   }
 }
-function setCoordInputs(coords) {
+function setCoordInputs(coords, markCurrent = true) {
+  if (markCurrent) hasCurrentRegion = true;
   el.coordMode.value = coords.coord_mode || 'relative';
   el.coordX.value = formatCoord(coords.x);
   el.coordY.value = formatCoord(coords.y);
@@ -430,6 +435,8 @@ function syncSelectionLayerToVideoContent() {
 }
 function renderSelectionBox() {
   syncSelectionLayerToVideoContent();
+  el.selectionBox.classList.toggle('visible', hasCurrentRegion);
+  if (!hasCurrentRegion) return;
   const coords = coordsToRelative(getCoords());
   el.selectionBox.style.left = (coords.x * 100) + '%';
   el.selectionBox.style.top = (coords.y * 100) + '%';
@@ -477,7 +484,8 @@ function pointToRelative(event) {
 }
 function loadSavedSettings() {
   el.accessToken.value = getSodaAccessToken();
-  setCoordInputs(DEFAULT_COORDS);
+  setCoordInputs(DEFAULT_COORDS, false);
+  hasCurrentRegion = false;
   updateModeHelp();
 }
 function selectFile(file) {
@@ -493,6 +501,7 @@ function selectFile(file) {
   el.previewShell.classList.add('active');
   el.fileName.textContent = file.name + ' · ' + formatBytes(file.size);
   activeTaskId = '';
+  hasCurrentRegion = false;
   stopPolling();
   setProgress(0);
   updateTaskSummary('', '未提交');
@@ -515,6 +524,7 @@ function normalizeSegment(start, end) {
   return { start: Math.round(s * 1000) / 1000, end: Math.round(e * 1000) / 1000 };
 }
 function cloneCurrentRegion() {
+  if (!hasCurrentRegion) throw new Error('请先在预览区拖出一个字幕框，或点击“使用默认区域”。');
   const coords = coordsToRelative(getCoords());
   return {
     coord_mode: 'relative',
@@ -577,7 +587,7 @@ function updateSegment(index, key, value) {
 function getValidSegments() {
   return segments.map((seg) => {
     const normalized = normalizeSegment(seg.start, seg.end);
-    normalized.regions = ensureRegionList(seg).length ? ensureRegionList(seg) : [cloneCurrentRegion()];
+    normalized.regions = ensureRegionList(seg).length ? ensureRegionList(seg) : (hasCurrentRegion ? [cloneCurrentRegion()] : []);
     return normalized;
   }).filter((seg) => seg.end > seg.start);
 }
@@ -707,6 +717,10 @@ async function submitTask() {
   try {
     if (!currentFile) throw new Error('请先上传视频文件');
     const coords = getCoords();
+    const validSegmentsBeforeSubmit = getValidSegments();
+    if (!hasCurrentRegion && !validSegmentsBeforeSubmit.some((seg) => Array.isArray(seg.regions) && seg.regions.length)) {
+      throw new Error('请先拖选字幕区域，或点击“使用默认区域”。');
+    }
     validateCoords(coords);
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
@@ -722,7 +736,7 @@ async function submitTask() {
     form.append('file', currentFile, currentFile.name);
     const removalMode = getRemovalMode();
     form.append('mode', removalMode);
-    const validSegments = getValidSegments();
+    const validSegments = validSegmentsBeforeSubmit;
     if (removalMode === 'ai_inpaint' && validSegments.length) {
       form.append('segments_json', JSON.stringify(validSegments));
     } else if (removalMode === 'ai_inpaint') {
@@ -883,20 +897,25 @@ el.coordMode.addEventListener('change', (event) => {
     h: Number(el.coordH.value)
   }, targetMode));
 });
-[el.coordX, el.coordY, el.coordW, el.coordH].forEach((input) => input.addEventListener('input', renderSelectionBox));
+[el.coordX, el.coordY, el.coordW, el.coordH].forEach((input) => input.addEventListener('input', () => { hasCurrentRegion = true; renderSelectionBox(); }));
 el.removalMode.addEventListener('change', updateModeHelp);
-el.defaultBoxBtn.addEventListener('click', () => setCoordInputs(DEFAULT_COORDS));
+el.defaultBoxBtn.addEventListener('click', () => { setCoordInputs(DEFAULT_COORDS, true); setStatus('已使用默认底部区域，可继续调整或加入片段。', 'info'); });
 el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
 el.submitBtn.addEventListener('click', submitTask);
 el.downloadBtn.addEventListener('click', downloadResult);
 el.addSegmentBtn.addEventListener('click', () => {
-  const start = el.videoPreview.currentTime || 0;
-  const duration = Number(el.previewSeconds.value) || 5;
-  addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
+  try {
+    const start = el.videoPreview.currentTime || 0;
+    const duration = Number(el.previewSeconds.value) || 5;
+    addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
+  } catch (error) {
+    setStatus(error.message, 'warn');
+  }
 });
-el.addCurrentBoxBtn.addEventListener('click', addCurrentRegionToActiveSegment);
-el.addCurrentBoxToActiveBtn.addEventListener('click', addCurrentRegionToActiveSegment);
-el.addEmptySegmentBtn.addEventListener('click', () => addSegment(0, 5));
+el.addCurrentBoxBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
+el.clearCurrentBoxBtn.addEventListener('click', () => { hasCurrentRegion = false; renderSelectionBox(); setStatus('当前黄色框已清除。', 'warn'); });
+el.addCurrentBoxToActiveBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
+el.addEmptySegmentBtn.addEventListener('click', () => { segments.push({ start: 0, end: 5, regions: [] }); activeSegmentIndex = segments.length - 1; renderSegmentInputs(); renderStoredRegionOverlays(); });
 el.segmentList.addEventListener('input', (event) => {
   const index = Number(event.target.dataset.index);
   if (event.target.classList.contains('segment-start')) updateSegment(index, 'start', event.target.value);
@@ -909,7 +928,7 @@ el.segmentList.addEventListener('click', (event) => {
   const removeRegionBtn = event.target.closest('.region-remove');
   if (removeBtn) removeSegment(Number(removeBtn.dataset.index));
   if (activeBtn) setActiveSegment(Number(activeBtn.dataset.index));
-  if (addRegionBtn) addRegionToSegment(Number(addRegionBtn.dataset.index), cloneCurrentRegion());
+  if (addRegionBtn) { try { addRegionToSegment(Number(addRegionBtn.dataset.index), cloneCurrentRegion()); } catch (error) { setStatus(error.message, 'warn'); } }
   if (removeRegionBtn) removeRegion(Number(removeRegionBtn.dataset.segmentIndex), Number(removeRegionBtn.dataset.regionIndex));
 });
 el.segmentResultList.addEventListener('click', (event) => {
