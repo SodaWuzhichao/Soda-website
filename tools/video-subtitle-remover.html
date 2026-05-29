@@ -8,93 +8,76 @@
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --bg:#0a0a0a; --surface:#141414; --surface-soft:#101010; --gold:#ffd700;
-  --text:#e8e8e8; --muted:#777; --muted-2:#5e5e5e; --border:#262626;
-  --ok:#5ad060; --warn:#f0c46a; --info:#7ec8ff; --danger:#ff6666;
+  --bg:#0a0a0a; --surface:#141414; --gold:#ffd700;
+  --text:#e8e8e8; --muted:#666; --border:#222;
+  --ok:#5ad060; --warn:#f0c46a; --danger:#ff6666;
 }
 html { color-scheme: dark; }
-body { background:var(--bg); color:var(--text); font-family:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-weight:200; min-height:100vh; }
-a { color:inherit; }
-nav { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:24px 48px; border-bottom:1px solid var(--border); }
-.logo-wrap { display:flex; align-items:center; gap:8px; text-decoration:none; line-height:1; }
-.logo-wrap img { height:52px; width:auto; border-radius:4px; }
-.logo-text { display:flex; flex-direction:column; justify-content:center; }
-.logo-text strong { font-weight:700; letter-spacing:-.5px; color:#fff; font-size:1.2em; }
-.logo-text span { font-weight:200; letter-spacing:3.5px; font-size:.65em; opacity:.8; color:#fff; margin-top:2px; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:200; min-height:100vh; }
+nav { display:flex; justify-content:space-between; align-items:center; padding:24px 48px; border-bottom:1px solid var(--border); }
+.logo { font-size:1.2rem; color:var(--text); font-weight:300; text-decoration:none; letter-spacing:1px; }
 .nav-back { padding:10px 20px; border-radius:6px; text-decoration:none; font-size:.85rem; font-weight:300; letter-spacing:1px; transition:all .3s; border:1px solid rgba(255,255,255,.2); color:var(--text); }
 .nav-back:hover { border-color:var(--gold); color:var(--gold); }
-.container { max-width:1040px; margin:0 auto; padding:80px 48px; }
-.section-label { font-size:.7rem; letter-spacing:4px; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
-.page-title { font-size:clamp(2rem,4vw,3rem); font-weight:200; letter-spacing:-2px; margin-bottom:12px; }
-.page-desc { color:var(--muted); font-size:.95rem; line-height:1.8; margin-bottom:38px; max-width:760px; }
-.upload-token-row { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr); gap:20px; align-items:start; }
-.full-card { width:100%; }
-.param-grid,.status-details,.stack { display:grid; gap:14px; }
-.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; }
-.card-title { font-size:1rem; font-weight:300; margin-bottom:12px; }
-.field label { display:block; margin-bottom:8px; color:var(--muted); font-size:.84rem; }
-.input,.select { width:100%; padding:12px 14px; background:#111; border:1px solid var(--border); border-radius:10px; color:var(--text); font:inherit; }
-.input:focus,.select:focus { outline:none; border-color:var(--gold); }
-.input::placeholder { color:#4e4e4e; }
-.help { margin-top:8px; color:var(--muted-2); font-size:.78rem; line-height:1.6; }
-.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-.coord-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-.btn-row { display:flex; flex-wrap:wrap; gap:12px; }
-.btn { padding:13px 20px; border-radius:6px; font-weight:300; font-size:.9rem; transition:all .3s; cursor:pointer; border:1px solid var(--border); font-family:inherit; letter-spacing:.5px; background:transparent; color:var(--text); }
-.btn:hover { transform:translateY(-2px); }
-.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-.btn-primary { background:var(--gold); color:#111; border-color:var(--gold); }
-.btn-primary:hover { box-shadow:0 8px 20px rgba(255,215,0,.3); }
-.btn-secondary:hover { border-color:rgba(255,255,255,.4); }
-.btn-danger { border-color:rgba(255,102,102,.35); color:#ff9a9a; }
-.upload-area { background:var(--surface-soft); border:2px dashed var(--border); border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all .3s; }
+.container { max-width:860px; margin:0 auto; padding:80px 48px; }
+.page-title { font-size:clamp(2rem,4vw,3rem); font-weight:200; letter-spacing:-2px; margin-bottom:16px; }
+.page-desc { color:var(--muted); font-size:.95rem; margin-bottom:36px; line-height:1.8; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; margin-top:24px; }
+.upload-area { background:var(--surface); border:2px dashed var(--border); border-radius:8px; padding:54px 32px; text-align:center; cursor:pointer; transition:all .3s; }
 .upload-area:hover,.upload-area.dragover { border-color:var(--gold); background:rgba(255,215,0,.05); }
-.upload-icon { font-size:2.8rem; margin-bottom:12px; }
-.upload-text { font-size:1.05rem; margin-bottom:8px; }
-.upload-hint { font-size:.84rem; color:var(--muted); }
-.file-name { margin-top:12px; color:var(--gold); font-size:.85rem; word-break:break-all; }
-.preview-shell { display:none; }
-.preview-shell.active { display:block; }
-.video-wrap { position:relative; width:100%; background:#050505; border:1px solid var(--border); border-radius:12px; overflow:hidden; user-select:none; }
-.video-wrap video { display:block; width:100%; max-height:560px; background:#000; }
+.upload-icon { font-size:3rem; margin-bottom:16px; }
+.upload-text { font-size:1.1rem; margin-bottom:8px; }
+.upload-hint,.help { font-size:.85rem; color:var(--muted); line-height:1.7; }
+.file-name { margin-top:14px; color:var(--gold); font-size:.86rem; word-break:break-all; }
+.field { margin-bottom:18px; }
+.field label { display:block; color:var(--muted); font-size:.85rem; margin-bottom:8px; }
+.input { width:100%; padding:12px 14px; background:#101010; color:var(--text); border:1px solid var(--border); border-radius:6px; font:inherit; }
+.input:focus { outline:none; border-color:var(--gold); }
+.video-section { display:none; }
+.video-section.active { display:block; }
+.video-wrap { position:relative; background:#050505; border:1px solid var(--border); border-radius:8px; overflow:hidden; user-select:none; }
+.video-wrap video { display:block; width:100%; max-height:520px; background:#000; }
 .selection-layer { position:absolute; left:0; top:0; width:0; height:0; cursor:crosshair; display:none; }
 .selection-layer.active { display:block; }
-.selection-box { position:absolute; border:2px solid var(--gold); background:rgba(255,215,0,.14); box-shadow:0 0 0 9999px rgba(0,0,0,.18); pointer-events:none; display:none; }
+.selection-box { position:absolute; border:2px solid var(--gold); background:rgba(255,215,0,.14); box-shadow:0 0 0 9999px rgba(0,0,0,.16); pointer-events:none; display:none; }
 .selection-box.visible { display:block; }
-.selection-box::after { content:"当前框"; position:absolute; top:-30px; left:0; padding:4px 8px; background:rgba(0,0,0,.8); border:1px solid rgba(255,215,0,.45); color:var(--gold); font-size:12px; white-space:nowrap; }
+.selection-box.visible::after { content:'当前框'; position:absolute; top:-28px; left:0; padding:3px 7px; border:1px solid rgba(255,215,0,.45); background:rgba(0,0,0,.8); color:var(--gold); font-size:12px; white-space:nowrap; }
 .overlay-box { position:absolute; border:1px solid rgba(126,200,255,.95); background:rgba(126,200,255,.13); pointer-events:none; }
-.overlay-box.active { border-color:var(--gold); background:rgba(255,215,0,.15); }
-.overlay-box::after { content:attr(data-label); position:absolute; top:-24px; left:0; padding:3px 7px; border-radius:999px; background:rgba(0,0,0,.78); color:#bfe6ff; font-size:11px; white-space:nowrap; }
-.overlay-box.active::after { color:var(--gold); }
-.strategy-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
-.strategy-card { background:linear-gradient(180deg,rgba(255,215,0,.07),rgba(255,255,255,.02)); border:1px solid rgba(255,215,0,.18); border-radius:14px; padding:16px; min-height:118px; }
-.strategy-card strong { display:block; color:#fff; font-weight:400; margin-bottom:8px; }
-.strategy-card span { display:block; color:var(--muted); font-size:.82rem; line-height:1.7; }
-.status-panel { display:grid; gap:12px; }
-.status-line { min-height:44px; padding:13px 14px; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); color:var(--muted); line-height:1.6; word-break:break-word; }
-.status-line.ok { color:var(--ok); border-color:rgba(90,208,96,.25); }
-.status-line.warn { color:var(--warn); border-color:rgba(240,196,106,.25); }
-.status-line.err { color:var(--danger); border-color:rgba(255,102,102,.25); }
-.status-line.info { color:var(--info); border-color:rgba(126,200,255,.22); }
-.progress-bar-bg { height:8px; background:#0d0d0d; border:1px solid var(--border); border-radius:999px; overflow:hidden; }
-.progress-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#fff2a6); transition:width .3s; }
-.subtle-row { display:flex; justify-content:space-between; gap:14px; color:var(--muted); font-size:.84rem; border-bottom:1px solid rgba(255,255,255,.06); padding-bottom:9px; }
-.subtle-row span:last-child { color:var(--text); text-align:right; word-break:break-all; }
+.overlay-box.active { border-color:var(--gold); background:rgba(255,215,0,.16); }
+.overlay-box::after { content:attr(data-label); position:absolute; top:-23px; left:0; padding:2px 6px; border-radius:999px; background:rgba(0,0,0,.78); color:#bfe6ff; font-size:11px; white-space:nowrap; }
+.timeline { margin-top:18px; }
+.timeline-track { position:relative; height:46px; border:1px solid var(--border); border-radius:8px; background:#0f0f0f; cursor:crosshair; overflow:hidden; }
+.timeline-selection { position:absolute; top:8px; bottom:8px; border:1px solid var(--gold); background:rgba(255,215,0,.2); border-radius:6px; min-width:3px; }
+.timeline-selection.active { box-shadow:0 0 0 1px rgba(255,215,0,.45); }
+.timeline-playhead { position:absolute; top:0; bottom:0; width:2px; background:#fff; opacity:.7; pointer-events:none; }
+.timeline-meta { display:flex; justify-content:space-between; gap:12px; margin-top:8px; color:var(--muted); font-size:.82rem; }
+.btn-group { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px; }
+.btn { padding:14px 24px; border-radius:6px; text-decoration:none; font-weight:300; font-size:.9rem; transition:all .3s; cursor:pointer; border:none; font-family:inherit; letter-spacing:.5px; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn-primary { background:var(--gold); color:var(--bg); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,215,0,.3); }
+.btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--text); transform:translateY(-2px); }
+.btn-ghost { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,.1); }
+.btn-ghost:hover { color:var(--text); border-color:rgba(255,255,255,.3); }
+.btn-danger { background:transparent; color:#ff8888; border:1px solid rgba(255,102,102,.28); }
+.status { margin-top:24px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--muted); line-height:1.7; word-break:break-word; }
+.status.ok { color:var(--ok); border-color:rgba(90,208,96,.28); }
+.status.warn { color:var(--warn); border-color:rgba(240,196,106,.28); }
+.status.err { color:var(--danger); border-color:rgba(255,102,102,.28); }
+.progress-bg { height:10px; background:#222; border-radius:5px; overflow:hidden; margin-top:14px; }
+.progress-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#ffed4a); transition:width .3s; }
+.segment-list { display:grid; gap:10px; margin-top:16px; }
+.segment-item { border:1px solid var(--border); border-radius:8px; padding:12px; background:#101010; }
+.segment-head { display:flex; justify-content:space-between; gap:12px; align-items:center; color:var(--text); font-size:.9rem; }
+.segment-meta { color:var(--muted); font-size:.8rem; line-height:1.7; margin-top:6px; }
+.segment-card { display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#101010; }
+.segment-card.succeeded { border-color:rgba(90,208,96,.28); }
+.segment-card.failed { border-color:rgba(255,102,102,.32); }
+.segment-card video { width:100%; max-height:260px; background:#000; border-radius:6px; }
 .download-area { display:none; }
 .download-area.active { display:block; }
-.segment-builder { display:grid; gap:12px; margin-top:16px; padding:14px; border:1px solid rgba(255,215,0,.14); border-radius:12px; background:rgba(255,215,0,.03); }
-.segment-list { display:grid; gap:10px; }
-.segment-row { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; padding:10px; border:1px solid var(--border); border-radius:10px; background:#101010; }
-.region-list { display:grid; gap:8px; margin-top:10px; grid-column:1/-1; }
-.region-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:9px 10px; border:1px solid rgba(126,200,255,.18); border-radius:10px; color:var(--muted); font-size:.8rem; }
-.segment-card { display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-soft); }
-.segment-card.failed { border-color:rgba(255,102,102,.35); }
-.segment-card.succeeded { border-color:rgba(90,208,96,.25); }
-.segment-card video { width:100%; max-height:260px; background:#000; border-radius:8px; }
-.segment-meta,.notice { color:var(--muted); font-size:.82rem; line-height:1.7; }
 footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); text-align:center; }
-@media (max-width:900px) { .upload-token-row,.strategy-grid { grid-template-columns:1fr; } .container { padding-top:56px; } }
-@media (max-width:640px) { nav,.container { padding-left:24px; padding-right:24px; } .form-grid,.coord-grid,.segment-row { grid-template-columns:1fr; } .btn { width:100%; } }
+@media (max-width:768px) { nav { padding-left:24px; padding-right:24px; } .container { padding:60px 24px; } .upload-area { padding:40px 20px; } .btn-group { flex-direction:column; } .btn { width:100%; text-align:center; } .timeline-meta { flex-direction:column; } }
 </style>
 </head>
 <body>
@@ -107,139 +90,79 @@ footer { padding:28px 48px; border-top:1px solid var(--border); font-size:.75rem
 </nav>
 
 <main class="container">
-  <p class="section-label">Video Tool</p>
   <h1 class="page-title">视频去字幕</h1>
-  <p class="page-desc">上传视频，在预览区框选一个或多个字幕区域后统一处理。当前保留 AI 修复模式，支持同一时间片段内多个框选，先看效果再决定是否加长。</p>
+  <p class="page-desc">上传视频，直接在预览画面框选字幕区域；需要处理哪一段，就在时间线上拖出来。</p>
 
-  <section class="strategy-grid" aria-label="处理建议">
-    <div class="strategy-card"><strong>1. 先短预览</strong><span>AI 修复先用 5 秒验证字幕框和背景效果，别一上来拉长时长。</span></div>
-    <div class="strategy-card"><strong>2. 框小一点</strong><span>只覆盖字幕文字区域，减少 AI 需要重绘的面积，效果和成功率都会更好。</span></div>
-    <div class="strategy-card"><strong>3. 多框一次跑</strong><span>同一 5 秒里有多处字幕，可连续添加多个框，一次上传逐个修复。</span></div>
+  <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择视频文件">
+    <input id="fileInput" type="file" accept="video/*" hidden>
+    <div class="upload-icon">🎞️</div>
+    <div class="upload-text">点击或拖拽视频到这里</div>
+    <div class="upload-hint">上传后框选字幕区域，再在时间线上选择处理片段</div>
+    <div class="file-name" id="fileName"></div>
+  </div>
+
+  <section class="card" id="tokenCard">
+    <div class="field" style="margin-bottom:0;">
+      <label for="accessToken">访问码</label>
+      <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
+        <button class="btn btn-ghost" id="clearTokenBtn" type="button">清除</button>
+      </div>
+    </div>
   </section>
 
-  <!-- Top Row: Upload Video + Access Token -->
-  <div class="upload-token-row">
-    <section class="card stack upload-card">
-      <div>
-        <div class="card-title">1. 上传视频</div>
-        <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择视频文件">
-          <input id="fileInput" type="file" accept="video/*" hidden>
-          <div class="upload-icon">🎞️</div>
-          <div class="upload-text">点击或拖拽视频到这里</div>
-          <div class="upload-hint">支持浏览器可预览的视频格式；实际可处理格式以后端为准。</div>
-          <div class="file-name" id="fileName"></div>
-        </div>
+  <section class="card video-section" id="previewShell">
+    <div class="video-wrap" id="videoWrap">
+      <video id="videoPreview" controls playsinline></video>
+      <div class="selection-layer" id="selectionLayer" title="拖拽框选字幕区域">
+        <div class="selection-box" id="selectionBox"></div>
       </div>
+    </div>
 
-      <div class="preview-shell" id="previewShell">
-        <div class="card-title">2. 预览并框选字幕区域</div>
-        <div class="video-wrap" id="videoWrap">
-          <video id="videoPreview" controls playsinline></video>
-          <div class="selection-layer" id="selectionLayer" title="拖拽框选字幕区域">
-            <div class="selection-box" id="selectionBox"></div>
-          </div>
-        </div>
-        <div class="btn-row" style="margin-top:12px;">
-          <button class="btn btn-secondary" id="selectModeBtn" type="button">开启拖拽框选</button>
-          <button class="btn btn-secondary" id="addCurrentBoxBtn" type="button">把当前框加入片段</button>
-          <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">清除当前框</button>
-        </div>
-        <div class="help">开启拖拽框选后，可在视频上拖出字幕区域；默认不显示框，手动拖选后才出现。需要底部默认区域时点「使用默认区域」。</div>
-      </div>
-    </section>
+    <div class="btn-group">
+      <button class="btn btn-secondary" id="selectModeBtn" type="button">开启画面框选</button>
+      <button class="btn btn-secondary" id="addCurrentBoxBtn" type="button">添加当前框</button>
+      <button class="btn btn-ghost" id="defaultBoxBtn" type="button">使用底部默认框</button>
+      <button class="btn btn-danger" id="clearCurrentBoxBtn" type="button">清除当前框</button>
+    </div>
+    <div class="help" style="margin-top:10px;">可连续添加多个框。同一时间段有多处字幕时，建议添加多个小框，不要整条底部全选。</div>
 
-    <aside class="card stack token-card">
-      <div>
-        <div class="card-title">Access Token</div>
-        <div class="field">
-          <label for="accessToken">访问码</label>
-          <input class="input" id="accessToken" type="password" autocomplete="off" placeholder="粘贴 Access Token">
-          <div class="help">仅保存在当前浏览器 localStorage；请求时通过 X-Soda-Access-Token 发送，不会写入页面日志。</div>
-        </div>
+    <div class="timeline">
+      <div class="timeline-track" id="timelineTrack" title="在这里拖拽选择处理时间段">
+        <div class="timeline-playhead" id="timelinePlayhead"></div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" id="saveTokenBtn" type="button">保存访问码</button>
-        <button class="btn btn-danger" id="clearTokenBtn" type="button">清除</button>
+      <div class="timeline-meta">
+        <span id="timelineHint">拖拽时间线选择处理片段；不选则默认处理当前 5 秒。</span>
+        <span id="timelineDuration">-</span>
       </div>
-    </aside>
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="addSegmentBtn" type="button">添加当前 5 秒</button>
+        <button class="btn btn-secondary" id="addCurrentBoxToActiveBtn" type="button">把当前框加入选中片段</button>
+        <button class="btn btn-ghost" id="clearSegmentsBtn" type="button">清空片段</button>
+      </div>
+      <div class="segment-list" id="segmentList"></div>
+    </div>
+  </section>
+
+  <div class="btn-group" id="submitGroup" style="display:none;">
+    <button class="btn btn-primary" id="submitBtn" type="button">提交去字幕任务</button>
   </div>
 
-  <!-- Full Width: Processing Parameters -->
-  <div class="card full-card" style="margin-top:20px;">
-    <div class="card-title">处理参数</div>
-    <div class="param-grid">
-      <div class="form-grid">
-        <div class="field">
-          <label for="removalMode">处理模式</label>
-          <select class="select" id="removalMode" disabled>
-            <option value="ai_inpaint" selected>AI 修复 ProPainter（分段预览）</option>
-          </select>
-          <div class="help" id="modeHelp">已清理极速模糊模式；当前只保留 AI 修复。建议先 5-10 秒验证区域和效果，再逐步加长。</div>
-        </div>
-        <div class="field">
-          <label for="previewSeconds">AI 预览时长（秒）</label>
-          <input class="input" id="previewSeconds" type="number" step="1" min="1" max="60" value="5">
-          <div class="help">建议先 5-10 秒测试。最长 60 秒；超过 10 秒会自动分段并降低处理帧率/尺寸，优先保证成功率。</div>
-        </div>
-      </div>
-      <div class="field">
-        <label for="coordMode">坐标模式</label>
-        <select class="select" id="coordMode">
-          <option value="relative">relative（0-1 比例）</option>
-          <option value="pixels">pixels（按原视频像素）</option>
-        </select>
-      </div>
-      <div class="coord-grid">
-        <div class="field"><label for="coordX">x</label><input class="input" id="coordX" type="number" step="0.001" value="0"></div>
-        <div class="field"><label for="coordY">y</label><input class="input" id="coordY" type="number" step="0.001" value="0.78"></div>
-        <div class="field"><label for="coordW">w</label><input class="input" id="coordW" type="number" step="0.001" value="1"></div>
-        <div class="field"><label for="coordH">h</label><input class="input" id="coordH" type="number" step="0.001" value="0.18"></div>
-      </div>
-      <div class="segment-builder">
-        <div>
-          <div class="card-title" style="margin-bottom:4px;">多片段预览（可选）</div>
-          <div class="help">填写多个 start/end 后会一次上传原视频，后端逐段处理。每个片段可包含多个框选区域，适合 5 秒内多处字幕；留空则使用上方单预览时长和当前框。</div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" id="addSegmentBtn" type="button">添加当前 5 秒片段</button>
-          <button class="btn btn-secondary" id="addCurrentBoxToActiveBtn" type="button">把当前框加入选中片段</button>
-          <button class="btn btn-secondary" id="addEmptySegmentBtn" type="button">添加空片段</button>
-        </div>
-        <div class="segment-list" id="segmentList"></div>
-      </div>
-    </div>
-    <div class="btn-row" style="margin-top:14px;">
-      <button class="btn btn-secondary" id="defaultBoxBtn" type="button">使用默认区域</button>
-      <button class="btn btn-primary" id="submitBtn" type="button">提交去字幕任务</button>
-    </div>
-  </div>
+  <div class="status" id="statusLine">等待上传视频。</div>
+  <div class="progress-bg"><div class="progress-fill" id="progressBar"></div></div>
 
-  <!-- Full Width: Task Status -->
-  <div class="card full-card status-panel" style="margin-top:20px;">
-    <div class="card-title">任务状态</div>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
-    <div class="status-line" id="statusLine">等待上传视频。</div>
-    <div class="status-details">
-      <div class="subtle-row"><span>任务 ID</span><span id="taskIdText">-</span></div>
-      <div class="subtle-row"><span>当前状态</span><span id="taskStateText">未提交</span></div>
-      <div class="subtle-row"><span>处理模式</span><span id="taskModeText">-</span></div>
-      <div class="subtle-row"><span>最近更新</span><span id="taskUpdatedText">-</span></div>
-    </div>
-    <div class="download-area" id="downloadArea">
-      <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
-      <div class="help">下载同样会携带 Access Token；如果结果已过期，请重新提交任务。</div>
-    </div>
-    <div class="segment-list" id="segmentResultList"></div>
+  <div class="download-area" id="downloadArea" style="margin-top:18px;">
+    <button class="btn btn-primary" id="downloadBtn" type="button">下载处理后视频</button>
   </div>
-
-  <div class="notice" style="margin-top:20px;">优化建议：字幕框尽量只覆盖文字和少量边缘；同一片段有多处字幕就添加多个小框，比整条底部全选更稳。</div>
+  <div class="segment-list" id="segmentResultList"></div>
 </main>
 
 <footer>© 2026 SODA567</footer>
 
 <script>
 const DEFAULT_COORDS = { x: 0, y: 0.78, w: 1, h: 0.18, coord_mode: 'relative' };
-const API_BASE = '';
+const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'https://api.soda567.dpdns.org' : '';
 const TOKEN_KEY = 'soda_access_token';
 
 const el = {
@@ -255,30 +178,23 @@ const el = {
   selectionLayer: document.getElementById('selectionLayer'),
   selectionBox: document.getElementById('selectionBox'),
   selectModeBtn: document.getElementById('selectModeBtn'),
-  removalMode: document.getElementById('removalMode'),
-  previewSeconds: document.getElementById('previewSeconds'),
-  modeHelp: document.getElementById('modeHelp'),
-  coordMode: document.getElementById('coordMode'),
-  coordX: document.getElementById('coordX'),
-  coordY: document.getElementById('coordY'),
-  coordW: document.getElementById('coordW'),
-  coordH: document.getElementById('coordH'),
+  addCurrentBoxBtn: document.getElementById('addCurrentBoxBtn'),
+  addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
+  clearCurrentBoxBtn: document.getElementById('clearCurrentBoxBtn'),
   defaultBoxBtn: document.getElementById('defaultBoxBtn'),
+  timelineTrack: document.getElementById('timelineTrack'),
+  timelinePlayhead: document.getElementById('timelinePlayhead'),
+  timelineHint: document.getElementById('timelineHint'),
+  timelineDuration: document.getElementById('timelineDuration'),
+  addSegmentBtn: document.getElementById('addSegmentBtn'),
+  clearSegmentsBtn: document.getElementById('clearSegmentsBtn'),
+  segmentList: document.getElementById('segmentList'),
+  submitGroup: document.getElementById('submitGroup'),
   submitBtn: document.getElementById('submitBtn'),
-  progressBar: document.getElementById('progressBar'),
   statusLine: document.getElementById('statusLine'),
-  taskIdText: document.getElementById('taskIdText'),
-  taskStateText: document.getElementById('taskStateText'),
-  taskModeText: document.getElementById('taskModeText'),
-  taskUpdatedText: document.getElementById('taskUpdatedText'),
+  progressBar: document.getElementById('progressBar'),
   downloadArea: document.getElementById('downloadArea'),
   downloadBtn: document.getElementById('downloadBtn'),
-  addSegmentBtn: document.getElementById('addSegmentBtn'),
-  addCurrentBoxBtn: document.getElementById('addCurrentBoxBtn'),
-  clearCurrentBoxBtn: document.getElementById('clearCurrentBoxBtn'),
-  addCurrentBoxToActiveBtn: document.getElementById('addCurrentBoxToActiveBtn'),
-  addEmptySegmentBtn: document.getElementById('addEmptySegmentBtn'),
-  segmentList: document.getElementById('segmentList'),
   segmentResultList: document.getElementById('segmentResultList')
 };
 
@@ -289,140 +205,35 @@ let pollTimer = 0;
 let dragStart = null;
 let isDragging = false;
 let selectMode = false;
+let hasCurrentRegion = false;
+let currentRegion = { ...DEFAULT_COORDS };
 let segments = [];
 let activeSegmentIndex = -1;
-let hasCurrentRegion = false;
+let timelineDrag = null;
 
-function getSodaAccessToken() {
-  return localStorage.getItem(TOKEN_KEY) || '';
-}
-function setSodaAccessToken(value) {
-  const token = String(value || '').trim();
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
-}
-function withSodaAccessToken(headers = {}) {
-  const token = getSodaAccessToken();
-  if (token) headers['X-Soda-Access-Token'] = token;
-  return headers;
-}
-function apiUrl(path) {
-  return API_BASE + path;
-}
-function setStatus(message, type = '') {
-  el.statusLine.textContent = message;
-  el.statusLine.className = 'status-line' + (type ? ' ' + type : '');
-}
-function setProgress(percent) {
-  el.progressBar.style.width = Math.max(0, Math.min(100, percent)) + '%';
-}
-function stopPolling() {
-  if (pollTimer) clearTimeout(pollTimer);
-  pollTimer = 0;
-}
-function setSelectMode(enabled) {
-  selectMode = !!enabled;
-  el.selectionLayer.classList.toggle('active', selectMode);
-  el.selectModeBtn.textContent = selectMode ? '关闭拖拽框选' : '开启拖拽框选';
-}
-function updateTaskSummary(taskId, state, mode = '') {
-  el.taskIdText.textContent = taskId || '-';
-  el.taskStateText.textContent = state || '未提交';
-  if (el.taskModeText) el.taskModeText.textContent = mode ? modeLabel(mode) : '-';
-  el.taskUpdatedText.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-}
-function modeLabel(mode) {
-  return 'AI 修复 ProPainter（分段预览）';
-}
-function updateModeHelp() {
-  const ai = el.removalMode.value === 'ai_inpaint';
-  el.previewSeconds.disabled = !ai;
-  el.modeHelp.textContent = ai
-    ? 'AI 修复会先生成预览片段：3-8 秒最稳，超过 10 秒自动降级处理参数，避免长请求失败。'
-    : '当前只保留 AI 修复。';
-}
-function getRemovalMode() {
-  return 'ai_inpaint';
-}
-function getCoords() {
-  return {
-    coord_mode: el.coordMode.value,
-    x: Number(el.coordX.value),
-    y: Number(el.coordY.value),
-    w: Number(el.coordW.value),
-    h: Number(el.coordH.value)
-  };
-}
-function validateCoords(coords) {
-  for (const key of ['x', 'y', 'w', 'h']) {
-    if (!Number.isFinite(coords[key])) throw new Error('坐标 ' + key + ' 必须是数字');
-  }
-  if (coords.w <= 0 || coords.h <= 0) throw new Error('w / h 必须大于 0');
-  if (coords.coord_mode === 'relative') {
-    if (coords.x < 0 || coords.y < 0 || coords.w > 1 || coords.h > 1 || coords.x + coords.w > 1.001 || coords.y + coords.h > 1.001) {
-      throw new Error('relative 坐标需在 0-1 范围内，且 x+w、y+h 不应超过 1');
-    }
-  }
-}
-function setCoordInputs(coords, markCurrent = true) {
-  if (markCurrent) hasCurrentRegion = true;
-  el.coordMode.value = coords.coord_mode || 'relative';
-  el.coordX.value = formatCoord(coords.x);
-  el.coordY.value = formatCoord(coords.y);
-  el.coordW.value = formatCoord(coords.w);
-  el.coordH.value = formatCoord(coords.h);
-  renderSelectionBox();
-  renderStoredRegionOverlays();
-}
-function formatCoord(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '0';
-  return String(Math.round(n * 1000) / 1000);
-}
-function getVideoPixels() {
-  const videoW = el.videoPreview.videoWidth || 1;
-  const videoH = el.videoPreview.videoHeight || 1;
-  return { videoW, videoH };
-}
-function coordsToRelative(coords) {
-  if (coords.coord_mode === 'relative') return coords;
-  const { videoW, videoH } = getVideoPixels();
-  return { coord_mode: 'relative', x: coords.x / videoW, y: coords.y / videoH, w: coords.w / videoW, h: coords.h / videoH };
-}
-function convertCoordsForMode(coords, targetMode) {
-  const relative = coordsToRelative(coords);
-  if (targetMode === 'relative') return { ...relative, coord_mode: 'relative' };
-  const { videoW, videoH } = getVideoPixels();
-  return {
-    coord_mode: 'pixels',
-    x: relative.x * videoW,
-    y: relative.y * videoH,
-    w: relative.w * videoW,
-    h: relative.h * videoH
-  };
-}
+function getSodaAccessToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+function setSodaAccessToken(value) { const token = String(value || '').trim(); token ? localStorage.setItem(TOKEN_KEY, token) : localStorage.removeItem(TOKEN_KEY); }
+function withSodaAccessToken(headers = {}) { const token = getSodaAccessToken(); if (token) headers['X-Soda-Access-Token'] = token; return headers; }
+function apiUrl(path) { return API_BASE + path; }
+function escapeHtml(value) { return String(value || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+function formatTime(seconds) { const s = Math.max(0, Number(seconds) || 0); const m = Math.floor(s / 60); const rest = Math.floor(s % 60).toString().padStart(2, '0'); const ms = Math.round((s % 1) * 10); return ms ? `${m}:${rest}.${ms}` : `${m}:${rest}`; }
+function formatBytes(bytes) { if (!Number.isFinite(bytes)) return '-'; const units=['B','KB','MB','GB']; let size=bytes, i=0; while(size>=1024&&i<units.length-1){size/=1024;i++;} return (i?size.toFixed(1):size)+units[i]; }
+function setStatus(message, type = '') { el.statusLine.textContent = message; el.statusLine.className = 'status' + (type ? ' ' + type : ''); }
+function setProgress(percent) { el.progressBar.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
+function stopPolling() { if (pollTimer) clearTimeout(pollTimer); pollTimer = 0; }
+function apiDone() { return activeTaskId && activeTaskId !== ''; }
+
 function getRenderedVideoContentRect() {
   const videoRect = el.videoPreview.getBoundingClientRect();
   const wrapRect = el.videoWrap.getBoundingClientRect();
   const videoW = el.videoPreview.videoWidth || 0;
   const videoH = el.videoPreview.videoHeight || 0;
-  if (!videoRect.width || !videoRect.height || !videoW || !videoH) {
-    return { left: 0, top: 0, width: videoRect.width || wrapRect.width || 1, height: videoRect.height || wrapRect.height || 1 };
-  }
+  if (!videoRect.width || !videoRect.height || !videoW || !videoH) return { left:0, top:0, width:videoRect.width || wrapRect.width || 1, height:videoRect.height || wrapRect.height || 1 };
   const videoRatio = videoW / videoH;
   const boxRatio = videoRect.width / videoRect.height;
-  let width = videoRect.width;
-  let height = videoRect.height;
-  let left = videoRect.left - wrapRect.left;
-  let top = videoRect.top - wrapRect.top;
-  // Browser default/object-fit: contain may leave letterbox space inside the <video> box.
-  if (boxRatio > videoRatio) {
-    width = height * videoRatio;
-    left += (videoRect.width - width) / 2;
-  } else if (boxRatio < videoRatio) {
-    height = width / videoRatio;
-    top += (videoRect.height - height) / 2;
-  }
+  let width = videoRect.width, height = videoRect.height, left = videoRect.left - wrapRect.left, top = videoRect.top - wrapRect.top;
+  if (boxRatio > videoRatio) { width = height * videoRatio; left += (videoRect.width - width) / 2; }
+  else if (boxRatio < videoRatio) { height = width / videoRatio; top += (videoRect.height - height) / 2; }
   return { left, top, width, height };
 }
 function syncSelectionLayerToVideoContent() {
@@ -433,503 +244,317 @@ function syncSelectionLayerToVideoContent() {
   el.selectionLayer.style.height = rect.height + 'px';
   return rect;
 }
+function setSelectMode(enabled) {
+  selectMode = !!enabled;
+  el.selectionLayer.classList.toggle('active', selectMode);
+  el.selectModeBtn.textContent = selectMode ? '关闭画面框选' : '开启画面框选';
+}
 function renderSelectionBox() {
   syncSelectionLayerToVideoContent();
   el.selectionBox.classList.toggle('visible', hasCurrentRegion);
   if (!hasCurrentRegion) return;
-  const coords = coordsToRelative(getCoords());
-  el.selectionBox.style.left = (coords.x * 100) + '%';
-  el.selectionBox.style.top = (coords.y * 100) + '%';
-  el.selectionBox.style.width = (coords.w * 100) + '%';
-  el.selectionBox.style.height = (coords.h * 100) + '%';
+  el.selectionBox.style.left = (currentRegion.x * 100) + '%';
+  el.selectionBox.style.top = (currentRegion.y * 100) + '%';
+  el.selectionBox.style.width = (currentRegion.w * 100) + '%';
+  el.selectionBox.style.height = (currentRegion.h * 100) + '%';
+}
+function setCurrentRegion(region, visible = true) {
+  currentRegion = { coord_mode:'relative', x:Number(region.x), y:Number(region.y), w:Number(region.w), h:Number(region.h) };
+  hasCurrentRegion = !!visible;
+  renderSelectionBox();
+}
+function clearCurrentRegion() { hasCurrentRegion = false; renderSelectionBox(); }
+function pointToRelative(event) {
+  syncSelectionLayerToVideoContent();
+  const rect = el.selectionLayer.getBoundingClientRect();
+  return { x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)), y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)) };
+}
+function cloneCurrentRegion() {
+  if (!hasCurrentRegion) throw new Error('请先在画面上框选字幕区域，或点击“使用底部默认框”。');
+  return { coord_mode:'relative', x:round3(currentRegion.x), y:round3(currentRegion.y), w:round3(currentRegion.w), h:round3(currentRegion.h) };
+}
+function round3(n) { return Math.round(Number(n) * 1000) / 1000; }
+
+function normalizeSegment(start, end) {
+  const duration = Number(el.videoPreview.duration) || 0;
+  let s = Math.max(0, Number(start) || 0);
+  let e = Math.max(s + 0.1, Number(end) || (s + 5));
+  if (duration) { s = Math.min(s, duration); e = Math.min(Math.max(e, s + 0.1), duration); }
+  return { start:round3(s), end:round3(e), regions:[] };
+}
+function defaultCurrentFiveSeconds() {
+  const start = el.videoPreview.currentTime || 0;
+  return normalizeSegment(start, start + 5);
+}
+function ensureRegionList(seg) { if (!Array.isArray(seg.regions)) seg.regions = []; return seg.regions; }
+function addSegment(start, end, regions) {
+  const seg = normalizeSegment(start, end);
+  seg.regions = Array.isArray(regions) ? regions : (hasCurrentRegion ? [cloneCurrentRegion()] : []);
+  segments.push(seg);
+  activeSegmentIndex = segments.length - 1;
+  renderSegments();
+  renderStoredRegionOverlays();
+}
+function addCurrentRegionToActiveSegment() {
+  const region = cloneCurrentRegion();
+  if (!segments.length) {
+    const seg = defaultCurrentFiveSeconds();
+    seg.regions = [region];
+    segments.push(seg);
+    activeSegmentIndex = 0;
+  } else {
+    const index = activeSegmentIndex >= 0 ? activeSegmentIndex : segments.length - 1;
+    ensureRegionList(segments[index]).push(region);
+    activeSegmentIndex = index;
+  }
+  renderSegments();
+  renderStoredRegionOverlays();
+  setStatus('已添加当前框。', 'ok');
 }
 function renderStoredRegionOverlays() {
   if (!el.selectionLayer) return;
   syncSelectionLayerToVideoContent();
   el.selectionLayer.querySelectorAll('.overlay-box').forEach((node) => node.remove());
-  segments.forEach((seg, sIndex) => {
-    ensureRegionList(seg).forEach((region, rIndex) => {
-      const coords = coordsToRelative(region);
-      const box = document.createElement('div');
-      box.className = 'overlay-box' + (sIndex === activeSegmentIndex ? ' active' : '');
-      box.dataset.label = `片段${sIndex + 1}-框${rIndex + 1}`;
-      box.style.left = (coords.x * 100) + '%';
-      box.style.top = (coords.y * 100) + '%';
-      box.style.width = (coords.w * 100) + '%';
-      box.style.height = (coords.h * 100) + '%';
-      el.selectionLayer.appendChild(box);
-    });
-  });
+  segments.forEach((seg, sIndex) => ensureRegionList(seg).forEach((region, rIndex) => {
+    const box = document.createElement('div');
+    box.className = 'overlay-box' + (sIndex === activeSegmentIndex ? ' active' : '');
+    box.dataset.label = `片段${sIndex + 1}-框${rIndex + 1}`;
+    box.style.left = (region.x * 100) + '%';
+    box.style.top = (region.y * 100) + '%';
+    box.style.width = (region.w * 100) + '%';
+    box.style.height = (region.h * 100) + '%';
+    el.selectionLayer.appendChild(box);
+  }));
 }
-function setCoordsFromRelative(relativeCoords) {
-  if (el.coordMode.value === 'pixels') {
-    const { videoW, videoH } = getVideoPixels();
-    setCoordInputs({
-      coord_mode: 'pixels',
-      x: relativeCoords.x * videoW,
-      y: relativeCoords.y * videoH,
-      w: relativeCoords.w * videoW,
-      h: relativeCoords.h * videoH
-    });
-  } else {
-    setCoordInputs({ ...relativeCoords, coord_mode: 'relative' });
-  }
-}
-function pointToRelative(event) {
-  syncSelectionLayerToVideoContent();
-  const rect = el.selectionLayer.getBoundingClientRect();
-  const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-  const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-  return { x, y };
-}
-function loadSavedSettings() {
-  el.accessToken.value = getSodaAccessToken();
-  setCoordInputs(DEFAULT_COORDS, false);
-  hasCurrentRegion = false;
-  updateModeHelp();
-}
-function selectFile(file) {
-  if (!file) return;
-  if (!file.type.startsWith('video/')) {
-    setStatus('请选择视频文件。', 'err');
+function renderSegments() {
+  renderTimeline();
+  if (!segments.length) {
+    el.segmentList.innerHTML = '<div class="help">还没有片段：可在时间线上拖拽选择，或直接点「添加当前 5 秒」。</div>';
     return;
   }
+  el.segmentList.innerHTML = segments.map((seg, index) => {
+    const regions = ensureRegionList(seg);
+    return `<div class="segment-item" style="border-color:${index === activeSegmentIndex ? 'rgba(255,215,0,.45)' : 'var(--border)'}">
+      <div class="segment-head">
+        <span>片段 ${index + 1} · ${formatTime(seg.start)} - ${formatTime(seg.end)}</span>
+        <span>${regions.length} 个框</span>
+      </div>
+      <div class="segment-meta">${regions.length ? regions.map((_, i) => `框${i + 1}`).join(' / ') : '还没有框：选中此片段后添加当前框'}</div>
+      <div class="btn-group" style="margin-top:10px;">
+        <button class="btn btn-secondary segment-active" type="button" data-index="${index}">${index === activeSegmentIndex ? '已选中' : '选中'}</button>
+        <button class="btn btn-secondary region-add" type="button" data-index="${index}">加当前框</button>
+        <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除片段</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderTimeline() {
+  if (!el.timelineTrack) return;
+  el.timelineTrack.querySelectorAll('.timeline-selection').forEach((node) => node.remove());
+  const duration = Number(el.videoPreview.duration) || 0;
+  el.timelineDuration.textContent = duration ? `总时长 ${formatTime(duration)}` : '-';
+  const current = duration ? Math.max(0, Math.min(1, (el.videoPreview.currentTime || 0) / duration)) : 0;
+  el.timelinePlayhead.style.left = (current * 100) + '%';
+  segments.forEach((seg, index) => {
+    if (!duration) return;
+    const item = document.createElement('div');
+    item.className = 'timeline-selection' + (index === activeSegmentIndex ? ' active' : '');
+    item.style.left = (seg.start / duration * 100) + '%';
+    item.style.width = Math.max(0.5, ((seg.end - seg.start) / duration * 100)) + '%';
+    item.title = `片段 ${index + 1}: ${formatTime(seg.start)} - ${formatTime(seg.end)}`;
+    item.dataset.index = String(index);
+    el.timelineTrack.appendChild(item);
+  });
+}
+function timelinePointToSeconds(event) {
+  const rect = el.timelineTrack.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  return ratio * (Number(el.videoPreview.duration) || 0);
+}
+
+function selectFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('video/')) { setStatus('请选择视频文件。', 'err'); return; }
   currentFile = file;
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(file);
   el.videoPreview.src = objectUrl;
   el.previewShell.classList.add('active');
+  el.submitGroup.style.display = 'flex';
   el.fileName.textContent = file.name + ' · ' + formatBytes(file.size);
   activeTaskId = '';
-  hasCurrentRegion = false;
+  segments = [];
+  activeSegmentIndex = -1;
+  clearCurrentRegion();
   stopPolling();
   setProgress(0);
-  updateTaskSummary('', '未提交');
   el.downloadArea.classList.remove('active');
-  if (el.segmentResultList) el.segmentResultList.innerHTML = '';
-  setStatus('视频已选择，请确认字幕区域后提交。', 'info');
-  renderSelectionBox();
-}
-function formatBytes(bytes) {
-  if (!Number.isFinite(bytes)) return '-';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let idx = 0;
-  while (size >= 1024 && idx < units.length - 1) { size /= 1024; idx += 1; }
-  return (idx === 0 ? size : size.toFixed(1)) + units[idx];
-}
-function normalizeSegment(start, end) {
-  const s = Math.max(0, Number(start) || 0);
-  const e = Math.max(s + 0.1, Number(end) || (s + 5));
-  return { start: Math.round(s * 1000) / 1000, end: Math.round(e * 1000) / 1000 };
-}
-function cloneCurrentRegion() {
-  if (!hasCurrentRegion) throw new Error('请先在预览区拖出一个字幕框，或点击“使用默认区域”。');
-  const coords = coordsToRelative(getCoords());
-  return {
-    coord_mode: 'relative',
-    x: Number(formatCoord(coords.x)),
-    y: Number(formatCoord(coords.y)),
-    w: Number(formatCoord(coords.w)),
-    h: Number(formatCoord(coords.h))
-  };
-}
-function ensureRegionList(seg) {
-  if (!Array.isArray(seg.regions)) seg.regions = [];
-  return seg.regions;
-}
-function addRegionToSegment(index, region) {
-  if (!segments[index]) return;
-  ensureRegionList(segments[index]).push(region || cloneCurrentRegion());
-  activeSegmentIndex = index;
-  renderSegmentInputs();
-  renderStoredRegionOverlays();
-}
-function removeRegion(segmentIndex, regionIndex) {
-  if (!segments[segmentIndex]) return;
-  ensureRegionList(segments[segmentIndex]).splice(regionIndex, 1);
-  renderSegmentInputs();
-  renderStoredRegionOverlays();
-}
-function setActiveSegment(index) {
-  activeSegmentIndex = Number(index);
-  renderSegmentInputs();
-  renderStoredRegionOverlays();
-}
-function addCurrentRegionToActiveSegment() {
-  if (!segments.length) {
-    const start = el.videoPreview.currentTime || 0;
-    const duration = Number(el.previewSeconds.value) || 5;
-    addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
-  }
-  const index = activeSegmentIndex >= 0 ? activeSegmentIndex : segments.length - 1;
-  addRegionToSegment(index, cloneCurrentRegion());
-  setStatus('已把当前框加入片段 ' + (index + 1) + '。', 'ok');
-}
-function addSegment(start, end) {
-  const seg = normalizeSegment(start, end);
-  seg.regions = [cloneCurrentRegion()];
-  segments.push(seg);
-  activeSegmentIndex = segments.length - 1;
-  renderSegmentInputs();
-  renderStoredRegionOverlays();
-}
-function removeSegment(index) {
-  segments.splice(index, 1);
-  if (activeSegmentIndex >= segments.length) activeSegmentIndex = segments.length - 1;
-  renderSegmentInputs();
-  renderStoredRegionOverlays();
-}
-function updateSegment(index, key, value) {
-  if (!segments[index]) return;
-  segments[index][key] = Number(value);
-}
-function getValidSegments() {
-  return segments.map((seg) => {
-    const normalized = normalizeSegment(seg.start, seg.end);
-    normalized.regions = ensureRegionList(seg).length ? ensureRegionList(seg) : (hasCurrentRegion ? [cloneCurrentRegion()] : []);
-    return normalized;
-  }).filter((seg) => seg.end > seg.start);
-}
-function renderSegmentInputs() {
-  if (!el.segmentList) return;
-  if (!segments.length) {
-    el.segmentList.innerHTML = '<div class="help">还没有多片段；不添加则使用单预览时长和当前框。</div>';
-    return;
-  }
-  el.segmentList.innerHTML = segments.map((seg, index) => {
-    const regions = ensureRegionList(seg);
-    const regionHtml = regions.length ? regions.map((region, rIndex) => `
-      <div class="region-row">
-        <span>框 ${rIndex + 1} · x=${region.x}, y=${region.y}, w=${region.w}, h=${region.h}</span>
-        <button class="btn btn-danger region-remove" type="button" data-segment-index="${index}" data-region-index="${rIndex}">删除框</button>
-      </div>
-    `).join('') : '<div class="help">这个片段还没有框，会默认使用当前坐标框。</div>';
-    return `
-    <div class="segment-row" data-active="${activeSegmentIndex === index ? '1' : '0'}" style="border-color:${activeSegmentIndex === index ? 'rgba(255,215,0,.45)' : 'var(--border)'}">
-      <div class="field"><label>开始（秒）</label><input class="input segment-start" type="number" min="0" step="0.1" data-index="${index}" value="${seg.start}"></div>
-      <div class="field"><label>结束（秒）</label><input class="input segment-end" type="number" min="0" step="0.1" data-index="${index}" value="${seg.end}"></div>
-      <div class="btn-row">
-        <button class="btn btn-secondary segment-active" type="button" data-index="${index}">${activeSegmentIndex === index ? '已选中' : '选中'}</button>
-        <button class="btn btn-secondary region-add" type="button" data-index="${index}">加当前框</button>
-        <button class="btn btn-danger segment-remove" type="button" data-index="${index}">删除</button>
-      </div>
-      <div class="region-list">${regionHtml}</div>
-    </div>`;
-  }).join('');
-}
-function renderSegmentResults(task) {
-  if (!el.segmentResultList) return;
-  const list = task && Array.isArray(task.segments) ? task.segments : [];
-  if (!list.length) {
-    el.segmentResultList.innerHTML = '';
-    return;
-  }
-  el.segmentResultList.innerHTML = list.map((seg) => {
-    const cls = seg.status === 'succeeded' ? 'succeeded' : (seg.status === 'failed' ? 'failed' : '');
-    const preview = seg.status === 'succeeded' && seg.preview_url
-      ? `<video controls playsinline src="${apiUrl(seg.preview_url)}"></video>`
-      : '';
-    const download = seg.status === 'succeeded' && seg.download_url
-      ? `<button class="btn btn-primary segment-download" type="button" data-url="${seg.download_url}" data-index="${seg.index || ''}">下载片段</button>`
-      : '';
-    const retry = seg.status === 'failed'
-      ? `<button class="btn btn-secondary segment-retry" type="button" data-id="${seg.segment_id}">重试片段</button>`
-      : '';
-    const err = seg.error ? `<div class="status-line err">${escapeHtml(seg.error)}</div>` : '';
-    return `<div class="segment-card ${cls}">
-      <div><strong>片段 ${seg.index || '-'}：</strong>${seg.start}s - ${seg.end}s · ${seg.status || 'queued'} / ${seg.phase || '-'}</div>
-      <div class="segment-meta">重试次数：${seg.retry_count || 0}</div>
-      ${err}${preview}<div class="btn-row">${download}${retry}</div>
-    </div>`;
-  }).join('');
-}
-function escapeHtml(value) {
-  return String(value || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-}
-async function downloadSegment(url, index) {
-  try {
-    const res = await fetch(apiUrl(url), { method: 'GET', headers: withSodaAccessToken({}), mode: 'cors' });
-    if (!res.ok) throw new Error(await readError(res));
-    const blob = await res.blob();
-    const object = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = object;
-    a.download = makeDownloadName().replace('.mp4', `_segment_${index || ''}.mp4`);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(object), 30000);
-  } catch (error) {
-    setStatus('片段下载失败：' + error.message, 'err');
-  }
-}
-async function retrySegment(segmentId) {
-  if (!activeTaskId || !segmentId) return;
-  try {
-    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/segments/' + encodeURIComponent(segmentId) + '/retry'), {
-      method: 'POST',
-      headers: withSodaAccessToken({}),
-      mode: 'cors'
-    });
-    if (!res.ok) throw new Error(await readError(res));
-    setStatus('片段已加入重试队列。', 'info');
-    stopPolling();
-    pollTask();
-  } catch (error) {
-    setStatus('片段重试失败：' + error.message, 'err');
-  }
+  el.segmentResultList.innerHTML = '';
+  renderSegments();
+  setStatus('视频已选择：先在画面框选字幕，再在时间线上选择片段。', 'warn');
 }
 
 function friendlyErrorMessage(data, fallback) {
   const code = data && (data.error || data.code);
   const msg = (data && (data.message || data.raw_message)) || fallback || '';
-  const token = (data && data.token) || {};
-  const usage = token.usage_today || {};
+  const usage = (data && data.token && data.token.usage_today) || {};
   if (code === 'quota_exceeded') {
-    if ((data.raw_message || msg || '').includes('bytes')) {
-      const used = usage.bytes != null ? (usage.bytes / 1024 / 1024).toFixed(1) : '-';
-      const limit = usage.bytes_limit ? (usage.bytes_limit / 1024 / 1024).toFixed(1) : '-';
-      return `今日上传流量已用完（已用 ${used}MB / 上限 ${limit}MB），请明天再试或提高访问码流量额度。`;
-    }
-    const used = usage.count != null ? usage.count : '-';
-    const limit = usage.count_limit || '-';
-    return `今日提交次数已用完（已用 ${used}/${limit} 次），请明天再试或提高访问码每日次数。`;
+    if ((data.raw_message || msg || '').includes('bytes')) return `今日上传流量已用完（已用 ${usage.bytes ? (usage.bytes/1024/1024).toFixed(1) : '-'}MB）。`;
+    return `今日提交次数已用完（已用 ${usage.count ?? '-'} 次）。`;
   }
-  if (code === 'file_too_large') return msg || '文件超过单文件大小限制。';
-  if (code === 'invalid') return '访问码无效，请检查 Access Token 是否粘贴正确。';
-  if (code === 'disabled') return '访问码已停用，请到后台启用或更换访问码。';
-  if (code === 'expired') return '访问码已过期，请重新创建或延长有效期。';
+  if (code === 'invalid') return '访问码无效，请检查 Access Token 是否正确。';
+  if (code === 'disabled') return '访问码已停用。';
+  if (code === 'expired') return '访问码已过期。';
   if (code === 'not_allowed') return '当前访问码没有这个工具的权限。';
   return msg || fallback || '请求失败';
 }
 async function readError(res) {
   const text = await res.text().catch(() => '');
   if (!text) return res.status + ' ' + res.statusText;
-  try {
-    const data = JSON.parse(text);
-    return friendlyErrorMessage(data, text);
-  } catch (_) {
-    return text.slice(0, 300);
-  }
+  try { return friendlyErrorMessage(JSON.parse(text), text); } catch (_) { return text.slice(0, 300); }
+}
+function getSubmitSegments() {
+  const usable = segments.map((seg) => ({ ...normalizeSegment(seg.start, seg.end), regions: ensureRegionList(seg) })).filter((seg) => seg.end > seg.start && seg.regions.length);
+  if (usable.length) return usable;
+  if (!hasCurrentRegion) throw new Error('请先框选字幕区域，或点击“使用底部默认框”。');
+  const seg = defaultCurrentFiveSeconds();
+  seg.regions = [cloneCurrentRegion()];
+  return [seg];
 }
 async function submitTask() {
   try {
     if (!currentFile) throw new Error('请先上传视频文件');
-    const coords = getCoords();
-    const validSegmentsBeforeSubmit = getValidSegments();
-    if (!hasCurrentRegion && !validSegmentsBeforeSubmit.some((seg) => Array.isArray(seg.regions) && seg.regions.length)) {
-      throw new Error('请先拖选字幕区域，或点击“使用默认区域”。');
-    }
-    validateCoords(coords);
+    const submitSegments = getSubmitSegments();
     const token = (el.accessToken.value || '').trim();
     if (token !== getSodaAccessToken()) setSodaAccessToken(token);
-
     stopPolling();
     el.submitBtn.disabled = true;
     el.downloadArea.classList.remove('active');
     setProgress(12);
-    updateTaskSummary('', '提交中');
-    setStatus('正在上传并创建任务…', 'info');
-
+    setStatus('正在上传并创建任务…', 'warn');
     const form = new FormData();
     form.append('file', currentFile, currentFile.name);
-    const removalMode = getRemovalMode();
-    form.append('mode', removalMode);
-    const validSegments = validSegmentsBeforeSubmit;
-    if (removalMode === 'ai_inpaint' && validSegments.length) {
-      form.append('segments_json', JSON.stringify(validSegments));
-    } else if (removalMode === 'ai_inpaint') {
-      form.append('preview_seconds', String(Math.min(60, Math.max(1, Number(el.previewSeconds.value) || 5))));
-    }
-    updateTaskSummary('', '准备提交', removalMode);
-    setStatus('本次提交模式：' + modeLabel(removalMode) + '。正在上传…', 'info');
-    form.append('coord_mode', coords.coord_mode);
-    form.append('x', String(coords.x));
-    form.append('y', String(coords.y));
-    form.append('w', String(coords.w));
-    form.append('h', String(coords.h));
-
-    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), {
-      method: 'POST',
-      headers: withSodaAccessToken({}),
-      body: form,
-      mode: 'cors'
-    });
+    form.append('mode', 'ai_inpaint');
+    form.append('segments_json', JSON.stringify(submitSegments));
+    form.append('coord_mode', 'relative');
+    form.append('x', String(submitSegments[0].regions[0].x));
+    form.append('y', String(submitSegments[0].regions[0].y));
+    form.append('w', String(submitSegments[0].regions[0].w));
+    form.append('h', String(submitSegments[0].regions[0].h));
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks'), { method:'POST', headers:withSodaAccessToken({}), body:form });
     if (!res.ok) throw new Error(await readError(res));
     const data = await res.json();
-    activeTaskId = data.task_id || data.id || '';
+    activeTaskId = data.task_id || '';
     if (!activeTaskId) throw new Error('后端未返回 task_id');
     setProgress(28);
-    updateTaskSummary(activeTaskId, data.status || 'queued', data.mode || removalMode);
-    setStatus('AI 修复任务已创建：正在处理预览片段…', 'info');
+    setStatus('任务已创建，正在处理…', 'warn');
     pollTask();
   } catch (error) {
     setProgress(0);
-    updateTaskSummary(activeTaskId, '提交失败');
     setStatus('提交失败：' + error.message, 'err');
-  } finally {
-    el.submitBtn.disabled = false;
-  }
+  } finally { el.submitBtn.disabled = false; }
 }
 function statusToProgress(status) {
   if (status === 'queued') return 36;
   if (status === 'running' || status === 'processing') return 68;
-  if (status === 'succeeded' || status === 'success' || status === 'completed') return 100;
-  if (status === 'partial_failed') return 100;
-  if (status === 'failed' || status === 'error') return 100;
+  if (['succeeded','success','completed','partial_failed','failed','error'].includes(status)) return 100;
   return 45;
+}
+function renderSegmentResults(task) {
+  const list = task && Array.isArray(task.segments) ? task.segments : [];
+  if (!list.length) { el.segmentResultList.innerHTML = ''; return; }
+  el.segmentResultList.innerHTML = list.map((seg) => {
+    const cls = seg.status === 'succeeded' ? 'succeeded' : (seg.status === 'failed' ? 'failed' : '');
+    const preview = seg.status === 'succeeded' && seg.preview_url ? `<video controls playsinline src="${apiUrl(seg.preview_url)}"></video>` : '';
+    const download = seg.status === 'succeeded' && seg.download_url ? `<button class="btn btn-primary segment-download" type="button" data-url="${seg.download_url}" data-index="${seg.index || ''}">下载片段</button>` : '';
+    const retry = seg.status === 'failed' ? `<button class="btn btn-secondary segment-retry" type="button" data-id="${seg.segment_id}">重试片段</button>` : '';
+    const err = seg.error ? `<div class="status err">${escapeHtml(seg.error)}</div>` : '';
+    return `<div class="segment-card ${cls}"><div>片段 ${seg.index || '-'}：${seg.start}s - ${seg.end}s · ${seg.status || 'queued'}</div>${err}${preview}<div class="btn-group">${download}${retry}</div></div>`;
+  }).join('');
 }
 async function pollTask() {
   if (!activeTaskId) return;
   try {
-    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId)), {
-      method: 'GET',
-      headers: withSodaAccessToken({}),
-      mode: 'cors'
-    });
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId)), { headers:withSodaAccessToken({}) });
     if (!res.ok) throw new Error(await readError(res));
     const data = await res.json();
     renderSegmentResults(data);
-    const status = data.status || data.state || 'unknown';
-    const mode = data.mode || '';
-    updateTaskSummary(activeTaskId, status, mode);
+    const status = data.status || 'unknown';
     setProgress(statusToProgress(status));
-
-    if (status === 'succeeded' || status === 'success' || status === 'completed') {
+    if (['succeeded','success','completed'].includes(status)) {
       const hasSegments = Array.isArray(data.segments) && data.segments.length > 0;
-      setStatus(hasSegments ? '所有片段处理完成，可分别预览/下载。' : 'AI 预览片段处理完成，可以下载查看效果。', 'ok');
+      setStatus(hasSegments ? '片段处理完成，可分别预览/下载。' : '处理完成，可以下载。', 'ok');
       el.downloadArea.classList.toggle('active', !hasSegments);
-      stopPolling();
-      return;
+      stopPolling(); return;
     }
-    if (status === 'partial_failed') {
-      setStatus('部分片段处理失败；成功片段可下载，失败片段可单独重试。', 'warn');
-      stopPolling();
-      return;
-    }
-    if (status === 'failed' || status === 'error') {
-      const msg = data.error || data.message || '任务处理失败';
-      setStatus('处理失败：' + msg, 'err');
-      stopPolling();
-      return;
-    }
-    const phase = data.phase ? ' / ' + data.phase : '';
-    const pi = data.processing_info || {};
-    let info = '';
-    if (pi.segmented) {
-      info = '（分段 ' + (pi.segment_index || '-') + '/' + (pi.total_segments || '-') + '，目标 ' + (pi.actual_total_seconds || pi.requested_preview_seconds || '-') + ' 秒）';
-    } else if (pi.preview_seconds) {
-      info = '（预览 ' + pi.preview_seconds + ' 秒）';
-    }
-    const extra = data.message ? '：' + data.message : '';
-    setStatus('当前状态：' + status + phase + info + extra, status === 'queued' ? 'warn' : 'info');
+    if (status === 'partial_failed') { setStatus('部分片段处理失败；成功片段可下载，失败片段可重试。', 'warn'); stopPolling(); return; }
+    if (status === 'failed' || status === 'error') { setStatus('处理失败：' + (data.error || data.message || '任务处理失败'), 'err'); stopPolling(); return; }
+    setStatus('当前状态：' + status + (data.phase ? ' / ' + data.phase : ''), 'warn');
     pollTimer = setTimeout(pollTask, 3000);
-  } catch (error) {
-    setStatus('查询状态失败：' + error.message, 'err');
-    pollTimer = setTimeout(pollTask, 5000);
-  }
+  } catch (error) { setStatus('查询状态失败：' + error.message, 'err'); pollTimer = setTimeout(pollTask, 5000); }
 }
 async function downloadResult() {
   if (!activeTaskId) return;
   try {
-    el.downloadBtn.disabled = true;
-    setStatus('正在准备下载…', 'info');
-    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/download'), {
-      method: 'GET',
-      headers: withSodaAccessToken({}),
-      mode: 'cors'
-    });
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/download'), { headers:withSodaAccessToken({}) });
     if (!res.ok) throw new Error(await readError(res));
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = makeDownloadName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    a.href = url; a.download = (currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video') + '_subtitle_removed.mp4';
+    document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
-    setStatus('下载已开始。', 'ok');
-  } catch (error) {
-    setStatus('下载失败：' + error.message, 'err');
-  } finally {
-    el.downloadBtn.disabled = false;
-  }
+  } catch (error) { setStatus('下载失败：' + error.message, 'err'); }
 }
-function makeDownloadName() {
-  const original = currentFile ? currentFile.name.replace(/\.[^.]+$/, '') : 'video';
-  return original + '_subtitle_removed.mp4';
+async function downloadSegment(url, index) {
+  try {
+    const res = await fetch(apiUrl(url), { headers:withSodaAccessToken({}) });
+    if (!res.ok) throw new Error(await readError(res));
+    const blob = await res.blob();
+    const object = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = object; a.download = `subtitle_removed_segment_${index || ''}.mp4`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(object), 30000);
+  } catch (error) { setStatus('片段下载失败：' + error.message, 'err'); }
+}
+async function retrySegment(segmentId) {
+  if (!activeTaskId || !segmentId) return;
+  try {
+    const res = await fetch(apiUrl('/api/video-subtitle-remover/tasks/' + encodeURIComponent(activeTaskId) + '/segments/' + encodeURIComponent(segmentId) + '/retry'), { method:'POST', headers:withSodaAccessToken({}) });
+    if (!res.ok) throw new Error(await readError(res));
+    setStatus('片段已加入重试队列。', 'warn');
+    stopPolling(); pollTask();
+  } catch (error) { setStatus('片段重试失败：' + error.message, 'err'); }
 }
 
 el.uploadArea.addEventListener('click', () => el.fileInput.click());
-el.uploadArea.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    el.fileInput.click();
-  }
-});
+el.uploadArea.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.fileInput.click(); } });
 el.fileInput.addEventListener('change', () => selectFile(el.fileInput.files[0]));
-['dragenter', 'dragover'].forEach((type) => {
-  el.uploadArea.addEventListener(type, (event) => {
-    event.preventDefault();
-    el.uploadArea.classList.add('dragover');
-  });
-});
-['dragleave', 'drop'].forEach((type) => {
-  el.uploadArea.addEventListener(type, (event) => {
-    event.preventDefault();
-    el.uploadArea.classList.remove('dragover');
-  });
-});
+['dragenter','dragover'].forEach((type) => el.uploadArea.addEventListener(type, (event) => { event.preventDefault(); el.uploadArea.classList.add('dragover'); }));
+['dragleave','drop'].forEach((type) => el.uploadArea.addEventListener(type, (event) => { event.preventDefault(); el.uploadArea.classList.remove('dragover'); }));
 el.uploadArea.addEventListener('drop', (event) => selectFile(event.dataTransfer.files[0]));
-el.videoPreview.addEventListener('loadedmetadata', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
-el.videoPreview.addEventListener('loadeddata', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
-window.addEventListener('resize', () => { renderSelectionBox(); renderStoredRegionOverlays(); });
-el.coordMode.addEventListener('change', (event) => {
-  const targetMode = event.target.value;
-  const previousMode = targetMode === 'relative' ? 'pixels' : 'relative';
-  setCoordInputs(convertCoordsForMode({
-    coord_mode: previousMode,
-    x: Number(el.coordX.value),
-    y: Number(el.coordY.value),
-    w: Number(el.coordW.value),
-    h: Number(el.coordH.value)
-  }, targetMode));
-});
-[el.coordX, el.coordY, el.coordW, el.coordH].forEach((input) => input.addEventListener('input', () => { hasCurrentRegion = true; renderSelectionBox(); }));
-el.removalMode.addEventListener('change', updateModeHelp);
-el.defaultBoxBtn.addEventListener('click', () => { setCoordInputs(DEFAULT_COORDS, true); setStatus('已使用默认底部区域，可继续调整或加入片段。', 'info'); });
+el.videoPreview.addEventListener('loadedmetadata', () => { renderSelectionBox(); renderSegments(); });
+el.videoPreview.addEventListener('timeupdate', renderTimeline);
+window.addEventListener('resize', () => { renderSelectionBox(); renderStoredRegionOverlays(); renderTimeline(); });
 el.selectModeBtn.addEventListener('click', () => setSelectMode(!selectMode));
+el.defaultBoxBtn.addEventListener('click', () => { setCurrentRegion(DEFAULT_COORDS, true); setStatus('已使用底部默认框，可直接提交或加入片段。', 'warn'); });
+el.clearCurrentBoxBtn.addEventListener('click', () => { clearCurrentRegion(); setStatus('当前框已清除。', 'warn'); });
+el.addCurrentBoxBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
+el.addCurrentBoxToActiveBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
+el.addSegmentBtn.addEventListener('click', () => { try { const seg = defaultCurrentFiveSeconds(); addSegment(seg.start, seg.end, hasCurrentRegion ? [cloneCurrentRegion()] : []); } catch (error) { setStatus(error.message, 'warn'); } });
+el.clearSegmentsBtn.addEventListener('click', () => { segments = []; activeSegmentIndex = -1; renderSegments(); renderStoredRegionOverlays(); });
 el.submitBtn.addEventListener('click', submitTask);
 el.downloadBtn.addEventListener('click', downloadResult);
-el.addSegmentBtn.addEventListener('click', () => {
-  try {
-    const start = el.videoPreview.currentTime || 0;
-    const duration = Number(el.previewSeconds.value) || 5;
-    addSegment(start, start + Math.min(60, Math.max(0.1, duration)));
-  } catch (error) {
-    setStatus(error.message, 'warn');
-  }
-});
-el.addCurrentBoxBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
-el.clearCurrentBoxBtn.addEventListener('click', () => { hasCurrentRegion = false; renderSelectionBox(); setStatus('当前黄色框已清除。', 'warn'); });
-el.addCurrentBoxToActiveBtn.addEventListener('click', () => { try { addCurrentRegionToActiveSegment(); } catch (error) { setStatus(error.message, 'warn'); } });
-el.addEmptySegmentBtn.addEventListener('click', () => { segments.push({ start: 0, end: 5, regions: [] }); activeSegmentIndex = segments.length - 1; renderSegmentInputs(); renderStoredRegionOverlays(); });
-el.segmentList.addEventListener('input', (event) => {
-  const index = Number(event.target.dataset.index);
-  if (event.target.classList.contains('segment-start')) updateSegment(index, 'start', event.target.value);
-  if (event.target.classList.contains('segment-end')) updateSegment(index, 'end', event.target.value);
-});
+el.saveTokenBtn.addEventListener('click', () => { setSodaAccessToken(el.accessToken.value); setStatus(getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。', 'ok'); });
+el.clearTokenBtn.addEventListener('click', () => { el.accessToken.value = ''; setSodaAccessToken(''); setStatus('访问码已清除。', 'warn'); });
 el.segmentList.addEventListener('click', (event) => {
   const removeBtn = event.target.closest('.segment-remove');
   const activeBtn = event.target.closest('.segment-active');
-  const addRegionBtn = event.target.closest('.region-add');
-  const removeRegionBtn = event.target.closest('.region-remove');
-  if (removeBtn) removeSegment(Number(removeBtn.dataset.index));
-  if (activeBtn) setActiveSegment(Number(activeBtn.dataset.index));
-  if (addRegionBtn) { try { addRegionToSegment(Number(addRegionBtn.dataset.index), cloneCurrentRegion()); } catch (error) { setStatus(error.message, 'warn'); } }
-  if (removeRegionBtn) removeRegion(Number(removeRegionBtn.dataset.segmentIndex), Number(removeRegionBtn.dataset.regionIndex));
+  const addBtn = event.target.closest('.region-add');
+  if (removeBtn) { segments.splice(Number(removeBtn.dataset.index), 1); if (activeSegmentIndex >= segments.length) activeSegmentIndex = segments.length - 1; renderSegments(); renderStoredRegionOverlays(); }
+  if (activeBtn) { activeSegmentIndex = Number(activeBtn.dataset.index); renderSegments(); renderStoredRegionOverlays(); }
+  if (addBtn) { try { ensureRegionList(segments[Number(addBtn.dataset.index)]).push(cloneCurrentRegion()); activeSegmentIndex = Number(addBtn.dataset.index); renderSegments(); renderStoredRegionOverlays(); } catch (error) { setStatus(error.message, 'warn'); } }
 });
 el.segmentResultList.addEventListener('click', (event) => {
   const retryBtn = event.target.closest('.segment-retry');
@@ -937,45 +562,36 @@ el.segmentResultList.addEventListener('click', (event) => {
   if (retryBtn) retrySegment(retryBtn.dataset.id);
   if (downloadBtn) downloadSegment(downloadBtn.dataset.url, downloadBtn.dataset.index);
 });
-el.saveTokenBtn.addEventListener('click', () => {
-  setSodaAccessToken(el.accessToken.value);
-  setStatus(getSodaAccessToken() ? '访问码已保存。' : '访问码为空，已清除。', 'ok');
-});
-el.clearTokenBtn.addEventListener('click', () => {
-  el.accessToken.value = '';
-  setSodaAccessToken('');
-  setStatus('访问码已清除。', 'warn');
-});
-el.selectionLayer.addEventListener('pointerdown', (event) => {
-  if (!currentFile) return;
-  dragStart = pointToRelative(event);
-  isDragging = true;
-  el.selectionLayer.setPointerCapture(event.pointerId);
-});
+el.selectionLayer.addEventListener('pointerdown', (event) => { if (!currentFile) return; dragStart = pointToRelative(event); isDragging = true; el.selectionLayer.setPointerCapture(event.pointerId); });
 el.selectionLayer.addEventListener('pointermove', (event) => {
   if (!isDragging || !dragStart) return;
   const end = pointToRelative(event);
-  const x = Math.min(dragStart.x, end.x);
-  const y = Math.min(dragStart.y, end.y);
-  const w = Math.abs(end.x - dragStart.x);
-  const h = Math.abs(end.y - dragStart.y);
-  if (w > 0.005 && h > 0.005) setCoordsFromRelative({ x, y, w, h, coord_mode: 'relative' });
+  const x = Math.min(dragStart.x, end.x), y = Math.min(dragStart.y, end.y), w = Math.abs(end.x - dragStart.x), h = Math.abs(end.y - dragStart.y);
+  if (w > 0.005 && h > 0.005) setCurrentRegion({ x, y, w, h, coord_mode:'relative' }, true);
 });
-el.selectionLayer.addEventListener('pointerup', (event) => {
-  isDragging = false;
-  dragStart = null;
-  try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {}
-  renderStoredRegionOverlays();
+el.selectionLayer.addEventListener('pointerup', (event) => { isDragging = false; dragStart = null; try { el.selectionLayer.releasePointerCapture(event.pointerId); } catch (_) {} renderStoredRegionOverlays(); });
+el.timelineTrack.addEventListener('pointerdown', (event) => { if (!currentFile || !el.videoPreview.duration) return; timelineDrag = { start: timelinePointToSeconds(event) }; el.timelineTrack.setPointerCapture(event.pointerId); });
+el.timelineTrack.addEventListener('pointermove', (event) => {
+  if (!timelineDrag) return;
+  const end = timelinePointToSeconds(event);
+  const temp = normalizeSegment(Math.min(timelineDrag.start, end), Math.max(timelineDrag.start, end));
+  el.timelineHint.textContent = `选择中：${formatTime(temp.start)} - ${formatTime(temp.end)}`;
 });
-window.addEventListener('beforeunload', () => {
-  stopPolling();
-  if (objectUrl) URL.revokeObjectURL(objectUrl);
+el.timelineTrack.addEventListener('pointerup', (event) => {
+  if (!timelineDrag) return;
+  const end = timelinePointToSeconds(event);
+  const start = Math.min(timelineDrag.start, end), finish = Math.max(timelineDrag.start, end);
+  timelineDrag = null;
+  try { el.timelineTrack.releasePointerCapture(event.pointerId); } catch (_) {}
+  if (Math.abs(finish - start) < 0.15) { el.videoPreview.currentTime = start; renderTimeline(); return; }
+  addSegment(start, finish, hasCurrentRegion ? [cloneCurrentRegion()] : []);
+  el.timelineHint.textContent = '已添加时间片段，可继续添加框或提交。';
 });
+window.addEventListener('beforeunload', () => { stopPolling(); if (objectUrl) URL.revokeObjectURL(objectUrl); });
 
-loadSavedSettings();
-renderSegmentInputs();
+el.accessToken.value = getSodaAccessToken();
+renderSegments();
 renderSelectionBox();
-renderStoredRegionOverlays();
 </script>
 </body>
 </html>
