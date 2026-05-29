@@ -332,6 +332,7 @@ function addCurrentRegionToActiveSegment() {
   setStatus('已添加当前框。', 'ok');
 }
 function undoLastSubtitleBox() {
+  clearCurrentRegion();
   if (activeSegmentIndex >= 0 && segments[activeSegmentIndex]) {
     const regions = ensureRegionList(segments[activeSegmentIndex]);
     if (regions.length) {
