@@ -680,14 +680,40 @@ function renderWorksGrid(works) {
     return;
   }
 
-  // 生成单个作品卡片
-  function renderCard(w) {
-    const videoUrl = w.source_url ||
+  function webMp4Name(id) {
+    return String(id || 'video').replace(/[^A-Za-z0-9_-]/g, '_') + '.mp4';
+  }
+
+  function preferredPlaybackQuality() {
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (conn?.saveData) return '720p';
+    if (conn?.effectiveType && /2g|3g/.test(conn.effectiveType)) return '720p';
+    if (conn?.downlink && conn.downlink < 2.5) return '720p';
+    return isMobile ? '720p' : '1080p';
+  }
+
+  function buildVideoSources(w) {
+    const fallback = w.source_url ||
       (w.filename
         ? (w.filename.startsWith('hls/')
             ? MEDIA_URL + '/' + w.filename
             : MEDIA_URL + '/videos/' + w.filename)
         : '');
+    if (w.source_url || !w.id) {
+      return { preferred: fallback, hd: fallback, smooth: fallback, fallback };
+    }
+    const name = webMp4Name(w.id);
+    const hd = MEDIA_URL + '/web-videos/1080p/' + name;
+    const smooth = MEDIA_URL + '/web-videos/720p/' + name;
+    const preferred = preferredPlaybackQuality() === '720p' ? smooth : hd;
+    return { preferred, hd, smooth, fallback };
+  }
+
+  // 生成单个作品卡片
+  function renderCard(w) {
+    const sources = (w.type === 'video' || w.type === 'live') ? buildVideoSources(w) : { preferred: '', hd: '', smooth: '', fallback: '' };
+    const videoUrl = sources.preferred;
     const thumbVersion = encodeURIComponent(w.updated_at || w.created_at || Date.now());
     const thumbUrl = w.thumbnail ?
       MEDIA_URL + '/thumbnails/' + w.thumbnail + '?v=' + thumbVersion : '';
@@ -702,7 +728,7 @@ function renderWorksGrid(works) {
         else ar = parseFloat(w.aspect_ratio) || 0;
       }
       const rc = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
-      return `<div class="work-item is-video ${rc}" data-type="video" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
+      return `<div class="work-item is-video ${rc}" data-type="video" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
         <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${poster}" style="pointer-events:none"></video>
         <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">VIDEO · ${w.year || 2025}</div></div>
         <div class="work-play"></div></div>`;
@@ -727,7 +753,7 @@ function renderWorksGrid(works) {
         else ar3 = parseFloat(w.aspect_ratio) || 0;
       }
       const rc3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
-      return `<div class="work-item is-video ${rc3}" data-type="live" data-src="${videoUrl}" data-id="${w.id}" data-ratio="fixed">
+      return `<div class="work-item is-video ${rc3}" data-type="live" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
         <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${thumbUrl}" style="pointer-events:none"></video>
         <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">LIVE · ${w.year || 2025}</div></div>
         <div class="work-play"></div></div>`;
@@ -803,6 +829,43 @@ function setupHoverAndRatio() {
 
   const workItems = document.querySelectorAll('.work-item');
 
+  function getVideoFallbacks(item) {
+    const arr = [item.dataset.src, item.dataset.srcSmooth, item.dataset.srcHd, item.dataset.srcFallback].filter(Boolean);
+    return [...new Set(arr)];
+  }
+
+  function setVideoSource(video, src, item) {
+    if (!src) return;
+    if (src.includes('.m3u8')) {
+      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if (item.hlsInstance) item.hlsInstance.destroy();
+        item.hlsInstance = new Hls();
+        item.hlsInstance.loadSource(src);
+        item.hlsInstance.attachMedia(video);
+      } else {
+        video.src = src;
+      }
+    } else if (!video.src || video.src !== src) {
+      video.src = src;
+      video.load();
+    }
+  }
+
+  function attachSourceFallback(video, item) {
+    if (video.dataset.fallbackBound) return;
+    video.dataset.fallbackBound = '1';
+    video.addEventListener('error', () => {
+      const sources = getVideoFallbacks(item);
+      const current = video.currentSrc || video.src;
+      const idx = sources.findIndex(src => current && current.includes(src));
+      const next = sources[idx + 1] || sources.find(src => src !== current);
+      if (next) {
+        console.warn('[video] fallback source:', next);
+        setVideoSource(video, next, item);
+      }
+    });
+  }
+
   // IntersectionObserver 懒加载视频(进入视口才加载,移出暂停)
   const videoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -812,19 +875,9 @@ function setupHoverAndRatio() {
       const videoSrc = item.dataset.src;
 
       if (entry.isIntersecting) {
-        // 进入视口:加载视频
-        if (videoSrc && videoSrc.includes('.m3u8')) {
-          // HLS视频用hls.js加载
-          if (typeof Hls !== 'undefined' && Hls.isSupported() && !item.hlsInstance) {
-            item.hlsInstance = new Hls();
-            item.hlsInstance.loadSource(videoSrc);
-            item.hlsInstance.attachMedia(video);
-          }
-        } else if (!video.src || video.src === window.location.href) {
-          // 普通视频直接加载
-          video.src = videoSrc;
-          video.load();
-        }
+        // 进入视口:加载视频，优先 Web MP4，失败自动兜底
+        attachSourceFallback(video, item);
+        if (videoSrc) setVideoSource(video, videoSrc, item);
       } else {
         // 离开视口:暂停并释放内存
         video.pause();
@@ -867,31 +920,11 @@ function setupHoverAndRatio() {
       });
 
       item.addEventListener('mouseenter', () => {
-        // HLS视频使用hls.js播放
-        if (item.dataset.src && item.dataset.src.includes('.m3u8')) {
-          if (!item.hlsInstance) {
-            // 等待hls.js加载
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-              item.hlsInstance = new Hls();
-              item.hlsInstance.loadSource(item.dataset.src);
-              item.hlsInstance.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-              // Safari原生HLS
-              video.src = item.dataset.src;
-              video.play().catch(() => {});
-              return;
-            }
-          }
-          if (item.hlsInstance) {
-            item.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-              video.play().catch(() => {});
-            });
-          }
+        attachSourceFallback(video, item);
+        if (item.dataset.src) setVideoSource(video, item.dataset.src, item);
+        if (item.hlsInstance) {
+          item.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
         } else {
-          // 普通视频直接播放
-          if (video.dataset.src && (!video.src || video.src === window.location.href)) {
-            video.src = video.dataset.src;
-          }
           video.play().catch(() => {});
         }
       });
@@ -951,6 +984,7 @@ function setupFilter() {
     <p style="color:#888;margin-top:12px;font-size:14px;" id="exitHint"></p>
   </div>
   <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
+  <div id="qualityBadge" style="display:none;position:absolute;right:16px;top:16px;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 12px;font-size:13px;z-index:2;">自动清晰度</div>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -970,6 +1004,8 @@ function closeVideo() {
   video.src = '';
   loading.style.display = 'flex';
   video.style.display = 'none';
+  const badge = document.getElementById('qualityBadge');
+  if (badge) badge.style.display = 'none';
 }
 
 // ESC 键关闭
@@ -988,6 +1024,24 @@ function updateExitHint() {
 let hlsInstance = null;
 let touchStartX = 0;
 let touchStartY = 0;
+
+function getModalFallbacks(item) {
+  const arr = [item.dataset.src, item.dataset.srcSmooth, item.dataset.srcHd, item.dataset.srcFallback].filter(Boolean);
+  return [...new Set(arr)];
+}
+
+function setQualityBadge(src) {
+  const badge = document.getElementById('qualityBadge');
+  if (!badge) return;
+  if (!src) { badge.style.display = 'none'; return; }
+  let text = '自动清晰度';
+  if (src.includes('/720p/')) text = '流畅 720p';
+  else if (src.includes('/1080p/')) text = '高清 1080p';
+  else if (src.includes('.m3u8')) text = 'HLS 备用';
+  else text = '原片备用';
+  badge.textContent = text;
+  badge.style.display = 'block';
+}
 
 function setupVideoModal() {
   // 触摸滑动关闭
@@ -1017,6 +1071,21 @@ function setupVideoModal() {
         video.style.display = 'none';
         modal.style.display = 'flex';
         updateExitHint();
+
+        const modalSources = getModalFallbacks(item);
+        let modalSourceIndex = 0;
+        function tryNextModalSource() {
+          modalSourceIndex += 1;
+          const next = modalSources[modalSourceIndex];
+          if (!next) return;
+          setQualityBadge(next);
+          video.src = '';
+          video.load();
+          video.src = next;
+          video.play().catch(() => {});
+        }
+        video.addEventListener('error', tryNextModalSource);
+        setQualityBadge(videoSrc);
 
         // 如果是HLS (.m3u8),使用hls.js播放
         if (videoSrc.includes('.m3u8')) {
