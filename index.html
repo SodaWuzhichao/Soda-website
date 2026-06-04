@@ -683,7 +683,11 @@ function renderWorksGrid(works) {
   // 生成单个作品卡片
   function renderCard(w) {
     const videoUrl = w.source_url ||
-      (w.filename ? MEDIA_URL + '/' + (w.filename.endsWith('.m3u8') ? 'hls/' : 'videos/') + w.filename : '');
+      (w.filename
+        ? (w.filename.startsWith('hls/')
+            ? MEDIA_URL + '/' + w.filename
+            : MEDIA_URL + '/videos/' + w.filename)
+        : '');
     const thumbVersion = encodeURIComponent(w.updated_at || w.created_at || Date.now());
     const thumbUrl = w.thumbnail ?
       MEDIA_URL + '/thumbnails/' + w.thumbnail + '?v=' + thumbVersion : '';
