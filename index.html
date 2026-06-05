@@ -993,19 +993,18 @@ function setupFilter() {
 
 
 <!-- 视频播放器 -->
-<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal'||event.target.id==='modalVideo')closeVideo()">
+<div id="videoModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target.id==='videoModal')closeVideo()">
   <div id="videoLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#000;">
     <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.3);border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;"></div>
     <p style="color:#fff;margin-top:20px;font-size:16px;">视频正在加载，建议先去泡杯咖啡<span id="loadingDots">...</span></p>
     <p style="color:#888;margin-top:12px;font-size:14px;" id="exitHint"></p>
   </div>
   <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
-  <select id="qualitySelector" aria-label="视频清晰度" style="display:none;position:absolute;right:16px;top:16px;background:rgba(0,0,0,.65);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 28px 6px 12px;font-size:13px;z-index:3;outline:none;" onclick="event.stopPropagation()">
+  <select id="qualitySelector" aria-label="视频清晰度" style="display:none;position:absolute;right:24px;bottom:72px;background:rgba(0,0,0,.72);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 30px 7px 13px;font-size:13px;z-index:3;outline:none;box-shadow:0 8px 24px rgba(0,0,0,.35);" onclick="event.stopPropagation()">
     <option value="1080p">1080P</option>
     <option value="720p">720P</option>
     <option value="smooth">流畅</option>
   </select>
-  <div id="qualityBadge" style="display:none;position:absolute;right:16px;top:54px;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 12px;font-size:13px;z-index:2;">自动清晰度</div>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -1016,24 +1015,40 @@ function setupFilter() {
 </style>
 
 <script>
+let modalPlaybackToken = 0;
+
+function stopModalMedia() {
+  modalPlaybackToken += 1;
+  const video = document.getElementById('modalVideo');
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+  if (!video) return;
+  video.pause();
+  video.onerror = null;
+  video.removeAttribute('src');
+  video.src = '';
+  video.load();
+  video.dataset.modalSources = '[]';
+  video.dataset.modalSourceIndex = '0';
+}
+
 function closeVideo() {
   const modal = document.getElementById('videoModal');
   const video = document.getElementById('modalVideo');
   const loading = document.getElementById('videoLoading');
-  modal.style.display = 'none';
-  video.pause();
-  video.src = '';
-  loading.style.display = 'flex';
-  video.style.display = 'none';
-  const badge = document.getElementById('qualityBadge');
-  if (badge) badge.style.display = 'none';
+  stopModalMedia();
+  if (modal) modal.style.display = 'none';
+  if (loading) loading.style.display = 'flex';
+  if (video) video.style.display = 'none';
   const selector = document.getElementById('qualitySelector');
   if (selector) selector.style.display = 'none';
 }
 
 // ESC 键关闭
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeVideo();
+  if (e.key === 'Escape' && isModalOpen()) closeVideo();
 });
 
 // 根据设备类型显示不同的退出提示
@@ -1047,20 +1062,6 @@ function updateExitHint() {
 let hlsInstance = null;
 let touchStartX = 0;
 let touchStartY = 0;
-
-function setQualityBadge(src) {
-  const badge = document.getElementById('qualityBadge');
-  if (!badge) return;
-  if (!src) { badge.style.display = 'none'; return; }
-  let text = '自动清晰度';
-  if (src.includes('/1080p/')) text = '正在播放：1080P';
-  else if (src.includes('/720p/')) text = '正在播放：720P';
-  else if (src.includes('/smooth/')) text = '正在播放：流畅';
-  else if (src.includes('.m3u8')) text = '正在播放：HLS 备用';
-  else text = '正在播放：原片备用';
-  badge.textContent = text;
-  badge.style.display = 'block';
-}
 
 function getModalSourceByQuality(item, quality) {
   const map = {
@@ -1076,58 +1077,59 @@ function getModalFallbacks(item, firstSrc) {
   return [...new Set(arr)];
 }
 
+function isModalOpen() {
+  const modal = document.getElementById('videoModal');
+  return !!modal && modal.style.display !== 'none';
+}
+
 function playModalSource(video, loading, src) {
   if (!src) return;
+  const playbackToken = ++modalPlaybackToken;
   if (hlsInstance) {
     hlsInstance.destroy();
     hlsInstance = null;
   }
   loading.style.display = 'flex';
   video.style.display = 'none';
-  setQualityBadge(src);
+
+  const showAndPlay = () => {
+    if (playbackToken !== modalPlaybackToken || !isModalOpen()) return;
+    loading.style.display = 'none';
+    video.style.display = 'block';
+    video.play().catch(() => {});
+  };
 
   if (src.includes('.m3u8')) {
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
       hlsInstance = new Hls();
       hlsInstance.loadSource(src);
       hlsInstance.attachMedia(video);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-        loading.style.display = 'none';
-        video.style.display = 'block';
-        video.play().catch(() => {});
-      });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, showAndPlay);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
-      video.addEventListener('loadedmetadata', () => {
-        loading.style.display = 'none';
-        video.style.display = 'block';
-        video.play().catch(() => {});
-      }, { once: true });
+      video.addEventListener('loadedmetadata', showAndPlay, { once: true });
     }
     return;
   }
 
+  video.pause();
+  video.removeAttribute('src');
   video.src = '';
   video.load();
   video.src = src;
   let videoLoaded = false;
   video.addEventListener('loadedmetadata', () => {
     videoLoaded = true;
-    loading.style.display = 'none';
-    video.style.display = 'block';
+    showAndPlay();
   }, { once: true });
   video.addEventListener('canplay', () => {
-    if (!videoLoaded) {
-      loading.style.display = 'none';
-      video.style.display = 'block';
-    }
+    if (!videoLoaded) showAndPlay();
   }, { once: true });
   setTimeout(() => {
-    if (!videoLoaded && video.error) {
+    if (playbackToken === modalPlaybackToken && isModalOpen() && !videoLoaded && video.error) {
       loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
     }
   }, 15000);
-  video.play().catch(() => {});
 }
 
 let _videoModalBound = false;
@@ -1163,6 +1165,7 @@ function setupVideoModal() {
 
       const video = document.getElementById('modalVideo');
       const loading = document.getElementById('videoLoading');
+      stopModalMedia();
 
       // 显示加载提示
       loading.style.display = 'flex';
