@@ -674,6 +674,7 @@ function renderWorksGrid(works) {
   const grid = document.getElementById('worksGrid');
   const API_URL = 'https://api.soda567.dpdns.org';
   const MEDIA_URL = 'https://api.soda567.dpdns.org/media';
+  const STATIC_MEDIA_URL = 'https://media.soda567.dpdns.org';
 
   if (!works || works.length === 0) {
     grid.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">暂无作品</div>';
@@ -704,8 +705,8 @@ function renderWorksGrid(works) {
       return { preferred: fallback, hd: fallback, smooth: fallback, fallback };
     }
     const name = webMp4Name(w.id);
-    const hd = MEDIA_URL + '/web-videos/1080p/' + name;
-    const smooth = MEDIA_URL + '/web-videos/720p/' + name;
+    const hd = STATIC_MEDIA_URL + '/web-videos/1080p/' + name;
+    const smooth = STATIC_MEDIA_URL + '/web-videos/720p/' + name;
     const preferred = preferredPlaybackQuality() === '720p' ? smooth : hd;
     return { preferred, hd, smooth, fallback };
   }
