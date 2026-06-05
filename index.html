@@ -654,6 +654,23 @@ footer {
 // 作品数据缓存
 let _cachedWorks = null;
 
+const VIDEO_QUALITY_STORAGE_KEY = 'soda_video_quality';
+const VIDEO_QUALITIES = ['1080p', '720p', 'smooth'];
+
+function getSavedVideoQuality() {
+  try {
+    const saved = localStorage.getItem(VIDEO_QUALITY_STORAGE_KEY);
+    return VIDEO_QUALITIES.includes(saved) ? saved : '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function saveVideoQuality(quality) {
+  if (!VIDEO_QUALITIES.includes(quality)) return;
+  try { localStorage.setItem(VIDEO_QUALITY_STORAGE_KEY, quality); } catch (err) {}
+}
+
 function renderWorksSkeleton() {
   const grid = document.getElementById('worksGrid');
   if (!grid) return;
@@ -686,12 +703,8 @@ function renderWorksGrid(works) {
   }
 
   function preferredPlaybackQuality() {
-    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-    if (conn?.saveData) return '720p';
-    if (conn?.effectiveType && /2g|3g/.test(conn.effectiveType)) return '720p';
-    if (conn?.downlink && conn.downlink < 2.5) return '720p';
-    return isMobile ? '720p' : '1080p';
+    // 默认优先高清；用户在弹窗里的选择会被 localStorage 记住。
+    return getSavedVideoQuality() || '1080p';
   }
 
   function buildVideoSources(w) {
@@ -702,18 +715,20 @@ function renderWorksGrid(works) {
             : MEDIA_URL + '/videos/' + w.filename)
         : '');
     if (w.source_url || !w.id) {
-      return { preferred: fallback, hd: fallback, smooth: fallback, fallback };
+      return { preferred: fallback, hd: fallback, sd: fallback, smooth: fallback, fallback };
     }
     const name = webMp4Name(w.id);
     const hd = STATIC_MEDIA_URL + '/web-videos/1080p/' + name;
-    const smooth = STATIC_MEDIA_URL + '/web-videos/720p/' + name;
-    const preferred = preferredPlaybackQuality() === '720p' ? smooth : hd;
-    return { preferred, hd, smooth, fallback };
+    const sd = STATIC_MEDIA_URL + '/web-videos/720p/' + name;
+    const smooth = STATIC_MEDIA_URL + '/web-videos/smooth/' + name;
+    const sourcesByQuality = { '1080p': hd, '720p': sd, smooth };
+    const preferred = sourcesByQuality[preferredPlaybackQuality()] || hd;
+    return { preferred, hd, sd, smooth, fallback };
   }
 
   // 生成单个作品卡片
   function renderCard(w) {
-    const sources = (w.type === 'video' || w.type === 'live') ? buildVideoSources(w) : { preferred: '', hd: '', smooth: '', fallback: '' };
+    const sources = (w.type === 'video' || w.type === 'live') ? buildVideoSources(w) : { preferred: '', hd: '', sd: '', smooth: '', fallback: '' };
     const videoUrl = sources.preferred;
     const thumbVersion = encodeURIComponent(w.updated_at || w.created_at || Date.now());
     const thumbUrl = w.thumbnail ?
@@ -729,7 +744,7 @@ function renderWorksGrid(works) {
         else ar = parseFloat(w.aspect_ratio) || 0;
       }
       const rc = ar > 1.2 ? 'landscape' : ar > 0 && ar < 0.8 ? 'portrait' : ar > 0 ? 'square' : 'portrait';
-      return `<div class="work-item is-video ${rc}" data-type="video" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
+      return `<div class="work-item is-video ${rc}" data-type="video" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-sd="${sources.sd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
         <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${poster}" style="pointer-events:none"></video>
         <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">VIDEO · ${w.year || 2025}</div></div>
         <div class="work-play"></div></div>`;
@@ -754,7 +769,7 @@ function renderWorksGrid(works) {
         else ar3 = parseFloat(w.aspect_ratio) || 0;
       }
       const rc3 = ar3 > 1.2 ? 'landscape' : ar3 > 0 && ar3 < 0.8 ? 'portrait' : ar3 > 0 ? 'square' : 'portrait';
-      return `<div class="work-item is-video ${rc3}" data-type="live" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
+      return `<div class="work-item is-video ${rc3}" data-type="live" data-src="${videoUrl}" data-src-hd="${sources.hd}" data-src-sd="${sources.sd}" data-src-smooth="${sources.smooth}" data-src-fallback="${sources.fallback}" data-id="${w.id}" data-ratio="fixed">
         <video data-src="${videoUrl}" muted loop playsinline webkit-playsinline preload="metadata" poster="${thumbUrl}" style="pointer-events:none"></video>
         <div class="work-overlay"><div class="work-title">${w.title}</div><div class="work-meta">LIVE · ${w.year || 2025}</div></div>
         <div class="work-play"></div></div>`;
@@ -831,7 +846,7 @@ function setupHoverAndRatio() {
   const workItems = document.querySelectorAll('.work-item');
 
   function getVideoFallbacks(item) {
-    const arr = [item.dataset.src, item.dataset.srcSmooth, item.dataset.srcHd, item.dataset.srcFallback].filter(Boolean);
+    const arr = [item.dataset.src, item.dataset.srcHd, item.dataset.srcSd, item.dataset.srcSmooth, item.dataset.srcFallback].filter(Boolean);
     return [...new Set(arr)];
   }
 
@@ -985,7 +1000,12 @@ function setupFilter() {
     <p style="color:#888;margin-top:12px;font-size:14px;" id="exitHint"></p>
   </div>
   <video id="modalVideo" controls style="display:none;width:100%;height:100%;object-fit:contain;" onclick="event.stopPropagation()"></video>
-  <div id="qualityBadge" style="display:none;position:absolute;right:16px;top:16px;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 12px;font-size:13px;z-index:2;">自动清晰度</div>
+  <select id="qualitySelector" aria-label="视频清晰度" style="display:none;position:absolute;right:16px;top:16px;background:rgba(0,0,0,.65);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 28px 6px 12px;font-size:13px;z-index:3;outline:none;" onclick="event.stopPropagation()">
+    <option value="1080p">1080P</option>
+    <option value="720p">720P</option>
+    <option value="smooth">流畅</option>
+  </select>
+  <div id="qualityBadge" style="display:none;position:absolute;right:16px;top:54px;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 12px;font-size:13px;z-index:2;">自动清晰度</div>
 </div>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -1007,6 +1027,8 @@ function closeVideo() {
   video.style.display = 'none';
   const badge = document.getElementById('qualityBadge');
   if (badge) badge.style.display = 'none';
+  const selector = document.getElementById('qualitySelector');
+  if (selector) selector.style.display = 'none';
 }
 
 // ESC 键关闭
@@ -1026,118 +1048,158 @@ let hlsInstance = null;
 let touchStartX = 0;
 let touchStartY = 0;
 
-function getModalFallbacks(item) {
-  const arr = [item.dataset.src, item.dataset.srcSmooth, item.dataset.srcHd, item.dataset.srcFallback].filter(Boolean);
-  return [...new Set(arr)];
-}
-
 function setQualityBadge(src) {
   const badge = document.getElementById('qualityBadge');
   if (!badge) return;
   if (!src) { badge.style.display = 'none'; return; }
   let text = '自动清晰度';
-  if (src.includes('/720p/')) text = '流畅 720p';
-  else if (src.includes('/1080p/')) text = '高清 1080p';
-  else if (src.includes('.m3u8')) text = 'HLS 备用';
-  else text = '原片备用';
+  if (src.includes('/1080p/')) text = '正在播放：1080P';
+  else if (src.includes('/720p/')) text = '正在播放：720P';
+  else if (src.includes('/smooth/')) text = '正在播放：流畅';
+  else if (src.includes('.m3u8')) text = '正在播放：HLS 备用';
+  else text = '正在播放：原片备用';
   badge.textContent = text;
   badge.style.display = 'block';
 }
 
-function setupVideoModal() {
-  // 触摸滑动关闭
-  const modal = document.getElementById('videoModal');
-  modal.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  });
-  modal.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > 100 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-      closeVideo();
+function getModalSourceByQuality(item, quality) {
+  const map = {
+    '1080p': item.dataset.srcHd,
+    '720p': item.dataset.srcSd,
+    smooth: item.dataset.srcSmooth
+  };
+  return map[quality] || item.dataset.srcHd || item.dataset.src || item.dataset.srcFallback || '';
+}
+
+function getModalFallbacks(item, firstSrc) {
+  const arr = [firstSrc, item.dataset.srcHd, item.dataset.srcSd, item.dataset.srcSmooth, item.dataset.srcFallback].filter(Boolean);
+  return [...new Set(arr)];
+}
+
+function playModalSource(video, loading, src) {
+  if (!src) return;
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+  loading.style.display = 'flex';
+  video.style.display = 'none';
+  setQualityBadge(src);
+
+  if (src.includes('.m3u8')) {
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+      hlsInstance = new Hls();
+      hlsInstance.loadSource(src);
+      hlsInstance.attachMedia(video);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        loading.style.display = 'none';
+        video.style.display = 'block';
+        video.play().catch(() => {});
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src;
+      video.addEventListener('loadedmetadata', () => {
+        loading.style.display = 'none';
+        video.style.display = 'block';
+        video.play().catch(() => {});
+      }, { once: true });
     }
-  });
+    return;
+  }
+
+  video.src = '';
+  video.load();
+  video.src = src;
+  let videoLoaded = false;
+  video.addEventListener('loadedmetadata', () => {
+    videoLoaded = true;
+    loading.style.display = 'none';
+    video.style.display = 'block';
+  }, { once: true });
+  video.addEventListener('canplay', () => {
+    if (!videoLoaded) {
+      loading.style.display = 'none';
+      video.style.display = 'block';
+    }
+  }, { once: true });
+  setTimeout(() => {
+    if (!videoLoaded && video.error) {
+      loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
+    }
+  }, 15000);
+  video.play().catch(() => {});
+}
+
+let _videoModalBound = false;
+function setupVideoModal() {
+  const modal = document.getElementById('videoModal');
+  const selector = document.getElementById('qualitySelector');
+
+  if (!_videoModalBound && modal) {
+    _videoModalBound = true;
+    // 触摸滑动关闭
+    modal.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    modal.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 100 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
+        closeVideo();
+      }
+    });
+  }
 
   document.querySelectorAll('.work-item').forEach(item => {
+    if (item.dataset.modalBound) return;
+    item.dataset.modalBound = '1';
     item.addEventListener('click', () => {
-      const videoSrc = item.dataset.src;
-      if (videoSrc && (item.dataset.type === 'video' || item.dataset.type === 'live')) {
-        const modal = document.getElementById('videoModal');
-        const video = document.getElementById('modalVideo');
-        const loading = document.getElementById('videoLoading');
+      if (!(item.dataset.type === 'video' || item.dataset.type === 'live')) return;
 
-        // 显示加载提示
-        loading.style.display = 'flex';
-        video.style.display = 'none';
-        modal.style.display = 'flex';
-        updateExitHint();
+      const selectedQuality = getSavedVideoQuality() || '1080p';
+      let videoSrc = getModalSourceByQuality(item, selectedQuality) || item.dataset.src;
+      if (!videoSrc) return;
 
-        const modalSources = getModalFallbacks(item);
-        let modalSourceIndex = 0;
-        function tryNextModalSource() {
-          modalSourceIndex += 1;
-          const next = modalSources[modalSourceIndex];
-          if (!next) return;
-          setQualityBadge(next);
-          video.src = '';
-          video.load();
-          video.src = next;
-          video.play().catch(() => {});
-        }
-        video.addEventListener('error', tryNextModalSource);
-        setQualityBadge(videoSrc);
+      const video = document.getElementById('modalVideo');
+      const loading = document.getElementById('videoLoading');
 
-        // 如果是HLS (.m3u8),使用hls.js播放
-        if (videoSrc.includes('.m3u8')) {
-          if (hlsInstance) {
-            hlsInstance.destroy();
-          }
-          if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-            hlsInstance = new Hls();
-            hlsInstance.loadSource(videoSrc);
-            hlsInstance.attachMedia(video);
-            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-              loading.style.display = 'none';
-              video.style.display = 'block';
-              video.play().catch(() => {});
-            });
-          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = videoSrc;
-            video.addEventListener('loadedmetadata', () => {
-              loading.style.display = 'none';
-              video.style.display = 'block';
-              video.play().catch(() => {});
-            });
-          }
-        } else {
-          // 普通视频 - 等待loadedmetadata后显示(比canplay更早触发)
-          video.src = videoSrc;
-          // 防止 error 在加载过程中提前触发
-          let videoLoaded = false;
-          video.addEventListener('loadedmetadata', () => {
-            videoLoaded = true;
-            loading.style.display = 'none';
-            video.style.display = 'block';
-          }, { once: true });
-          video.addEventListener('canplay', () => {
-            if (!videoLoaded) {
-              loading.style.display = 'none';
-              video.style.display = 'block';
-            }
-          }, { once: true });
-          // 仅在真正超时时显示错误
-          setTimeout(() => {
-            if (!videoLoaded && video.error) {
-              loading.innerHTML = '<p style="color:#f05050;font-size:16px;">视频加载失败</p>';
-            }
-          }, 15000);
-          video.play().catch(() => {});
-        }
+      // 显示加载提示
+      loading.style.display = 'flex';
+      video.style.display = 'none';
+      modal.style.display = 'flex';
+      updateExitHint();
+
+      if (selector) {
+        selector.value = selectedQuality;
+        selector.style.display = 'block';
+        selector.onchange = () => {
+          const nextQuality = selector.value;
+          saveVideoQuality(nextQuality);
+          const nextSrc = getModalSourceByQuality(item, nextQuality);
+          video.dataset.modalSourceIndex = '0';
+          video.dataset.modalSources = JSON.stringify(getModalFallbacks(item, nextSrc));
+          playModalSource(video, loading, nextSrc);
+        };
       }
+
+      const modalSources = getModalFallbacks(item, videoSrc);
+      video.dataset.modalSources = JSON.stringify(modalSources);
+      video.dataset.modalSourceIndex = '0';
+      video.onerror = () => {
+        const sources = JSON.parse(video.dataset.modalSources || '[]');
+        const nextIndex = Number(video.dataset.modalSourceIndex || 0) + 1;
+        const next = sources[nextIndex];
+        if (!next) return;
+        video.dataset.modalSourceIndex = String(nextIndex);
+        playModalSource(video, loading, next);
+      };
+
+      playModalSource(video, loading, videoSrc);
     });
   });
 }
+
 </script>
 <!-- HLS.js 播放器 -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
