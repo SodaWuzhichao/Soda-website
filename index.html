@@ -652,6 +652,61 @@ footer {
   <p>&copy; 2025 自由摄影师-SODA. All rights reserved.</p>
 </footer>
 
+<!-- QR Code Modal -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;align-items:center;justify-content:center;" onclick="if(event.target.id==='qrModal')closeQrModal()">
+  <div style="background:#141414;border-radius:16px;padding:40px;max-width:420px;width:90%;border:1px solid #222;position:relative;">
+    <button onclick="closeQrModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#666;font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+    <h3 style="font-size:1.3rem;font-weight:300;margin-bottom:8px;">链接转二维码</h3>
+    <p style="color:#666;font-size:.85rem;margin-bottom:24px;">粘贴链接，扫码直达</p>
+    <input type="url" id="qrInput" placeholder="https://live.weixin.qq.com/..." style="width:100%;padding:14px 16px;border-radius:10px;border:1px solid #222;background:#0a0a0a;color:#e8e8e8;font-size:.95rem;font-family:'DM Sans',sans-serif;font-weight:200;outline:none;transition:border-color .3s;">
+    <input:focus { border-color: #ffd700; }
+    <button onclick="generateQR()" style="width:100%;padding:14px;border-radius:10px;border:none;background:#ffd700;color:#0a0a0a;font-size:.95rem;font-family:'DM Sans',sans-serif;font-weight:400;cursor:pointer;margin-top:12px;transition:all .3s;">生成二维码</button>
+    <div id="qrSection" style="margin-top:28px;text-align:center;display:none;">
+      <div style="display:inline-block;padding:20px;border-radius:12px;background:#fff;">
+        <div id="qrCode"></div>
+      </div>
+      <br>
+      <button onclick="downloadQR()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;border:1px solid #222;background:transparent;color:#e8e8e8;font-size:.85rem;font-family:'DM Sans',sans-serif;font-weight:300;cursor:pointer;transition:all .3s;text-decoration:none;margin-top:8px;">
+        ⬇ 下载二维码
+      </button>
+      <p style="color:#666;font-size:.75rem;margin-top:20px;line-height:1.6;">支持任意网址（视频号/抖音/B站等）<br>微信扫码即可在浏览器中打开</p>
+    </div>
+  </div>
+</div>
+<script>
+let qrInstance = null;
+function openQrModal() {
+  const m = document.getElementById('qrModal');
+  m.style.display = 'flex';
+  document.getElementById('qrInput').focus();
+}
+function closeQrModal() {
+  document.getElementById('qrModal').style.display = 'none';
+}
+function isValidUrl(s) { try { new URL(s); return true; } catch { return false; } }
+function generateQR() {
+  const url = document.getElementById('qrInput').value.trim();
+  if (!url || !isValidUrl(url)) return;
+  const container = document.getElementById('qrCode');
+  container.innerHTML = '';
+  qrInstance = new QRCode(container, { text: url, width: 280, height: 280, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+  document.getElementById('qrSection').style.display = 'block';
+}
+document.getElementById('qrInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') generateQR(); });
+function downloadQR() {
+  const canvas = document.getElementById('qrCode').querySelector('canvas');
+  const img = document.getElementById('qrCode').querySelector('img');
+  let dataUrl = '';
+  if (canvas) dataUrl = canvas.toDataURL('image/png');
+  else if (img) dataUrl = img.src;
+  if (!dataUrl) return;
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = 'qrcode.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+</script>
+
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
