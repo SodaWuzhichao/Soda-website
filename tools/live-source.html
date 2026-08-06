@@ -251,10 +251,7 @@ nav {
   <div class="panel">
     <!-- 平台选择 -->
     <div class="platform-bar" id="platformBar">
-      <button class="platform-btn active" data-platform="auto">
-        <span class="icon">🔍</span> 自动识别
-      </button>
-      <button class="platform-btn" data-platform="douyin">
+      <button class="platform-btn active" data-platform="douyin">
         <span class="icon">🎵</span> 抖音
       </button>
       <button class="platform-btn" data-platform="kuaishou">
@@ -355,7 +352,7 @@ nav {
 
 <script>
 const API_BASE = 'https://api.soda567.dpdns.org/api';
-let selectedPlatform = 'auto';
+let selectedPlatform = 'douyin';
 let currentFlvUrl = '';
 let currentM3u8Url = '';
 let hlsInstance = null;
