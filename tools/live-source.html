@@ -274,6 +274,28 @@ nav {
       </button>
     </div>
 
+    <!-- Cookie 折叠区（需要 Cookie 的平台使用）-->
+    <div id="cookieSection" style="margin-bottom:16px;display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:0.82rem;color:var(--muted);">🍪 我的 Cookie</span>
+        <span style="font-size:0.75rem;color:rgba(255,215,0,0.6);">— 仅用于本次请求，不上传存储</span>
+        <button onclick="toggleCookieHelp()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.78rem;text-decoration:underline;">如何获取？</button>
+      </div>
+      <textarea id="cookieInput" placeholder="粘贴 Cookie 字符串，如 SESSDATA=xxx; bili_jct=xxx; ..."
+        style="width:100%;height:72px;border-radius:10px;border:1px solid var(--border);background:#101010;
+               color:var(--text);padding:10px 14px;font-size:0.8rem;font-family:monospace;
+               resize:vertical;outline:none;line-height:1.5;"></textarea>
+      <div id="cookieHelp" style="display:none;margin-top:10px;padding:12px 16px;border-radius:8px;
+           background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);font-size:0.8rem;color:var(--muted);line-height:1.8;">
+        <b style="color:var(--text);">如何获取 Cookie</b><br>
+        1. 浏览器打开对应平台并登录<br>
+        2. 按 <b style="color:var(--text);">F12</b> → 切到 <b style="color:var(--text);">Application</b> 标签 → 左侧 <b style="color:var(--text);">Cookies</b> → 点对应域名<br>
+        3. 全选所有条目 → 或在 <b style="color:var(--text);">Console</b> 输入 <code style="color:var(--gold);">document.cookie</code><br>
+        4. 复制结果粘贴到上方输入框<br>
+        <span style="color:rgba(232,232,232,0.35);">Cookie 仅在本次请求中使用，不会上传或存储。</span>
+      </div>
+    </div>
+
     <!-- 输入区 -->
     <div class="input-row">
       <input type="url" class="url-input" id="urlInput"
@@ -318,7 +340,7 @@ nav {
     <ul>
       <li>支持平台：抖音、快手、B站（免 Cookie）；淘宝、京东、小红书（需配置 Cookie）</li>
       <li>输入直播间主页链接或分享链接均可</li>
-      <li>需 Cookie 的平台，请在管理页面配置后再使用</li>
+      <li>淘宝、京东、小红书需要 Cookie：选中平台后，粘贴自己的 Cookie 即可（不会存储）</li>
       <li>每 IP 每分钟最多 10 次解析，请合理使用</li>
       <li>流地址有时效性，建议解析后尽快使用</li>
     </ul>
@@ -364,6 +386,12 @@ document.getElementById('platformBar').addEventListener('click', e => {
   document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedPlatform = btn.dataset.platform;
+  // 需要 Cookie 的平台自动展开 Cookie 区
+  const needsCookiePlatforms = ['taobao', 'jd', 'xiaohongshu'];
+  const cookieSec = document.getElementById('cookieSection');
+  if (cookieSec) {
+    cookieSec.style.display = needsCookiePlatforms.includes(selectedPlatform) ? 'block' : 'none';
+  }
 });
 
 // ── 解析 ──
@@ -379,6 +407,9 @@ async function doParse() {
   try {
     const body = { url };
     if (selectedPlatform !== 'auto') body.platform = selectedPlatform;
+    // 用户自带 Cookie，仅随本次请求发送，后端不存储
+    const userCookie = (document.getElementById('cookieInput')?.value || '').trim();
+    if (userCookie) body.cookie = userCookie;
 
     const r = await fetch(`${API_BASE}/parse`, {
       method: 'POST',
@@ -392,6 +423,11 @@ async function doParse() {
 
     if (!data.success) {
       showError(data.error || '解析失败');
+      // 如果是 needs_cookie，自动展开 Cookie 输入区
+      if (data.needs_cookie) {
+        const sec = document.getElementById('cookieSection');
+        if (sec) { sec.style.display = 'block'; }
+      }
       return;
     }
 
@@ -486,8 +522,10 @@ async function tryPlay(videoEl, url, type) {
     return;
   } catch (e) { /* 继续 */ }
 
-  // 策略 2: 通过后端代理
-  const proxyUrl = `${API_BASE}/live-proxy?url=${encodeURIComponent(url)}`;
+  // 策略 2: 通过后端代理（携带用户 Cookie 让代理请求平台时使用）
+  const cookieParam = (document.getElementById('cookieInput')?.value || '').trim();
+  const proxyUrl = `${API_BASE}/live-proxy?url=${encodeURIComponent(url)}` +
+    (cookieParam ? `&cookie=${encodeURIComponent(cookieParam)}` : '');
 
   if (type === 'm3u8' || url.includes('.m3u8')) {
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -529,6 +567,12 @@ function togglePlayer() {
   } else {
     playStream(currentFlvUrl, currentM3u8Url, currentM3u8Url ? 'm3u8' : 'flv');
   }
+}
+
+// ── Cookie 帮助面板 ──
+function toggleCookieHelp() {
+  const el = document.getElementById('cookieHelp');
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 // ── 工具函数 ──
