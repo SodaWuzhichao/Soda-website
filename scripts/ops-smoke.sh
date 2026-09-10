@@ -23,6 +23,7 @@ check_music_cors_post() {
   response="$(/usr/bin/curl -sS -D - -o /dev/null \
     -w '\n__HTTP_CODE__=%{http_code}\n' \
     --connect-timeout 5 --max-time 20 \
+    --retry 2 --retry-all-errors --retry-delay 1 \
     -X POST 'https://api.soda567.dpdns.org/api/music/presigned-upload' \
     -H 'Origin: https://soda567.dpdns.org' \
     -H 'Content-Type: application/json' \
@@ -51,6 +52,7 @@ check_post_contract() {
   response="$(/usr/bin/curl -sS -D - -o /dev/null \
     -w '\n__HTTP_CODE__=%{http_code}\n' \
     --connect-timeout 5 --max-time 20 \
+    --retry 2 --retry-all-errors --retry-delay 1 \
     -X POST "https://api.soda567.dpdns.org${path}" \
     -H 'Origin: https://soda567.dpdns.org' \
     -H 'Content-Type: application/json' \
