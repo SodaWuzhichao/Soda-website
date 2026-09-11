@@ -44,6 +44,9 @@ Soda-website/
 - 文档转换源码：`~/Documents/soda-services/document-converter`
 - 文档转换运行副本：`~/Library/Application Support/SodaServices/document-converter`
 - 文档转换任务数据：`/Volumes/SodaMedia/SodaData/document-converter`
+- 转写服务源码：`~/Documents/soda-services/whisper-api`
+- 转写运行副本：`~/Library/Application Support/SodaServices/whisper-api`
+- 转写大依赖与模型：`/Volumes/SodaMedia/whisper-api/venv`、`/Volumes/SodaMedia/whisper.cpp/models`
 - 公开媒体：`/Volumes/SodaMedia/Media`
 - 服务启动项：`~/Library/LaunchAgents/com.soda.*.plist`
 - 运维脚本：`~/Library/Scripts/`
