@@ -72,13 +72,16 @@ check_post_contract() {
 failures=0
 check "local readiness" "http://127.0.0.1:5001/api/ready" || failures=$((failures + 1))
 check "local music" "http://127.0.0.1:5062/api/music/health" || failures=$((failures + 1))
+check "local documents" "http://127.0.0.1:5063/api/document/health" || failures=$((failures + 1))
 check "local whisper" "http://127.0.0.1:5003/api/health" || failures=$((failures + 1))
 check "public API" "https://api.soda567.dpdns.org/api/ready" || failures=$((failures + 1))
 check_music_cors_post || failures=$((failures + 1))
 check_post_contract "transcribe route" "/api/transcribe/presigned-upload" '{"filename":"route-probe.txt","size":1}' "400" || failures=$((failures + 1))
 check_post_contract "douyin route" "/api/transcribe/douyin" '{"url":"invalid-route-probe"}' "400" || failures=$((failures + 1))
 check_post_contract "subtitle route" "/api/video-subtitle-remover/uploads" '{"filename":"route-probe.txt","size":1}' "400" || failures=$((failures + 1))
+check_post_contract "document route" "/api/document/presigned-upload" '{"filename":"route-probe.exe","size":1}' "400" || failures=$((failures + 1))
 check "public admin" "https://soda567.dpdns.org/admin" || failures=$((failures + 1))
 check "public music tool" "https://soda567.dpdns.org/tools/music-converter.html" || failures=$((failures + 1))
+check "public document" "https://soda567.dpdns.org/tools/document-converter.html" || failures=$((failures + 1))
 
 exit "$failures"

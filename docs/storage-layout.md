@@ -11,6 +11,8 @@
 | `~/Documents/Soda-website` | GitHub Pages 静态前端 | 是 |
 | `~/Documents/soda-server/backend` | 主 API 与管理后端源码 | 否 |
 | `~/Documents/soda-services/music-converter` | 音乐转换源码和依赖 | 否 |
+| `~/Documents/soda-services/document-converter` | 文档转换可编辑源码 | 否 |
+| `~/Library/Application Support/SodaServices/document-converter` | 文档转换运行副本与隔离依赖 | 否 |
 | `~/Library/Scripts` | 启动与 watchdog 脚本 | 否 |
 | `~/Library/LaunchAgents` | launchd 服务定义 | 否 |
 | `/opt/homebrew/etc/nginx` | API 反向代理配置 | 否 |
@@ -21,6 +23,7 @@
 |---|---|---|
 | `/Volumes/SodaMedia/Media` | 正式视频、缩略图和播放文件 | 长期保留并备份 |
 | `/Volumes/SodaMedia/SodaData/music-converter` | 音乐上传、输出、临时文件、任务和日志 | 按服务 TTL 自动清理 |
+| `/Volumes/SodaMedia/SodaData/document-converter` | 文档任务、转换中间文件、结果与日志 | 中间文件 2 小时、结果 24 小时、任务记录 48 小时 |
 | `/Volumes/SodaMedia/whisper-data` | 转写运行数据 | 按任务策略清理 |
 | `/Volumes/SodaMedia/Archives` | 人工隔离、旧版本和迁移回滚副本 | 验证后人工清理 |
 | `/Volumes/SodaMedia/Backups` | 自动备份 | 必须使用保留策略，禁止无限每日累积 |

@@ -41,6 +41,9 @@ Soda-website/
 - 主 API：`~/Documents/soda-server/backend`
 - 音乐转换代码：`~/Documents/soda-services/music-converter`
 - 音乐运行数据：`/Volumes/SodaMedia/SodaData/music-converter`
+- 文档转换源码：`~/Documents/soda-services/document-converter`
+- 文档转换运行副本：`~/Library/Application Support/SodaServices/document-converter`
+- 文档转换任务数据：`/Volumes/SodaMedia/SodaData/document-converter`
 - 公开媒体：`/Volumes/SodaMedia/Media`
 - 服务启动项：`~/Library/LaunchAgents/com.soda.*.plist`
 - 运维脚本：`~/Library/Scripts/`
@@ -54,7 +57,8 @@ Soda-website/
 bash scripts/ops-smoke.sh
 launchctl print gui/$(id -u)/com.soda.server
 launchctl print gui/$(id -u)/com.soda.music-converter
+launchctl print gui/$(id -u)/com.soda.document-converter
 tail -n 100 /tmp/soda-watchdog.log
 ```
 
-`ops-smoke.sh` 不只检查健康页面，还会用无副作用的失败请求验证音乐转换、转文案、抖音提取和视频去字幕的真实 POST 路由及 CORS。转文案与抖音的 `/api/transcribe*`、状态查询 `/api/status*` 必须经过主后端 `5001`；`5003` 只允许作为内部 Whisper worker。
+`ops-smoke.sh` 不只检查健康页面，还会用无副作用的失败请求验证音乐转换、文档转换、转文案、抖音提取和视频去字幕的真实 POST 路由及 CORS。转文案与抖音的 `/api/transcribe*`、状态查询 `/api/status*` 必须经过主后端 `5001`；`5003` 只允许作为内部 Whisper worker。
