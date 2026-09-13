@@ -25,6 +25,7 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
 .status{margin-top:14px;color:var(--muted);font-size:.86rem;line-height:1.7;word-break:break-word}.status.error{color:var(--danger)}.status.success{color:var(--ok)}.status.warn{color:var(--warn)}
 .result{display:none}.result h2{font-size:1rem;font-weight:300;margin-bottom:12px}.quality{display:grid;gap:8px;margin-bottom:16px;color:var(--muted);font-size:.82rem;line-height:1.65}.quality strong{color:var(--text);font-weight:300}.download{display:inline-block;padding:13px 20px;border-radius:6px;background:var(--gold);color:#111;text-decoration:none;font-size:.88rem;font-weight:400}.privacy{font-size:.76rem;color:#5d5d5d;line-height:1.7;text-align:center;padding:4px 14px 0}footer{padding:0 24px 34px;text-align:center;color:#555;font-size:.75rem}
 .hidden{display:none!important}
+.bar.indeterminate{width:30%!important;animation:working 1.5s ease-in-out infinite}.activity{margin-top:10px;color:var(--muted);font-size:.78rem;line-height:1.7}@keyframes working{from{transform:translateX(-100%)}to{transform:translateX(340%)}}@media(prefers-reduced-motion:reduce){.bar.indeterminate{animation:none}}
 @media(max-width:768px){nav{padding:24px}.container{padding:60px 24px}.upload-area{padding:42px 20px}.controls{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.buttons{flex-direction:column}.btn{width:100%}}
 </style>
 </head>
@@ -66,6 +67,7 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
       <div class="bar-bg"><div class="bar" id="bar"></div></div>
       <div class="progress-label"><span id="detailText">文件不会长期保留</span><span class="pct" id="pct">0%</span></div>
       <div class="status" id="status">选择文件后即可开始。</div>
+      <div class="activity" id="activity"></div>
     </section>
 
     <section class="card result" id="result">
@@ -77,6 +79,6 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
   </div>
 </main>
 <footer>© 2026 SODA567</footer>
-<script src="document-converter.js?verify=4b16e2f" defer></script>
+<script src="document-converter.js?v=20260914-speed1" defer></script>
 </body>
 </html>
