@@ -36,7 +36,7 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
 </nav>
 <main class="container">
   <h1 class="page-title">文档与电子书转换</h1>
-  <p class="page-desc">阅读与原文对照兼顾。PDF 默认生成阅读版、原貌版和逐页核对报告；识别有疑点时保留原页，不擅自补写或改文。</p>
+  <p class="page-desc">把扫描文档转换为可调字号的文字 EPUB。正文连续阅读，原貌版与核对报告单独提供；不擅自补写或改写原文。</p>
   <div class="stack">
     <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="选择文档">
       <div class="upload-icon">▤</div>
@@ -50,9 +50,9 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
     <section class="card">
       <div class="controls">
         <div class="field"><label for="outputFormat">输出格式</label><select class="select" id="outputFormat" disabled><option>请先选择文件</option></select></div>
-        <div class="field" id="modeField"><label for="epubMode">PDF → EPUB 模式</label><select class="select" id="epubMode"><option value="dual">阅读 + 原貌 + 核对报告（推荐）</option><option value="fixed">仅原貌版（不识别文字）</option></select></div>
+        <div class="field" id="modeField"><label for="epubMode">PDF → EPUB 模式</label><select class="select" id="epubMode"><option value="dual">文字阅读版（推荐，可调字号）</option><option value="fixed">仅图片原貌（不可调字号，无 OCR）</option></select></div>
       </div>
-      <div class="mode-note" id="modeNote">双引擎逐页核对，支持从已保存页面继续。OCR 无法保证逐字无误，重要内容请点“核对原页”。精确核对耗时较长，原貌图像也会使文件更大。</div>
+      <div class="mode-note" id="modeNote">默认生成可调字号的文字阅读版，并另附原貌对照版。正文不穿插整页图片；疑点按页码查阅报告与原貌版。OCR 不能保证逐字无误。</div>
       <div class="buttons">
         <button class="btn btn-primary" id="startBtn" type="button" disabled>开始转换</button>
         <button class="btn btn-secondary hidden" id="cancelBtn" type="button">取消任务</button>
@@ -79,6 +79,6 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:20px;paddi
   </div>
 </main>
 <footer>© 2026 SODA567</footer>
-<script src="document-converter.js?v=20260914-speed2" defer></script>
+<script src="document-converter.js?v=20260914-reflow1" defer></script>
 </body>
 </html>
