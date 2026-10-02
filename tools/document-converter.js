@@ -52,8 +52,13 @@ async function cancel() { if (!taskId) return; const current = ++generation; cle
 async function retry() { if (!taskId) return; const current = ++generation; setBusy(true); $('retryBtn').classList.add('hidden'); try { await post('/tasks/' + taskId + '/retry'); poll(current); } catch (error) { setBusy(false); status(friendly(error), 'error'); $('retryBtn').classList.remove('hidden'); } }
 $('uploadArea').onclick = () => { if (!busy) $('fileInput').click(); };
 $('uploadArea').onkeydown = event => { if (['Enter',' '].includes(event.key)) {event.preventDefault(); if (!busy) $('fileInput').click();} };
-$('fileInput').onchange = () => { if ($('fileInput').files[0]) choose($('fileInput').files[0]); };
-for (const type of ['dragover','drop']) $('uploadArea').addEventListener(type, event => {event.preventDefault(); if (type === 'drop' && event.dataTransfer.files[0]) choose(event.dataTransfer.files[0]);});
+function chooseChecked(candidate) {
+  if (busy) return;
+  if (ext(candidate.name) === 'pdg') { status('暂不支持直接转换 PDG。请使用有权限的阅读器导出 PDF 后上传，不能只修改扩展名。', 'error'); return; }
+  choose(candidate);
+}
+$('fileInput').onchange = () => { if ($('fileInput').files[0]) chooseChecked($('fileInput').files[0]); };
+for (const type of ['dragover','drop']) $('uploadArea').addEventListener(type, event => {event.preventDefault(); if (type === 'drop' && event.dataTransfer.files[0]) chooseChecked(event.dataTransfer.files[0]);});
 $('outputFormat').onchange = syncMode; $('epubMode').onchange = syncMode; $('startBtn').onclick = start; $('cancelBtn').onclick = cancel; $('retryBtn').onclick = retry;
 $('resetBtn').onclick = () => { if (busy) return; ++generation; clearTimeout(timer); storage(null); location.reload(); };
 try { const raw = storage(); const saved = /^[0-9a-f]{32}$/.test(raw || '') ? {id:raw} : JSON.parse(raw || '{}'); if (/^[0-9a-f]{32}$/.test(saved.id || '')) {taskId = saved.id; setBusy(true); poll();} } catch { storage(null); }

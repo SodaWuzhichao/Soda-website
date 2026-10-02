@@ -17,4 +17,7 @@ assert.match(view({...base,telemetry:{...base.telemetry,stage_started_at:500}}).
 assert.equal(view({...base,status:'completed'}).percent,100);
 assert.equal(view({...base,status:'failed'}).label,'已停止');
 assert.equal(view({...base,status:'cancelled'}).label,'已停止');
-console.log('PASS: 8 real-progress, legacy fallback, packaging, stale-heartbeat and terminal-state assertions');
+vm.runInContext("chooseChecked({name:'book.PDG',size:100})", context);
+assert.match(nodes.get('status').textContent, /不能只修改扩展名/);
+assert.equal(vm.runInContext('taskId', context), undefined);
+console.log('PASS: progress states and unsupported PDG rejected before upload');
